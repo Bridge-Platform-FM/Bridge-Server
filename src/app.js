@@ -1,9 +1,11 @@
 const express = require('express');
 const config = require('./configs/configs');
+const requestResponseLogger = require('./configs/logger');
 const HttpResponse = require('./utils/HttpResponse');
 
 const app = express();
 app.use(express.json());
+app.use(requestResponseLogger);
 
 app.get('/', (req, res) => {
     HttpResponse.success(res, {

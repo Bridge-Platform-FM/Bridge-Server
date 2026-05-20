@@ -1,14 +1,22 @@
 const express = require('express');
+const config = require('./configs/configs');
+const requestResponseLogger = require('./configs/logger');
+const HttpResponse = require('./utils/HttpResponse');
 
 const app = express();
 app.use(express.json());
+app.use(requestResponseLogger);
 
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    HttpResponse.success(res, {
+        message: 'Hello World!'
+    });
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on port http://localhost:3000');
+const SERVER_PORT = config.SERVER_PORT || 3000;
+
+app.listen(SERVER_PORT, () => {
+    console.info(`Server is running on port http://localhost:${SERVER_PORT}`);
 });
 
 module.exports = app;

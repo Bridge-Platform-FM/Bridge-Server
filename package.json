@@ -6,18 +6,26 @@
     "scripts": {
         "dev": "node --watch src/app.js",
         "lint": "eslint .",
-        "lint:fix": "eslint . --fix"
+        "lint:fix": "eslint . --fix",
+        "migrate:make": "sequelize-mig migration:make -n",
+        "migrate:run": "sequelize-cli db:migrate",
+        "migrate:undo": "sequelize-cli db:migrate:undo"
     },
     "dependencies": {
         "cors": "^2.8.6",
         "dotenv": "^17.4.2",
         "express": "^5.2.1",
+        "pg": "^8.21.0",
+        "pg-hstore": "^2.3.4",
+        "sequelize": "^6.37.8",
         "winston": "^3.19.0",
         "winston-daily-rotate-file": "^5.0.0"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "eslint": "^10.4.0",
-        "globals": "^17.6.0"
+        "globals": "^17.6.0",
+        "sequelize-cli": "^6.6.5",
+        "sequelize-mig": "^3.1.3"
     }
 }

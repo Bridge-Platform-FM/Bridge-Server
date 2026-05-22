@@ -1,9 +1,9 @@
 'use strict';
 
 const { DataTypes } = require('sequelize');
- 
+
 module.exports = (sequelize) => {
-    const CompanyRoleMaster = sequelize.define('CompanyRoleMaster', {
+    const SubRoleMaster = sequelize.define('SubRoleMaster', {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -11,22 +11,30 @@ module.exports = (sequelize) => {
             allowNull: false,
             field: 'id'
         },
-        role_name: {
+        sub_role_name: {
             type: DataTypes.STRING,
             allowNull: false
         },
-        role_code: {
+        sub_role_code: {
             type: DataTypes.STRING,
             allowNull: true
         },
-        role_description: {
+        sub_role_description: {
             type: DataTypes.STRING,
             allowNull: true
         },
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,
-            defaultValue: sequelize.literal('CURRENT_TIMESTAMP') 
+            defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
+        },
+        company_role_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'company_role_master', // Must match the tableName of CompanyRoleMaster
+                key: 'id'
+            }
         },
         created_by: {
             type: DataTypes.INTEGER,
@@ -58,17 +66,24 @@ module.exports = (sequelize) => {
             allowNull: true
         }
     }, {
-        tableName: 'company_role_master',
-        timestamps: false,
+        tableName: 'sub_role_master',
+        timestamps: false, // Disables default id, createdAt, and updatedAt injections
         initialAutoIncrement: 1
     });
 
-    CompanyRoleMaster.associate = (models) => {
-        CompanyRoleMaster.belongsTo(models.Admin, {
+    // Define relationship
+    SubRoleMaster.associate = (models) => {
+        SubRoleMaster.belongsTo(models.CompanyRoleMaster, {
+            foreignKey: 'company_role_id',
+            as: 'companyRole'
+        });
+    };
+    SubRoleMaster.associate = (models) => {
+        SubRoleMaster.belongsTo(models.Admin, {
             foreignKey: 'created_by',
             as: 'createdBy'
         });
     };
-    
-    return CompanyRoleMaster;
+
+    return SubRoleMaster;
 };

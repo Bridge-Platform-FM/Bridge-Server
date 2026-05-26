@@ -9,8 +9,18 @@ if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
 }
 
+// Daily rotate file transport
+// const transport = new DailyRotateFile({
+//     filename: path.join(logDir, 'application-%DATE%.log'),
+//     datePattern: 'YYYY-MM-DD',
+//     zippedArchive: false,
+//     maxSize: '20m',
+//     maxFiles: '30d'
+// });
 
-const transport = new DailyRotateFile({
+//application request response logger
+
+const applicationTransport = new DailyRotateFile({
     filename: path.join(logDir, 'application-%DATE%.log'),
     datePattern: 'YYYY-MM-DD',
     zippedArchive: false,
@@ -18,67 +28,57 @@ const transport = new DailyRotateFile({
     maxFiles: '30d'
 });
 
-const logger = winston.createLogger({
+const applicationLogger = winston.createLogger({
     level: 'info',
     format: winston.format.printf((info) => info.message),
-    transports: [transport]
+    transports: [applicationTransport]
 });
 
-const requestResponseLogger = (req, res, next) => {
 
-    const startTime = Date.now();
 
-    const originalJson = res.json;
-    const originalSend = res.send;
+// const logger = winston.createLogger({
+//     level: 'info',
+//     format: winston.format.printf((info) => info.message),
+//     transports: [transport]
+// });
 
-    let responseBody;
+// log formate chnage 
 
-    // Capture res.json()
-    res.json = function(body) {
-        responseBody = body;
-        return originalJson.call(this, body);
-    };
+// const logger = winston.createLogger({
+//     level: 'info',
+//     format: winston.format.combine(
+//         winston.format.timestamp(),
+//         winston.format.json()
+//     ),
+//     transports: [transport]
+// });
 
-    // Capture res.send()
-    res.send = function(body) {
-        responseBody = body;
-        return originalSend.call(this, body);
-    };
+// module.exports = logger;
 
-    res.on('finish', () => {
 
-        const endTime = Date.now();
-        const timeConsumed = `${endTime - startTime} ms`;
+//error logger
 
-        // Determine log level
-        let logLevel = 'info';
+const errorTransport = new DailyRotateFile({
+    filename: path.join(logDir, 'errorlog-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: false,
+    maxSize: '20m',
+    maxFiles: '30d'
+});
 
-        if (res.statusCode >= 500) {
-            logLevel = 'error';
-        } else if (res.statusCode >= 400) {
-            logLevel = 'warn';
-        } else if (res.statusCode >= 300) {
-            logLevel = 'warn';
-        }
+const errorLogger = winston.createLogger({
+    level: 'error',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.printf(({ timestamp, message }) => {
+            return `${timestamp} - ${message}`;
+        })
+    ),
+    transports: [errorTransport]
+});
 
-        const logMessage =
-            `${logLevel.toUpperCase()} - ` +
-            `${req.method} - ` +
-            `${req.originalUrl} - ` +
-            `${res.statusCode} - ` +
-            `${timeConsumed} - ` +
-            `REQUEST_HEADERS: ${JSON.stringify(req.headers)} - ` +
-            `REQUEST_BODY: ${JSON.stringify(req.body)} - ` +
-            `RESPONSE_HEADERS: ${JSON.stringify(res.getHeaders())} - ` +
-            `RESPONSE_BODY: ${JSON.stringify(responseBody)}`;
-
-        logger.log({
-            level: logLevel,
-            message: logMessage
-        });
-    });
-
-    next();
+module.exports = {
+    applicationLogger,
+    errorLogger
 };
 
-module.exports = requestResponseLogger;

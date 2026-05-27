@@ -5,7 +5,8 @@ const companyRepository = require('../repositories/companyRepository');
 const otpRepository = require('../repositories/otpRepository');
 const otpService = require('./otpService');
 const tokenService = require('./tokenService');
-const { applicationLogger, errorLogger } = require('../configs/logger');
+const { errorLogger } = require('../configs/logger');
+const ServiceResponse = require('../utils/ServiceResponse');
 
 const createError = (message, status = 400) => {
     const err = new Error(message);
@@ -17,7 +18,6 @@ const createError = (message, status = 400) => {
  * Starts company registration, checks uniqueness, hashes password, and triggers OTP.
  */
 const initiateRegistration = async (payload) => {
-    applicationLogger.info(`REGISTRATION ATTEMPT - Email: ${payload.email}, Phone: ${payload.phoneNumber}`);
 
     // 1. Check if email already registered in DB
     const existingEmail = await companyRepository.findByEmail(payload.email);
@@ -47,16 +47,16 @@ const initiateRegistration = async (payload) => {
     };
 
     // 5. Generate and store OTP codes in database
-    const otps = await otpService.generateAndSendOtp(
-        payload.email,
-        payload.phoneNumber,
-        registrationPayload
-    );
+    // const otps = await otpService.generateAndSendOtp(
+    //     payload.email,
+    //     payload.phoneNumber,
+    //     registrationPayload
+    // );
 
-    return {
-        emailOtp: otps.emailOtp,
-        mobileOtp: otps.mobileOtp
-    };
+    return ServiceResponse.success({
+        message: 'Registration payload prepared successfully',
+        data: registrationPayload
+    });
 };
 
 /**
@@ -64,7 +64,7 @@ const initiateRegistration = async (payload) => {
  */
 const verifyOtp = async (channel, identifier, otp) => {
     // 1. Run channel OTP verification state update
-    const otpRecord = await otpService.verifyOtp(channel, identifier, otp);
+    const otpRecord = (await otpService.verifyOtp(channel, identifier, otp)).data;
 
     // 2. Check if both email and mobile channels are verified
     if (otpRecord.is_email_verified && otpRecord.is_mobile_verified) {
@@ -79,10 +79,13 @@ const verifyOtp = async (channel, identifier, otp) => {
             // Soft delete the temporary OTP verification record
             await otpRepository.deleteOtp(otpRecord.id);
 
-            return {
-                isCompleted: true,
-                data: finalData
-            };
+            return ServiceResponse.success({
+                message: 'Registration successful',
+                data: {
+                    isCompleted: true,
+                    company: finalData
+                }
+            });
         } catch (err) {
             // Rollback transaction on failure
             await transaction.rollback();
@@ -93,10 +96,10 @@ const verifyOtp = async (channel, identifier, otp) => {
 
     // If only one channel is verified
     const channelLabel = channel.toUpperCase() === 'EMAIL' ? 'Email' : 'Mobile';
-    return {
-        isCompleted: false,
-        message: `${channelLabel} verified successfully`
-    };
+    return ServiceResponse.success({
+        message: `${channelLabel} verified successfully`,
+        data: { isCompleted: false }
+    });
 };
 
 /**
@@ -141,16 +144,9 @@ const completeRegistration = async (otpRecord, transaction) => {
     // 5. Save the refresh token in database (hashed)
     await tokenService.saveRefreshToken(company.id, tokens.refreshToken, { transaction });
 
-    applicationLogger.info(`REGISTRATION SUCCESSFUL - Company ID: ${company.id}, Email: ${company.company_email}`);
-
-    // Clean company record of sensitive fields
-    const companyClean = company.toJSON();
-    delete companyClean.password;
-
     return {
         accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        company: companyClean
+        refreshToken: tokens.refreshToken
     };
 };
 

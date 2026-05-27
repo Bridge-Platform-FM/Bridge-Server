@@ -9,14 +9,22 @@ const HttpResponse = require('../utils/HttpResponse');
  */
 const companyRegistration = async (req, res, next) => {
     try {
-        const { emailOtp, mobileOtp } = await authService.initiateRegistration(req.body);
+        const reqBody = req.body;
+        const ServiceResponse = await authService.initiateRegistration(reqBody);
+
+        const registrationPayload = ServiceResponse.data;
+
+        const otps = await otpService.generateAndSendOtp(
+            registrationPayload.email,
+            registrationPayload.phoneNumber,
+            registrationPayload
+        );
 
         // Print OTP to terminal is done inside the service.
         // As requested, we also send the OTPs back to the frontend.
         return HttpResponse.success(res, {
-            message: 'OTP sent successfully',
-            data: { emailOtp, mobileOtp },
-            statusCode: 200
+            message: otps.message,
+            data: otps.data
         });
     } catch (error) {
         next(error);
@@ -33,7 +41,7 @@ const verifyOtp = async (req, res, next) => {
 
         const result = await authService.verifyOtp(channel, identifier, otp);
 
-        if (result.isCompleted) {
+        if (result.data.isCompleted) {
             return HttpResponse.success(res, {
                 message: 'Registration successful',
                 data: result.data,

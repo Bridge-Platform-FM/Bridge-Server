@@ -1,15 +1,15 @@
-const success = ({ result = [], message = 'Successfully processed.' } = {}) => {
+const success = ({ data = [], message = 'Successfully processed.' } = {}) => {
     return {
         success: true,
-        result,
+        data,
         message
     };
 };
 
-const error = ({ message = 'Error encountered.', result = [] } = {}) => {
+const error = ({ message = 'Error encountered.', data = [] } = {}) => {
     return {
         success: false,
-        result,
+        data,
         message
     };
 };

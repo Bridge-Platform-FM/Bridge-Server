@@ -6,7 +6,6 @@ const generateAccessToken = require('../utils/generateAccessToken');
 const generateRefreshToken = require('../utils/generateRefreshToken');
 const verifyRefreshToken = require('../utils/verifyRefreshToken');
 const { Company, CompanyRole, CompanyRoleMaster } = require('../models');
-const { applicationLogger } = require('../configs/logger');
 
 const createError = (message, status = 400) => {
     const err = new Error(message);
@@ -101,7 +100,6 @@ const refreshToken = async (plainRefreshToken) => {
             role: roleCode
         });
 
-        applicationLogger.info(`TOKEN REFRESH - Success for company ID: ${companyId}`);
 
         return { accessToken: newAccessToken };
     } catch (error) {

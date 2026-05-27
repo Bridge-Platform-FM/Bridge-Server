@@ -3,8 +3,7 @@ const env = require('../configs/env_configs');
 const otpRepository = require('../repositories/otpRepository');
 const generateOtp = require('../utils/generateOtp');
 const { printOtp, printSingleOtp } = require('../utils/otpHelper');
-const { applicationLogger } = require('../configs/logger');
-
+const ServiceResponse = require('../utils/ServiceResponse');
 const createError = (message, status = 400) => {
     const err = new Error(message);
     err.status = status;
@@ -56,10 +55,12 @@ const generateAndSendOtp = async (email, phoneNumber, registrationPayload) => {
     // 3. Print OTP to console and log
     printOtp(email, emailOtp, phoneNumber, mobileOtp);
 
-    return {
-        emailOtp,
-        mobileOtp
-    };
+    return ServiceResponse.success({
+        data: {
+            emailOtp,
+            mobileOtp
+        }
+    });
 };
 
 /**
@@ -68,68 +69,116 @@ const generateAndSendOtp = async (email, phoneNumber, registrationPayload) => {
  */
 const verifyOtp = async (channel, identifier, otp) => {
     const now = new Date();
-    // 1. Fetch OTP record by channel identifier
-    const record = channel.toUpperCase() === 'EMAIL'
-        ? await otpRepository.findByEmail(identifier)
-        : await otpRepository.findByPhoneNumber(identifier);
+    const isEmailChannel = channel.toUpperCase() === 'EMAIL';
+
+    // Channel-specific field mapping
+    const config = {
+        otpField: isEmailChannel ? 'email_otp' : 'mobile_otp',
+        expiryField: isEmailChannel ? 'email_otp_expiry' : 'mobile_otp_expiry',
+        attemptsField: isEmailChannel
+            ? 'email_verify_attempts'
+            : 'mobile_verify_attempts',
+        blockedField: isEmailChannel
+            ? 'email_blocked_until'
+            : 'mobile_blocked_until',
+        verifiedField: isEmailChannel
+            ? 'is_email_verified'
+            : 'is_mobile_verified',
+        findRecord: isEmailChannel
+            ? otpRepository.findByEmail
+            : otpRepository.findByPhoneNumber
+    };
+
+    // 1. Fetch OTP record
+    const record = await config.findRecord(identifier);
 
     if (!record) {
         throw createError('OTP verification record not found or expired', 404);
     }
 
-    const isEmailChannel = channel.toUpperCase() === 'EMAIL';
+    // 2. Check if channel is blocked
+    const blockedUntil = record[config.blockedField];
 
-    // 2. Check if channel is temporarily blocked
-    const blockedUntil = isEmailChannel ? record.email_blocked_until : record.mobile_blocked_until;
     if (blockedUntil && now < new Date(blockedUntil)) {
-        const minutesLeft = Math.ceil((new Date(blockedUntil) - now) / 60000);
-        throw createError(`Verification is temporarily blocked for this channel. Please try again in ${minutesLeft} minutes.`, 403);
+        const minutesLeft = Math.ceil(
+            (new Date(blockedUntil) - now) / 60000
+        );
+
+        throw createError(
+            `Verification is temporarily blocked for this channel. Please try again in ${minutesLeft} minutes.`,
+            403
+        );
     }
 
-    // 3. Check OTP Expiry
-    const otpExpiry = isEmailChannel ? record.email_otp_expiry : record.mobile_otp_expiry;
+    // 3. Check max verification attempts
+    const currentAttempts = record[config.attemptsField];
+
+    if (currentAttempts >= env.OTP.MAX_VERIFY_ATTEMPTS) {
+        throw createError(
+            'Maximum verification attempts exceeded. Please request a new OTP or wait for the cooldown period to end.',
+            403
+        );
+    }
+
+    // 4. Check OTP expiry
+    const otpExpiry = record[config.expiryField];
+
     if (!otpExpiry || now > new Date(otpExpiry)) {
-        // Expired OTP counts as a failed attempt
         await handleFailedAttempt(record, isEmailChannel);
         throw createError('OTP has expired', 400);
     }
 
-    // 4. Verify OTP value
-    const storedOtp = isEmailChannel ? record.email_otp : record.mobile_otp;
+    // 5. Validate OTP
+    const storedOtp = record[config.otpField];
+
     if (storedOtp !== otp) {
         await handleFailedAttempt(record, isEmailChannel);
-        // Refetch record to get updated verify attempts
-        const updatedRecord = await otpRepository.findByEmailOrPhone(record.email, record.phone_number);
-        const attempts = isEmailChannel ? updatedRecord.email_verify_attempts : updatedRecord.mobile_verify_attempts;
-        const remaining = Math.max(0, env.OTP.MAX_VERIFY_ATTEMPTS - attempts);
 
-        if (remaining === 0) {
-            throw createError('Wrong OTP. Maximum verification attempts exceeded. Blocked for 15 minutes.', 400);
-        } else {
-            throw createError(`Invalid OTP. ${remaining} attempts remaining.`, 400);
+        // Fetch updated attempts after increment
+        const updatedRecord = await otpRepository.findByEmailOrPhone(
+            record.email,
+            record.phone_number
+        );
+
+        const updatedAttempts =
+            updatedRecord[config.attemptsField];
+
+        const remainingAttempts = Math.max(
+            0,
+            env.OTP.MAX_VERIFY_ATTEMPTS - updatedAttempts
+        );
+
+        if (remainingAttempts === 0) {
+            throw createError(
+                `Wrong OTP. Maximum verification attempts exceeded. Blocked for ${env.OTP.BLOCK_DURATION_MINUTES} minutes.`,
+                403
+            );
         }
+        throw createError(
+            `Invalid OTP. ${remainingAttempts} attempts remaining.`,
+            400
+        );
     }
 
-    // 5. If correct, reset verify attempts and set verified to true
-    const updateData = {};
-    if (isEmailChannel) {
-        updateData.is_email_verified = true;
-        updateData.email_verify_attempts = 0;
-        updateData.email_blocked_until = null;
-    } else {
-        updateData.is_mobile_verified = true;
-        updateData.mobile_verify_attempts = 0;
-        updateData.mobile_blocked_until = null;
-    }
+    // 6. OTP verified successfully
+    const updateData = {
+        [config.verifiedField]: true,
+        [config.attemptsField]: 0,
+        [config.blockedField]: null
+    };
 
     await otpRepository.updateOtp(record.id, updateData);
 
-    // Fetch the latest state
-    const finalRecord = await otpRepository.findByEmailOrPhone(record.email, record.phone_number);
+    // Fetch latest updated state
+    const finalRecord = await otpRepository.findByEmailOrPhone(
+        record.email,
+        record.phone_number
+    );
 
-    applicationLogger.info(`OTP VERIFICATION - Channel ${channel} verified successfully for identifier: ${identifier}`);
-
-    return finalRecord;
+    return ServiceResponse.success({
+        message: `${channel} OTP verified successfully`,
+        data: finalRecord
+    });
 };
 
 /**
@@ -143,13 +192,13 @@ const handleFailedAttempt = async (record, isEmailChannel) => {
         updateData.email_verify_attempts = attempts;
         if (attempts >= env.OTP.MAX_VERIFY_ATTEMPTS) {
             updateData.email_blocked_until = new Date(Date.now() + env.OTP.BLOCK_DURATION_MINUTES * 60 * 1000);
-            applicationLogger.info(`ACCOUNT TEMPORARY BLOCK - Channel EMAIL blocked for ${record.email} until ${updateData.email_blocked_until}`);
+            // applicationLogger.info(`ACCOUNT TEMPORARY BLOCK - Channel EMAIL blocked for ${record.email} until ${updateData.email_blocked_until}`);
         }
     } else {
         updateData.mobile_verify_attempts = attempts;
         if (attempts >= env.OTP.MAX_VERIFY_ATTEMPTS) {
             updateData.mobile_blocked_until = new Date(Date.now() + env.OTP.BLOCK_DURATION_MINUTES * 60 * 1000);
-            applicationLogger.info(`ACCOUNT TEMPORARY BLOCK - Channel MOBILE blocked for ${record.phone_number} until ${updateData.mobile_blocked_until}`);
+            // applicationLogger.info(`ACCOUNT TEMPORARY BLOCK - Channel MOBILE blocked for ${record.phone_number} until ${updateData.mobile_blocked_until}`);
         }
     }
 

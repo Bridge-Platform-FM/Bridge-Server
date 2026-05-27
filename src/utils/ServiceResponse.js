@@ -1,19 +1,20 @@
-class ServiceResponse {
-    static success = ({result=[], message='Successfully processed.'}={}) => {
-        return {
-            success: true,
-            result,
-            message
-        };
+const success = ({ result = [], message = 'Successfully processed.' } = {}) => {
+    return {
+        success: true,
+        result,
+        message
     };
+};
 
-    static error = ({message='Error encountered.', result=[]}={}) => {
-        return {
-            success: false,
-            result,
-            message
-        };
+const error = ({ message = 'Error encountered.', result = [] } = {}) => {
+    return {
+        success: false,
+        result,
+        message
     };
-}
+};
 
-module.exports = ServiceResponse;
+module.exports = {
+    success,
+    error
+};

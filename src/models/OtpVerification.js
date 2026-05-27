@@ -101,6 +101,12 @@ module.exports = (sequelize) => {
             allowNull: true,
             field: 'registration_payload'
         },
+        is_deleted: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            field: 'is_deleted'
+        },
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

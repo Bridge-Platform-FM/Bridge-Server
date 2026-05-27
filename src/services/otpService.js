@@ -24,8 +24,8 @@ const generateAndSendOtp = async (email, phoneNumber, registrationPayload) => {
     const emailOtpExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
     const mobileOtpExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
 
-    // 2. Check if an OTP record already exists for this signup process
-    let otpRecord = await otpRepository.findByEmailOrPhone(email, phoneNumber);
+    // 2. Soft-delete any existing active OTP records for this email/phone number
+    await otpRepository.softDeleteActiveByEmailOrPhone(email, phoneNumber);
 
     const recordData = {
         email,
@@ -40,23 +40,18 @@ const generateAndSendOtp = async (email, phoneNumber, registrationPayload) => {
         mobile_blocked_until: null,
         is_email_verified: false,
         is_mobile_verified: false,
-        registration_payload: registrationPayload
+        registration_payload: registrationPayload,
+        is_deleted: false
     };
 
-    if (otpRecord) {
-        // Keep old resend count if within cooldown/history, or reset if needed.
-        // Let's update the existing record
-        await otpRepository.updateOtp(otpRecord.id, recordData);
-    } else {
-        // Create a new record
-        await otpRepository.createOtp({
-            ...recordData,
-            email_resend_count: 0,
-            mobile_resend_count: 0,
-            email_last_sent_at: now,
-            mobile_last_sent_at: now
-        });
-    }
+    // Create a new record
+    await otpRepository.createOtp({
+        ...recordData,
+        email_resend_count: 0,
+        mobile_resend_count: 0,
+        email_last_sent_at: now,
+        mobile_last_sent_at: now
+    });
 
     // 3. Print OTP to console and log
     printOtp(email, emailOtp, phoneNumber, mobileOtp);
@@ -195,35 +190,50 @@ const resendOtp = async (channel, identifier) => {
         throw createError(`Maximum resend limit of ${env.OTP.MAX_RESEND_PER_HOUR} attempts per hour reached. Please try again later.`, 400);
     }
 
-    // 4. Generate new OTP and expiry
-    const newOtp = generateOtp();
-    const newExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
+    // 4. Check if the existing OTP is still valid (not expired)
+    const otpExpiry = isEmailChannel ? record.email_otp_expiry : record.mobile_otp_expiry;
+    const isExpired = !otpExpiry || now > new Date(otpExpiry);
 
-    // 5. Update DB
     const updateData = {};
+    let otpToSend;
+
+    if (!isExpired) {
+        // Reuse existing OTP
+        otpToSend = isEmailChannel ? record.email_otp : record.mobile_otp;
+    } else {
+        // Generate new OTP and expiry
+        otpToSend = generateOtp();
+        const newExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
+
+        if (isEmailChannel) {
+            updateData.email_otp = otpToSend;
+            updateData.email_otp_expiry = newExpiry;
+        } else {
+            updateData.mobile_otp = otpToSend;
+            updateData.mobile_otp_expiry = newExpiry;
+        }
+    }
+
+    // Common updates for resend (reset attempts, update cooldown timestamp, increment resend count)
     if (isEmailChannel) {
-        updateData.email_otp = newOtp;
-        updateData.email_otp_expiry = newExpiry;
-        updateData.email_resend_count = resendCount + 1;
         updateData.email_last_sent_at = now;
+        updateData.email_resend_count = resendCount + 1;
         updateData.email_verify_attempts = 0;
         updateData.email_blocked_until = null;
     } else {
-        updateData.mobile_otp = newOtp;
-        updateData.mobile_otp_expiry = newExpiry;
-        updateData.mobile_resend_count = resendCount + 1;
         updateData.mobile_last_sent_at = now;
+        updateData.mobile_resend_count = resendCount + 1;
         updateData.mobile_verify_attempts = 0;
         updateData.mobile_blocked_until = null;
     }
 
     await otpRepository.updateOtp(record.id, updateData);
 
-    // 6. Print to console and log
-    printSingleOtp(channel, identifier, newOtp);
+    // Print to console and log
+    printSingleOtp(channel, identifier, otpToSend);
 
     return {
-        otp: newOtp
+        otp: otpToSend
     };
 };
 

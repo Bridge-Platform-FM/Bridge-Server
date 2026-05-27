@@ -76,7 +76,7 @@ const verifyOtp = async (channel, identifier, otp) => {
             // Commit transaction
             await transaction.commit();
 
-            // Delete the temporary OTP verification record
+            // Soft delete the temporary OTP verification record
             await otpRepository.deleteOtp(otpRecord.id);
 
             return {

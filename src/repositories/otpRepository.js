@@ -4,13 +4,13 @@ const { Op } = require('sequelize');
 
 const findByEmail = async (email) => {
     return await OtpVerification.findOne({
-        where: { email }
+        where: { email, is_deleted: false }
     });
 };
 
 const findByPhoneNumber = async (phoneNumber) => {
     return await OtpVerification.findOne({
-        where: { phone_number: phoneNumber }
+        where: { phone_number: phoneNumber, is_deleted: false }
     });
 };
 
@@ -20,7 +20,20 @@ const findByEmailOrPhone = async (email, phoneNumber) => {
             [Op.or]: [
                 { email: email },
                 { phone_number: phoneNumber }
-            ]
+            ],
+            is_deleted: false
+        }
+    });
+};
+
+const softDeleteActiveByEmailOrPhone = async (email, phoneNumber) => {
+    return await OtpVerification.update({ is_deleted: true }, {
+        where: {
+            [Op.or]: [
+                { email: email },
+                { phone_number: phoneNumber }
+            ],
+            is_deleted: false
         }
     });
 };
@@ -37,7 +50,7 @@ const updateOtp = async (id, otpData) => {
 };
 
 const deleteOtp = async (id, { transaction } = {}) => {
-    return await OtpVerification.destroy({
+    return await OtpVerification.update({ is_deleted: true }, {
         where: { id },
         transaction
     });
@@ -47,6 +60,7 @@ module.exports = {
     findByEmail,
     findByPhoneNumber,
     findByEmailOrPhone,
+    softDeleteActiveByEmailOrPhone,
     createOtp,
     updateOtp,
     deleteOtp

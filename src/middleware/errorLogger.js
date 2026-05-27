@@ -6,7 +6,7 @@ const errorMiddleware = (err, req, res, next) => {
     const errors = err.errors || [];
 
     const errorMessage =
-        `ERROR - ` +
+        'ERROR - ' +
         `${req.method} - ` +
         `${req.originalUrl} - ` +
         `STATUS: ${status} - ` +

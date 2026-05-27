@@ -6,6 +6,7 @@ const generateAccessToken = require('../utils/generateAccessToken');
 const generateRefreshToken = require('../utils/generateRefreshToken');
 const verifyRefreshToken = require('../utils/verifyRefreshToken');
 const { Company, CompanyRole, CompanyRoleMaster } = require('../models');
+const ServiceResponse = require('../utils/ServiceResponse');
 
 const createError = (message, status = 400) => {
     const err = new Error(message);
@@ -18,16 +19,26 @@ const createError = (message, status = 400) => {
 * Generates a pair of access and refresh tokens.
 */
 const generateTokens = async (company, roleCode) => {
-    const payload = {
-        companyId: company.id,
-        email: company.company_email,
-        role: roleCode
-    };
+    try {
 
-    const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken({ companyId: company.id });
+        const payload = {
+            companyId: company.id,
+            email: company.company_email,
+            role: roleCode
+        };
 
-    return { accessToken, refreshToken };
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken({ companyId: company.id });
+
+        return ServiceResponse.success({
+            data: { accessToken, refreshToken }
+        });
+    } catch (err) {
+        return ServiceResponse.error({
+            message: err.message || 'Error encountered while generating and sending OTP.',
+            data: []
+        });
+    }
 };
 
 /**
@@ -101,18 +112,39 @@ const refreshToken = async (plainRefreshToken) => {
         });
 
 
-        return { accessToken: newAccessToken };
+        return ServiceResponse.success({
+            message: 'Token refreshed successfully',
+            data: {
+                accessToken: newAccessToken
+            }
+        });
     } catch (error) {
+
         if (error.status) {
-            throw error;
+            return ServiceResponse.error({
+                message: error.message,
+                data: []
+            });
         }
+
         if (error.name === 'TokenExpiredError') {
-            throw createError('Unauthorized: Refresh token has expired', 401);
+            return ServiceResponse.error({
+                message: 'Unauthorized: Refresh token has expired',
+                data: []
+            });
         }
+
         if (error.name === 'JsonWebTokenError') {
-            throw createError('Unauthorized: Invalid refresh token format', 401);
+            return ServiceResponse.error({
+                message: 'Unauthorized: Invalid refresh token format',
+                data: []
+            });
         }
-        throw createError('Unauthorized: Failed to refresh token', 401);
+
+        return ServiceResponse.error({
+            message: 'Unauthorized: Failed to refresh token',
+            data: []
+        });
     }
 };
 

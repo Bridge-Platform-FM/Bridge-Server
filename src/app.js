@@ -6,7 +6,6 @@ const HttpResponse = require('./utils/HttpResponse');
 const db = require('./models');
 const authRoutes = require('./routes/authRoutes');
 
-const { testService } = require('./services/testService');
 
 
 
@@ -22,24 +21,6 @@ app.get('/', (req, res) => {
         message: 'Hello World!'
     });
 });
-
-app.get('/error-test', (req, res, next) => {
-    try {
-        throw new Error('Test Error Logger');
-    } catch (error) {
-        next(error);
-    }
-});
-
-app.post('/test-api', async (req, res, next) => {
-    try {
-        const response = await testService(req.body);
-        return res.status(201).json(response);
-    } catch (error) {
-        next(error);
-    }
-});
-
 
 // Error logger middleware
 app.use(errorMiddleware);

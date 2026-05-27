@@ -12,6 +12,12 @@ const companyRegistration = async (req, res, next) => {
         const reqBody = req.body;
         const ServiceResponse = await authService.initiateRegistration(reqBody);
 
+        if (!ServiceResponse.success) {
+            return HttpResponse.error(res, {
+                message: ServiceResponse.message,
+                statusCode: 400
+            });
+        }
         const registrationPayload = ServiceResponse.data;
 
         const otps = await otpService.generateAndSendOtp(
@@ -41,6 +47,13 @@ const verifyOtp = async (req, res, next) => {
 
         const result = await authService.verifyOtp(channel, identifier, otp);
 
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: 400
+            });
+        }
+
         if (result.data.isCompleted) {
             return HttpResponse.success(res, {
                 message: 'Registration successful',
@@ -68,9 +81,16 @@ const resendOtp = async (req, res, next) => {
 
         const result = await otpService.resendOtp(channel, identifier);
 
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: 400
+            });
+        }
+
         return HttpResponse.success(res, {
             message: 'OTP sent successfully',
-            data: { otp: result.otp },
+            data: { otp: result.data.otp },
             statusCode: 200
         });
     } catch (error) {
@@ -86,9 +106,16 @@ const refreshToken = async (req, res, next) => {
         const { refreshToken } = req.body;
         const result = await tokenService.refreshToken(refreshToken);
 
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: 401
+            });
+        }
+
         return HttpResponse.success(res, {
             message: 'Token refreshed successfully',
-            data: result,
+            data: result.data,
             statusCode: 200
         });
     } catch (error) {

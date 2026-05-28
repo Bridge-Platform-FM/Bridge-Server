@@ -323,7 +323,7 @@ const generateOtp = () => {
     return crypto.randomInt(100000, 1000000).toString();
 };
 
-const storeOtp = (email, emailOtp, phoneNumber, phoneNumberOtp, registrationPayload) => {
+const storeOtp = async (email, emailOtp, phoneNumber, phoneNumberOtp, registrationPayload) => {
     try {
         const now = new Date();
         const emailOtpExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
@@ -333,7 +333,7 @@ const storeOtp = (email, emailOtp, phoneNumber, phoneNumberOtp, registrationPayl
             email,
             phone_number: phoneNumber,
             email_otp: emailOtp,
-            mobile_otp: mobileOtp,
+            mobile_otp: phoneNumberOtp,
             email_otp_expiry: emailOtpExpiry,
             mobile_otp_expiry: mobileOtpExpiry,
             email_verify_attempts: 0,

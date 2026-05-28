@@ -1,18 +1,31 @@
 const express = require('express');
 const env_config = require('./configs/env_configs');
-const requestResponseLogger = require('./configs/logger');
+const requestResponseLogger = require('./middleware/requestResponseLogger');
+const errorMiddleware = require('./middleware/errorLogger');
 const HttpResponse = require('./utils/HttpResponse');
 const db = require('./models');
+const authRoutes = require('./routes/authRoutes');
+
+
+
 
 const app = express();
 app.use(express.json());
+
+// Application request response logger
 app.use(requestResponseLogger);
+app.use('/api/v1/auth', authRoutes);
 
 app.get('/', (req, res) => {
     HttpResponse.success(res, {
         message: 'Hello World!'
     });
 });
+
+// Error logger middleware
+app.use(errorMiddleware);
+
+
 
 const SERVER_PORT = env_config.SERVER_PORT || 3000;
 

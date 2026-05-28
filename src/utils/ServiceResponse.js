@@ -1,5 +1,5 @@
 class ServiceResponse {
-    static success = ({result=[], message='Successfully processed.'}={}) => {
+    static success = ({result=[], message='Successfully processed.', statusCode=200}={}) => {
         return {
             success: true,
             result,
@@ -7,7 +7,7 @@ class ServiceResponse {
         };
     };
 
-    static error = ({message='Error encountered.', result=[]}={}) => {
+    static error = ({message='Error encountered.', result=[], statusCode=500}={}) => {
         return {
             success: false,
             result,

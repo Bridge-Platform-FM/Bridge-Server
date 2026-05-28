@@ -1,7 +1,9 @@
 'use strict';
 
 const { DataTypes } = require('sequelize');
- 
+const TimestampFields = require('./base/TimestampFields');
+const SoftDeleteFields = require('./base/SoftDeleteFields');
+
 module.exports = (sequelize) => {
     const CompanyRoleMaster = sequelize.define('CompanyRoleMaster', {
         id: {
@@ -23,40 +25,9 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        created_at: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: sequelize.literal('CURRENT_TIMESTAMP') 
-        },
-        created_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: 'admin',
-                key: 'id'
-            }
-        },
-        updated_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-        updated_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        },
-        is_deleted: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false
-        },
-        deleted_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-        deleted_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        }
+
+        ...TimestampFields,
+        ...SoftDeleteFields
     }, {
         tableName: 'company_role_master',
         timestamps: false,
@@ -68,7 +39,17 @@ module.exports = (sequelize) => {
             foreignKey: 'created_by',
             as: 'createdBy'
         });
+
+        CompanyRoleMaster.hasMany(models.CompanyRole, {
+            foreignKey: 'role_id',
+            as: 'companyRoles'
+        });
+
+        CompanyRoleMaster.hasMany(models.SubRoleMaster, {
+            foreignKey: 'role_id',
+            as: 'subRoles'
+        });
     };
-    
+
     return CompanyRoleMaster;
 };

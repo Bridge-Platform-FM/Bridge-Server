@@ -1,7 +1,9 @@
 'use strict';
 
 const { DataTypes } = require('sequelize');
- 
+const TimestampFields = require('./base/TimestampFields');
+const SoftDeleteFields = require('./base/SoftDeleteFields');
+
 module.exports = (sequelize) => {
     const Admin = sequelize.define('Admin', {
         id: {
@@ -17,39 +19,25 @@ module.exports = (sequelize) => {
         },
         email: {
             type: DataTypes.STRING,
-            allowNull: true
+            allowNull: true,
+            unique: true
         },
         password: {
             type: DataTypes.STRING,
             allowNull: true
         },
-        created_at: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
-        },
-        updated_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-        is_deleted: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false
-        },
-        deleted_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
         role: {
             type: DataTypes.STRING,
             allowNull: false
-        }
+        },
+
+        ...TimestampFields,
+        ...SoftDeleteFields
     }, {
         tableName: 'admin',
         timestamps: false,
         initialAutoIncrement: 1
     });
-    
+
     return Admin;
 };

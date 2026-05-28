@@ -1,0 +1,230 @@
+'use strict';
+const bcrypt = require('bcrypt');
+const { sequelize } = require('../models');
+const companyRepository = require('../repositories/companyRepository');
+const otpRepository = require('../repositories/otpRepository');
+const otpService = require('./otpService');
+const tokenService = require('./tokenService');
+const { errorLogger } = require('../configs/logger');
+const ServiceResponse = require('../utils/ServiceResponse');
+
+const createError = (message, status = 400) => {
+    const err = new Error(message);
+    err.status = status;
+    return err;
+};
+
+/**
+ * Starts company registration, checks uniqueness, hashes password, and triggers OTP.
+ */
+
+const checkEmailExists = (email) => {
+    try {
+        const existingEmailUser = await companyRepository.findByEmail(email);
+        if (existingEmail) {
+            return ServiceResponse.error(message='Email is already registered.', result=existingEmailUser, statusCode=400);
+        }
+        else {
+            return ServiceResponse.success(result=existingEmailUser);
+        }
+    }
+    catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error(message='Error occured while checking email.', result=[], statusCode=500);
+    }
+}
+
+const prepareOtpPayload = (companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber) => {
+    try {
+        const hashedPassword = await bcrypt.hash(payload.password, 10);
+
+        const registrationPayload = {
+            companyName: companyName,
+            email: email,
+            phoneNumber: phoneNumber,
+            password: hashedPassword,
+            role: role.toUpperCase(),
+            termsAccepted: termsAccepted,
+            gstNumber: gstNumber || null,
+            cinNumber: cinNumber || null
+        };
+
+        return ServiceResponse.success({message: 'Registration payload prepared successfully', data: registrationPayload, statusCode: 200});
+    }
+    catch {
+        errorLogger.error(error);
+        return ServiceResponse.error({message: 'Error occured while preparing registration', data: [], statusCode: 500});
+    }
+}
+
+
+const initiateRegistration = async (payload) => {
+    try {
+        // 1. Check if email already registered in DB
+        const existingEmail = await companyRepository.findByEmail(payload.email);
+        if (existingEmail) {
+            throw createError('Email is already registered', 400);
+        }
+
+        // 2. Check if phone number already registered in DB
+        const existingPhone = await companyRepository.findByPhoneNumber(payload.phoneNumber);
+        if (existingPhone) {
+            throw createError('Phone number is already registered', 400);
+        }
+
+        // 3. Hash password using bcrypt
+        const hashedPassword = await bcrypt.hash(payload.password, 10);
+
+        // 4. Store registration request detail in JSON payload (including password hash)
+        const registrationPayload = {
+            companyName: payload.companyName,
+            email: payload.email,
+            phoneNumber: payload.phoneNumber,
+            password: hashedPassword,
+            role: payload.role.toUpperCase(),
+            termsAccepted: payload.termsAccepted,
+            gstNumber: payload.gstNumber || null,
+            cinNumber: payload.cinNumber || null
+        };
+
+        // 5. Generate and store OTP codes in database
+        // const otps = await otpService.generateAndSendOtp(
+        //     payload.email,
+        //     payload.phoneNumber,
+        //     registrationPayload
+        // );
+
+        return ServiceResponse.success({
+            message: 'Registration payload prepared successfully',
+            data: registrationPayload
+        });
+    }
+    catch (error) {
+        return ServiceResponse.error({
+            message: error.message || 'Error occured while preparing registration',
+            data: []
+        });
+    };
+};
+
+/**
+ * Verifies channel OTP and triggers automatic final registration if both verified.
+ */
+const verifyOtp = async (channel, identifier, otp) => {
+    try {
+
+        // 1. Run channel OTP verification state update
+        // const otpRecord = (await otpService.verifyOtp(channel, identifier, otp)).data;
+        const otpResult = await otpService.verifyOtp(channel, identifier, otp);
+        if (!otpResult.success) {
+            return otpResult;
+        }
+        const otpRecord = otpResult.data;
+        // 2. Check if both email and mobile channels are verified
+        if (otpRecord.is_email_verified && otpRecord.is_mobile_verified) {
+            // Start final registration inside a transaction
+            const transaction = await sequelize.transaction();
+            try {
+                const finalData = await completeRegistration(otpRecord, transaction);
+
+                // Commit transaction
+                await transaction.commit();
+
+                // Soft delete the temporary OTP verification record
+                await otpRepository.deleteOtp(otpRecord.id);
+
+                return ServiceResponse.success({
+                    message: 'Registration successful',
+                    data: {
+                        isCompleted: true,
+                        company: finalData.data
+                    }
+                });
+
+            } catch (error) {
+
+                // Rollback transaction on failure
+                await transaction.rollback();
+
+                errorLogger.error(
+                    `REGISTRATION TRANSACTION ROLLBACK - Email: ${otpRecord.email}. Error: ${error.message} - ${error.stack}`
+                );
+
+                throw error;
+            }
+        }
+
+        // If only one channel is verified
+        const channelLabel = channel.toUpperCase() === 'EMAIL' ? 'Email' : 'Mobile';
+        return ServiceResponse.success({
+            message: `${channelLabel} verified successfully`,
+            data: { isCompleted: false }
+        });
+    } catch (err) {
+
+        return ServiceResponse.error({
+            message: err.message || 'Error encountered.',
+            data: []
+        });
+
+    }
+};
+
+/**
+ * Completes registration inside a transaction (creates Company, Role mapping, and saves RefreshToken).
+ */
+const completeRegistration = async (otpRecord, transaction) => {
+    const payload = otpRecord.registration_payload;
+
+    // 1. Find the role master entry corresponding to the role code
+    const roleMaster = await companyRepository.findRoleMasterByCode(payload.role);
+    if (!roleMaster) {
+        throw createError(`Specified role code '${payload.role}' does not exist in master roles`, 400);
+    }
+
+    // 2. Create the Company record
+    const companyData = {
+        company_name: payload.companyName,
+        company_email: payload.email,
+        mobile_number: payload.phoneNumber,
+        password: payload.password, // already hashed
+        gst_number: payload.gstNumber,
+        cin_number: payload.cinNumber,
+        terms_accepted: payload.termsAccepted,
+        is_active: true,
+        is_email_verified: true,
+        is_mobile_number_verified: true
+    };
+
+    const company = await companyRepository.createCompany(companyData, { transaction });
+
+    // 3. Create the CompanyRole mapping record
+    const companyRoleData = {
+        company_id: company.id,
+        role_id: roleMaster.id
+    };
+
+    await companyRepository.createCompanyRole(companyRoleData, { transaction });
+
+    // 4. Generate Access and Refresh tokens
+    const tokens = await tokenService.generateTokens(company, roleMaster.role_code);
+
+    // 5. Save the refresh token in database (hashed)
+    // generateTokens returns ServiceResponse, so unwrap .data to get the actual tokens
+    await tokenService.saveRefreshToken(company.id, tokens.data.refreshToken, { transaction });
+
+    return ServiceResponse.success({
+        message: 'Registration completed successfully',
+        data: {
+            accessToken: tokens.data.accessToken,
+            refreshToken: tokens.data.refreshToken
+        }
+    });
+};
+module.exports = {
+    initiateRegistration,
+    verifyOtp,
+    completeRegistration,
+    checkEmailExists,
+    prepareOtpPayload
+};

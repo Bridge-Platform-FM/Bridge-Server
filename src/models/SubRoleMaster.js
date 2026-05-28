@@ -1,6 +1,8 @@
 'use strict';
 
 const { DataTypes } = require('sequelize');
+const TimestampFields = require('./base/TimestampFields');
+const SoftDeleteFields = require('./base/SoftDeleteFields');
 
 module.exports = (sequelize) => {
     const SubRoleMaster = sequelize.define('SubRoleMaster', {
@@ -23,48 +25,27 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        created_at: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
-        },
-        company_role_id: {
+        role_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            field: 'company_role_id',
             references: {
-                model: 'company_role_master', // Must match the tableName of CompanyRoleMaster
+                model: 'company_role_master',
                 key: 'id'
             }
         },
-        created_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: 'admin',
-                key: 'id'
-            }
-        },
-        updated_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-        updated_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        },
-        is_deleted: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false
-        },
-        deleted_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-        deleted_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        }
+        // company_role_id: {
+        //     type: DataTypes.INTEGER,
+        //     allowNull: false,
+        //     references: {
+        //         model: 'company_role_master', // Must match the tableName of CompanyRoleMaster
+        //         key: 'id'
+        //     }
+        // },
+
+        ...TimestampFields,
+        ...SoftDeleteFields
+
     }, {
         tableName: 'sub_role_master',
         timestamps: false, // Disables default id, createdAt, and updatedAt injections
@@ -73,15 +54,20 @@ module.exports = (sequelize) => {
 
     // Define relationship
     SubRoleMaster.associate = (models) => {
-        SubRoleMaster.belongsTo(models.CompanyRoleMaster, {
-            foreignKey: 'company_role_id',
-            as: 'companyRole'
-        });
-    };
-    SubRoleMaster.associate = (models) => {
+
+        // SubRoleMaster.belongsTo(models.CompanyRoleMaster, {
+        //     foreignKey: 'company_role_id',
+        //     as: 'companyRole'
+        // });
+
         SubRoleMaster.belongsTo(models.Admin, {
             foreignKey: 'created_by',
             as: 'createdBy'
+        });
+
+        SubRoleMaster.belongsTo(models.CompanyRoleMaster, {
+            foreignKey: 'role_id',
+            as: 'role'
         });
     };
 

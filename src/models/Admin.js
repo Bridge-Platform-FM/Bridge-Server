@@ -31,12 +31,42 @@ module.exports = (sequelize) => {
             allowNull: false
         },
 
-        ...TimestampFields,
-        ...SoftDeleteFields
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW
+        },
+        created_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        updated_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        is_deleted: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        },
+        deleted_at: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        deleted_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        }
     }, {
         tableName: 'admin',
-        timestamps: false,
-        initialAutoIncrement: 1
+        timestamps: true,
+        initialAutoIncrement: 1,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
     });
 
     return Admin;

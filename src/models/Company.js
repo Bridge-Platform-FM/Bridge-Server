@@ -83,15 +83,45 @@ module.exports = (sequelize) => {
             defaultValue: false
         },
 
-        ...TimestampFields,
-        ...SoftDeleteFields
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+            field: 'created_at'
+        },
+        created_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'updated_at'
+        },
+        updated_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        is_deleted: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        },
+        deleted_at: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        deleted_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        }
 
     }, {
-
         tableName: 'company',
-        timestamps: false,
-        initialAutoIncrement: 1
-
+        timestamps: true,
+        initialAutoIncrement: 1,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
     });
 
     Company.associate = (models) => {

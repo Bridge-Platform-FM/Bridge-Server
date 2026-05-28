@@ -34,22 +34,46 @@ module.exports = (sequelize) => {
                 key: 'id'
             }
         },
-        // company_role_id: {
-        //     type: DataTypes.INTEGER,
-        //     allowNull: false,
-        //     references: {
-        //         model: 'company_role_master', // Must match the tableName of CompanyRoleMaster
-        //         key: 'id'
-        //     }
-        // },
 
-        ...TimestampFields,
-        ...SoftDeleteFields
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+            field: 'created_at'
+        },
+        created_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'updated_at'
+        },
+        updated_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        is_deleted: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        },
+        deleted_at: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        deleted_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        }
 
     }, {
         tableName: 'sub_role_master',
-        timestamps: false, // Disables default id, createdAt, and updatedAt injections
-        initialAutoIncrement: 1
+        timestamps: true, 
+        initialAutoIncrement: 1,
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
     });
 
     // Define relationship

@@ -17,7 +17,7 @@ app.use(requestResponseLogger);
 app.use('/api/v1/auth', authRoutes);
 
 app.get('/', (req, res) => {
-    HttpResponse.success(res, {
+    return HttpResponse.success(res, {
         message: 'Hello World!'
     });
 });

@@ -3,6 +3,7 @@ const env = require('../configs/env_configs');
 const { errorLogger } = require('../configs/logger');
 const otpRepository = require('../repositories/otpRepository');
 // const generateOtp = require('../utils/generateOtp');
+const crypto = require('crypto');
 const { printOtp, printSingleOtp } = require('../utils/otpHelper');
 const ServiceResponse = require('../utils/ServiceResponse');
 const createError = (message, status = 400) => {
@@ -354,11 +355,11 @@ const storeOtp = async (email, emailOtp, phoneNumber, phoneNumberOtp, registrati
             email_last_sent_at: now,
             mobile_last_sent_at: now
         });
-        ServiceResponse.success({message: 'OTP stored successfully.', data: otpRecord, statusCode: 200});
+        return ServiceResponse.success({message: 'OTP stored successfully.', data: otpRecord, statusCode: 200});
     }
     catch (error) {
         errorLogger.error(error);
-        ServiceResponse.error({message: 'Error occured while storing OTP.', data: [], statusCode: 500});
+        return ServiceResponse.error({message: 'Error occured while storing OTP.', data: [], statusCode: 500});
     }
 };
 

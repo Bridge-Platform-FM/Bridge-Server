@@ -6,7 +6,7 @@ module.exports = {
 
     is_deleted: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,
+        allowNull: true,
         defaultValue: false
     },
 

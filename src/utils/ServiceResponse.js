@@ -1,20 +1,19 @@
-const success = ({ data = [], message = 'Successfully processed.' } = {}) => {
-    return {
-        success: true,
-        data,
-        message
+class ServiceResponse {
+    static success = ({result=[], message='Successfully processed.', statusCode=200}={}) => {
+        return {
+            success: true,
+            result,
+            message
+        };
     };
-};
 
-const error = ({ message = 'Error encountered.', data = [] } = {}) => {
-    return {
-        success: false,
-        data,
-        message
+    static error = ({message='Error encountered.', result=[], statusCode=500}={}) => {
+        return {
+            success: false,
+            result,
+            message
+        };
     };
-};
+}
 
-module.exports = {
-    success,
-    error
-};
+module.exports = ServiceResponse;

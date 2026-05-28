@@ -17,6 +17,47 @@ const createError = (message, status = 400) => {
 /**
  * Starts company registration, checks uniqueness, hashes password, and triggers OTP.
  */
+
+const checkEmailExists = (email) => {
+    try {
+        const existingEmailUser = await companyRepository.findByEmail(email);
+        if (existingEmail) {
+            return ServiceResponse.error(message='Email is already registered.', result=existingEmailUser, statusCode=400);
+        }
+        else {
+            return ServiceResponse.success(result=existingEmailUser);
+        }
+    }
+    catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error(message='Error occured while checking email.', result=[], statusCode=500);
+    }
+}
+
+const prepareOtpPayload = (companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber) => {
+    try {
+        const hashedPassword = await bcrypt.hash(payload.password, 10);
+
+        const registrationPayload = {
+            companyName: companyName,
+            email: email,
+            phoneNumber: phoneNumber,
+            password: hashedPassword,
+            role: role.toUpperCase(),
+            termsAccepted: termsAccepted,
+            gstNumber: gstNumber || null,
+            cinNumber: cinNumber || null
+        };
+
+        return ServiceResponse.success({message: 'Registration payload prepared successfully', data: registrationPayload, statusCode: 200});
+    }
+    catch {
+        errorLogger.error(error);
+        return ServiceResponse.error({message: 'Error occured while preparing registration', data: [], statusCode: 500});
+    }
+}
+
+
 const initiateRegistration = async (payload) => {
     try {
         // 1. Check if email already registered in DB
@@ -183,5 +224,7 @@ const completeRegistration = async (otpRecord, transaction) => {
 module.exports = {
     initiateRegistration,
     verifyOtp,
-    completeRegistration
+    completeRegistration,
+    checkEmailExists,
+    prepareOtpPayload
 };

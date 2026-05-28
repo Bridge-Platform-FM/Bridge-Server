@@ -1,7 +1,8 @@
 'use strict';
 const env = require('../configs/env_configs');
+const { errorLogger } = require('../configs/logger');
 const otpRepository = require('../repositories/otpRepository');
-const generateOtp = require('../utils/generateOtp');
+// const generateOtp = require('../utils/generateOtp');
 const { printOtp, printSingleOtp } = require('../utils/otpHelper');
 const ServiceResponse = require('../utils/ServiceResponse');
 const createError = (message, status = 400) => {
@@ -24,8 +25,8 @@ const generateAndSendOtp = async (email, phoneNumber, registrationPayload) => {
         const emailOtpExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
         const mobileOtpExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
 
-        // 2. Soft-delete any existing active OTP records for this email/phone number
-        await otpRepository.softDeleteActiveByEmailOrPhone(email, phoneNumber);
+        // // 2. Soft-delete any existing active OTP records for this email/phone number
+        // await otpRepository.softDeleteActiveByEmailOrPhone(email, phoneNumber);
 
         const recordData = {
             email,
@@ -318,9 +319,55 @@ const resendOtp = async (channel, identifier) => {
     }
 };
 
+const generateOtp = () => {
+    return crypto.randomInt(100000, 1000000).toString();
+};
+
+const storeOtp = (email, emailOtp, phoneNumber, phoneNumberOtp, registrationPayload) => {
+    try {
+        const now = new Date();
+        const emailOtpExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
+        const mobileOtpExpiry = new Date(now.getTime() + env.OTP.EXPIRY_MINUTES * 60 * 1000);
+
+        const recordData = {
+            email,
+            phone_number: phoneNumber,
+            email_otp: emailOtp,
+            mobile_otp: mobileOtp,
+            email_otp_expiry: emailOtpExpiry,
+            mobile_otp_expiry: mobileOtpExpiry,
+            email_verify_attempts: 0,
+            mobile_verify_attempts: 0,
+            email_blocked_until: null,
+            mobile_blocked_until: null,
+            is_email_verified: false,
+            is_mobile_verified: false,
+            registration_payload: registrationPayload,
+            is_deleted: false
+        };
+
+        // Create a new record
+        const otpRecord = await otpRepository.createOtp({
+            ...recordData,
+            email_resend_count: 0,
+            mobile_resend_count: 0,
+            email_last_sent_at: now,
+            mobile_last_sent_at: now
+        });
+        ServiceResponse.success({message: 'OTP stored successfully.', data: otpRecord, statusCode: 200});
+    }
+    catch (error) {
+        errorLogger.error(error);
+        ServiceResponse.error({message: 'Error occured while storing OTP.', data: [], statusCode: 500});
+    }
+};
+
 module.exports = {
     generateAndSendOtp,
     verifyOtp,
     handleFailedAttempt,
-    resendOtp
+    resendOtp,
+    generateOtp,
+    storeOtp
 };
+

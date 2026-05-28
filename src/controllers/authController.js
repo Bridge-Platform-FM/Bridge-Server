@@ -1,7 +1,9 @@
 'use strict';
+const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otpService');
 const tokenService = require('../services/tokenService');
+const { OTP_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 /**
@@ -9,31 +11,45 @@ const HttpResponse = require('../utils/HttpResponse');
  */
 const companyRegistration = async (req, res, next) => {
     try {
-        const reqBody = req.body;
-        const ServiceResponse = await authService.initiateRegistration(reqBody);
+        const { companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber } = req.body;
 
-        if (!ServiceResponse.success) {
+        const checkEmailExistsRes = await authService.checkEmailExists(email);
+        if (!checkEmailExistsRes.success) {
             return HttpResponse.error(res, {
-                message: ServiceResponse.message,
-                statusCode: 400
+                message: checkEmailExistsRes.message,
+                statusCode: checkEmailExistsRes.statusCode
             });
         }
-        const registrationPayload = ServiceResponse.data;
 
-        const otps = await otpService.generateAndSendOtp(
-            registrationPayload.email,
-            registrationPayload.phoneNumber,
-            registrationPayload
-        );
+        const registrationPayloadRes = await authService.prepareOtpPayload(companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber);
+        if (!registrationPayloadRes.success) {
+            return HttpResponse.error(res, {message: registrationPayloadRes.message, statusCode: registrationPayloadRes.statusCode});
+        }
 
-        // Print OTP to terminal is done inside the service.
-        // As requested, we also send the OTPs back to the frontend.
+        const registrationPayload = registrationPayloadRes.data;
+
+        const emailOtp = otpService.generateOtp();
+        const phoneNumberOtp = otpService.generateOtp();
+
+        const storeOtpRes = await otpService.storeOtp(email, emailOtp, phoneNumber, phoneNumberOtp, registrationPayload);
+        if (!storeOtpRes.success) {
+            return HttpResponse.error(res, {message: storeOtpRes.message, statusCode: storeOtpRes.statusCode});
+        }
+
+        console.info(emailOtp);
+        console.info(phoneNumberOtp);
+        
         return HttpResponse.success(res, {
-            message: otps.message,
-            data: otps.data
+            message: OTP_MESSAGES.SUCCESS,
+            data: {emailOtp, phoneNumberOtp},
+            statusCode: 200
         });
     } catch (error) {
-        next(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: error.message,
+            statusCode: 500
+        });
     }
 };
 

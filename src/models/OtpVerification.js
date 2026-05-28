@@ -107,17 +107,34 @@ module.exports = (sequelize) => {
             defaultValue: false,
             field: 'is_deleted'
         },
+        deleted_at: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        deleted_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,
             defaultValue: DataTypes.NOW,
             field: 'created_at'
         },
+        created_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
         updated_at: {
             type: DataTypes.DATE,
             allowNull: true,
             field: 'updated_at'
+        },
+        updated_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true
         }
+        
     }, {
         tableName: 'otp_verification',
         timestamps: true,

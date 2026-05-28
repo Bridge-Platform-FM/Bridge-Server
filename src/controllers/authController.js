@@ -38,6 +38,11 @@ const companyRegistration = async (req, res, next) => {
 
         console.info(emailOtp);
         console.info(phoneNumberOtp);
+
+        const createCompanyRes = await authService.createCompany({companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber});
+        if (!createCompanyRes.success) {
+            return HttpResponse.error(res, {message: createCompanyRes.message, statusCode: createCompanyRes.statusCode});
+        }
         
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,
@@ -46,6 +51,7 @@ const companyRegistration = async (req, res, next) => {
         });
     } catch (error) {
         errorLogger.error(error);
+        console.error(error);
         return HttpResponse.error(res, {
             message: error.message,
             statusCode: 500

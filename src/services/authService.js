@@ -22,15 +22,16 @@ const checkEmailExists = async (email) => {
     try {
         const existingEmailUser = await companyRepository.findByEmail(email);
         if (existingEmailUser) {
-            return ServiceResponse.error({message:'Email is already registered.', result:existingEmailUser, statusCode:400});
+            return ServiceResponse.error({message:'Email is already registered.', data:existingEmailUser, statusCode:400});
         }
         else {
-            return ServiceResponse.success({result:existingEmailUser});
+            return ServiceResponse.success({data:existingEmailUser});
         }
     }
     catch (error) {
         errorLogger.error(error);
-        return ServiceResponse.error({message:'Error occured while checking email.', result:[], statusCode:500});
+        console.error(error);
+        return ServiceResponse.error({message:'Error occured while checking email.', data:[], statusCode:500});
     }
 };
 
@@ -54,6 +55,30 @@ const prepareOtpPayload = async (companyName, email, phoneNumber, password, role
     catch (error) {
         errorLogger.error(error);
         return ServiceResponse.error({message: 'Error occured while preparing registration', data: [], statusCode: 500});
+    }
+};
+
+const createCompany = async (data) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const companyData = {
+            company_name: data.companyName, company_email: data.email, 
+            mobile_number: data.phoneNumber, password: data.password, 
+            gst_number: data.gstNumber, cin_number: data.cinNumber, 
+            terms_accepted: data.termsAccepted, 
+            is_email_verified: false, is_mobile_number_verified: false
+        };
+        const company = await companyRepository.createCompany(companyData, transaction);
+        const role = await companyRepository.findRoleMasterByCode(data.role);
+        const companyRole = await companyRepository.createCompanyRole({company_id: company.id, role_id: role.id}, transaction);
+        await transaction.commit();
+
+        return ServiceResponse.success({message: 'Company created successfully', data: company, statusCode: 201});
+    }
+    catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({message: 'Error occured while creating company', data: [], statusCode: 500});
     }
 };
 
@@ -226,5 +251,6 @@ module.exports = {
     verifyOtp,
     completeRegistration,
     checkEmailExists,
-    prepareOtpPayload
+    prepareOtpPayload,
+    createCompany
 };

@@ -18,25 +18,25 @@ const createError = (message, status = 400) => {
  * Starts company registration, checks uniqueness, hashes password, and triggers OTP.
  */
 
-const checkEmailExists = (email) => {
+const checkEmailExists = async (email) => {
     try {
         const existingEmailUser = await companyRepository.findByEmail(email);
-        if (existingEmail) {
-            return ServiceResponse.error(message='Email is already registered.', result=existingEmailUser, statusCode=400);
+        if (existingEmailUser) {
+            return ServiceResponse.error({message:'Email is already registered.', result:existingEmailUser, statusCode:400});
         }
         else {
-            return ServiceResponse.success(result=existingEmailUser);
+            return ServiceResponse.success({result:existingEmailUser});
         }
     }
     catch (error) {
         errorLogger.error(error);
-        return ServiceResponse.error(message='Error occured while checking email.', result=[], statusCode=500);
+        return ServiceResponse.error({message:'Error occured while checking email.', result:[], statusCode:500});
     }
-}
+};
 
-const prepareOtpPayload = (companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber) => {
+const prepareOtpPayload = async (companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber) => {
     try {
-        const hashedPassword = await bcrypt.hash(payload.password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const registrationPayload = {
             companyName: companyName,
@@ -51,11 +51,11 @@ const prepareOtpPayload = (companyName, email, phoneNumber, password, role, term
 
         return ServiceResponse.success({message: 'Registration payload prepared successfully', data: registrationPayload, statusCode: 200});
     }
-    catch {
+    catch (error) {
         errorLogger.error(error);
         return ServiceResponse.error({message: 'Error occured while preparing registration', data: [], statusCode: 500});
     }
-}
+};
 
 
 const initiateRegistration = async (payload) => {

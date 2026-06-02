@@ -22,7 +22,13 @@ const printSingleOtp = (channel, recipient, otp) => {
 
 };
 
+// Generates a random 4-digit OTP
+const generateOTP = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+};
+
 module.exports = {
     printOtp,
-    printSingleOtp
+    printSingleOtp,
+    generateOTP
 };

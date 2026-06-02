@@ -1,5 +1,6 @@
 // 'use strict';
 const Joi = require('joi');
+const { OTP_MESSAGES } = require('../utils/constant');
 
 const companyRegistrationSchema = Joi.object({
     companyName: Joi.string().min(3).max(100).required().messages({
@@ -52,12 +53,12 @@ const verifyOtpSchema = Joi.object({
     }),
     email: Joi.string().email().when('channel', {
         is: 'EMAIL',
-        then: Joi.required().messages({ 'any.required': 'email is required when channel is EMAIL' }),
+        then: Joi.required().messages({ 'any.required': OTP_MESSAGES.EMAIL_VALIDATION_FAILED }),
         otherwise: Joi.optional().allow(null, '')
     }),
     phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).when('channel', {
         is: 'MOBILE',
-        then: Joi.required().messages({ 'any.required': 'phoneNumber is required when channel is MOBILE' }),
+        then: Joi.required().messages({ 'any.required': OTP_MESSAGES.PHONE_NUMBER_VALIDATION_FAILED }),
         otherwise: Joi.optional().allow(null, '')
     })
 });

@@ -14,7 +14,7 @@ module.exports = [
         },
         rules: {
             semi: ['error', 'always'],
-            quotes: ['error', 'single'],
+            quotes: ['error', 'single', 'double'],
             indent: ['error', 4],
             'no-unused-vars': 'warn',
             'comma-dangle': ['error', 'never'],

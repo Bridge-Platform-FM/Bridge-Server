@@ -9,17 +9,18 @@ const {
     resendOtpSchema,
     refreshTokenSchema
 } = require('../validations/authValidation');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Route for starting Company registration and generating OTPs
 router.post('/company-registration', validate(companyRegistrationSchema), authController.companyRegistration);
 
 // Route for verifying a single channel OTP
-router.post('/verify-otp', validate(verifyOtpSchema), authController.verifyOtp);
+router.post('/verify-otp', authMiddleware, validate(verifyOtpSchema), authController.verifyOtp);
 
 // Route for resending an OTP for a channel
-router.post('/resend-otp', validate(resendOtpSchema), authController.resendOtp);
+router.post('/resend-otp', authMiddleware, validate(resendOtpSchema), authController.resendOtp);
 
-// Route for refreshing access tokens via refresh tokens
-router.post('/refresh-token', validate(refreshTokenSchema), authController.refreshToken);
+// Route for updating access tokens via refresh tokens
+router.post('/refresh', validate(refreshTokenSchema), authController.updateAccessToken);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 // 'use strict';
 const Joi = require('joi');
 const { OTP_MESSAGES } = require('../utils/constant');
+const HttpResponse = require('../utils/HttpResponse');
 
 const companyRegistrationSchema = Joi.object({
     companyName: Joi.string().min(3).max(100).required().messages({
@@ -13,7 +14,7 @@ const companyRegistrationSchema = Joi.object({
         'any.required': 'email is required'
     }),
     phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).required().messages({
-        'string.pattern.base': 'phoneNumber must be a valid 10-digit Indian mobile number',
+        'string.pattern.base': 'phoneNumber must be a valid 10-digit Indian phone number',
         'any.required': 'phoneNumber is required'
     }),
     password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/).required().messages({
@@ -42,12 +43,12 @@ const companyRegistrationSchema = Joi.object({
 });
 
 const verifyOtpSchema = Joi.object({
-    channel: Joi.string().valid('EMAIL', 'MOBILE').required().messages({
-        'any.only': 'channel must be EMAIL or MOBILE',
+    channel: Joi.string().valid('EMAIL', 'PHONE').required().messages({
+        'any.only': 'channel must be EMAIL or PHONE',
         'any.required': 'channel is required'
     }),
-    otp: Joi.string().length(6).pattern(/^\d+$/).required().messages({
-        'string.length': 'otp must be exactly 6 characters',
+    otp: Joi.string().length(4).pattern(/^\d+$/).required().messages({
+        'string.length': 'otp must be exactly 4 characters',
         'string.pattern.base': 'otp must contain only digits',
         'any.required': 'otp is required'
     }),
@@ -57,15 +58,15 @@ const verifyOtpSchema = Joi.object({
         otherwise: Joi.optional().allow(null, '')
     }),
     phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).when('channel', {
-        is: 'MOBILE',
+        is: 'PHONE',
         then: Joi.required().messages({ 'any.required': OTP_MESSAGES.PHONE_NUMBER_VALIDATION_FAILED }),
         otherwise: Joi.optional().allow(null, '')
     })
 });
 
 const resendOtpSchema = Joi.object({
-    channel: Joi.string().valid('EMAIL', 'MOBILE').required().messages({
-        'any.only': 'channel must be EMAIL or MOBILE',
+    channel: Joi.string().valid('EMAIL', 'PHONE').required().messages({
+        'any.only': 'channel must be EMAIL or PHONE',
         'any.required': 'channel is required'
     }),
     email: Joi.string().email().when('channel', {
@@ -74,8 +75,8 @@ const resendOtpSchema = Joi.object({
         otherwise: Joi.optional().allow(null, '')
     }),
     phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).when('channel', {
-        is: 'MOBILE',
-        then: Joi.required().messages({ 'any.required': 'phoneNumber is required when channel is MOBILE' }),
+        is: 'PHONE',
+        then: Joi.required().messages({ 'any.required': 'phoneNumber is required when channel is PHONE' }),
         otherwise: Joi.optional().allow(null, '')
     })
 });
@@ -100,7 +101,11 @@ const validate = (schema) => {
             const err = new Error('Validation failed');
             err.status = 400;
             err.errors = errors;
-            return next(err);
+            return HttpResponse.error(res, {
+                message: err.message,
+                data: errors,
+                statusCode: 400
+            });
         }
         next();
     };

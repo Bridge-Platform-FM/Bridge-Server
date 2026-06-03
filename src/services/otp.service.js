@@ -1,8 +1,8 @@
 // Fixed: Passed strings to require() and removed destructuring for redis instance
 const redis = require("../configs/redis.js");
 const { OTP_MESSAGES } = require("../utils/constant.js");
-const { generateOTP } = require("../utils/otpHelper.js");
-const client = require("../configs/twilio.js");
+const { generateOTP } = require("../utils/Helper.js");
+const { smsClient } = require("../configs/twilio.js");
 const { sgMailClient } = require("../configs/twilio.js");
 const ServiceResponse = require("../utils/ServiceResponse.js");
 const { errorLogger } = require("../configs/logger.js");
@@ -11,12 +11,14 @@ require('dotenv').config();
 
 const sendOtpToPhone = async (phone, otp) => {
     try {
-        await client.messages.create({
+        const id = await smsClient.messages.create({
             body: `Your OTP is ${otp}`,
             from: process.env.TWILIO_PHONE_NUMBER,
             to: phone,
         });
+        console.log(`OTP sent to phone ${phone}, message SID: ${id}`);
     } catch (err) {
+        errorLogger.error(`Error sending OTP to phone ${phone}:`, err);
         console.error(`Error sending OTP to phone ${phone}:`, err);
         throw new Error("Failed to send OTP");
     }
@@ -35,12 +37,13 @@ const sendOtpToEmail = async (email, otp) => {
         };
         await sgMailClient.send(msg);
     } catch (err) {
+        errorLogger.error(`Error sending OTP to email ${email}:`, err);
         console.error(`Error sending OTP to email ${email}:`, err);
         throw new Error("Failed to send OTP");
     }
 };
 
-const sendOTP = async (channeltype, channelId) => {
+const sendOTP = async (channelType, channelId) => {
     try {
         // 0. Remove previous otp
         await redis.del(`otp:${channelId}`);
@@ -65,6 +68,7 @@ const sendOTP = async (channeltype, channelId) => {
         
         // 3. Generate OTP
         const otp = generateOTP();
+        console.log(`Generated OTP for channel ${channelId}: ${otp}`);
 
         // 4. Save OTP
         await redis.set(`otp:${channelId}`, otp, "EX", Number(process.env.OTP_TTL));
@@ -81,11 +85,12 @@ const sendOTP = async (channeltype, channelId) => {
         await redis.del(`otp_attempt:${channelId}`);
 
         // 6. Send OTP via appropriate channel
-        if (channelType === "phone") {
-            await sendOtpToPhone(channelId, otp);
-        } else {
-            await sendOtpToEmail(channelId, otp);
-        }
+        // if (channelType === "PHONE") {
+        //     // TODO:- Remove hardcoded phone number and use channelId instead after testing
+        //     await sendOtpToPhone("+91" + channelId, otp);
+        // } else {
+        //     await sendOtpToEmail(channelId, otp);
+        // }
 
         // 7. Increment OTP resent count
         await redis.incr(`otp_resend_count:${channelId}`);
@@ -95,7 +100,7 @@ const sendOTP = async (channeltype, channelId) => {
         });
 
     } catch (err) {
-        console.error(`Error in sendOTP for channel ${channelId}:`, err);
+        console.error(`Error in send OTP for channel ${channelId}:`, err);
         await redis.del(`otp:${channelId}`);
         await redis.del(`otp_attempt:${channelId}`);
         errorLogger.error(err);

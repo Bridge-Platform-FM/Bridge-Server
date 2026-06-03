@@ -11,5 +11,20 @@ const OTP_MESSAGES = {
     OTP_SEND_SUCCESS: "OTP sent successfully"
 };
 
+const REGISTRATION_MESSAGES = {
+    COMPANY_CREATION_FAILED: 'Error encountered while creating company.',
+    REGISTRATION_SUCCESS: 'Registration successful'
+};
 
-module.exports = { OTP_MESSAGES };
+const AUTH_MESSAGES = {
+    ACCESS_TOKEN_UNAUTHORIZED: 'Unauthorized: No access token provided',
+    FORBIDDEN: 'Forbidden',
+    INVALID_CREDENTIALS: 'Invalid email or password',
+    ACCESS_TOKEN_EXPIRED: 'Unauthorized: Access token has expired',
+    UNAUTHORIZED: 'Unauthorized',
+    TOKEN_REFRESH_SUCCESS: 'Token refreshed successfully',
+    TOKEN_REFRESH_FAILED: 'Error encountered while refreshing token'
+    
+}
+
+module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES };

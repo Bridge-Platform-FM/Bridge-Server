@@ -1,5 +1,8 @@
 'use strict';
-const verifyAccessToken = require('../utils/verifyAccessToken');
+const { errorLogger } = require('../configs/logger');
+const { AUTH_MESSAGES } = require('../utils/constant');
+const HttpResponse = require('../utils/HttpResponse');
+const { verifyAccessToken } = require('../utils/token');
 
 /**
  * Middleware to authenticate requests via JWT access token.
@@ -8,34 +11,38 @@ const authMiddleware = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization || req.headers.Authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            const error = new Error('Unauthorized: Access token is missing or malformed');
-            error.status = 401;
-            throw error;
+            return HttpResponse.error(res, {
+                message: AUTH_MESSAGES.ACCESS_TOKEN_UNAUTHORIZED,
+                statusCode: 401
+            });
         }
 
         const token = authHeader.split(' ')[1];
         const decoded = verifyAccessToken(token);
 
         // Attach decoded payload to request object
-        req.company = decoded;
+        req.companyId = decoded.companyId;
+        req.email = decoded.email;
+        req.role = decoded.role;
         next();
     } catch (error) {
-        if (error.status) {
-            return next(error);
-        }
+        errorLogger.error(error);
         if (error.name === 'TokenExpiredError') {
-            const err = new Error('Unauthorized: Access token has expired');
-            err.status = 401;
-            return next(err);
+            return HttpResponse.error(res, {
+                message: AUTH_MESSAGES.ACCESS_TOKEN_EXPIRED,
+                statusCode: 401
+            });
         }
         if (error.name === 'JsonWebTokenError') {
-            const err = new Error('Unauthorized: Invalid access token');
-            err.status = 401;
-            return next(err);
+            return HttpResponse.error(res, {
+                message: AUTH_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 401
+            });
         }
-        const err = new Error(error.message || 'Unauthorized');
-        err.status = 401;
-        return next(err);
+        return HttpResponse.error(res, {
+            message: AUTH_MESSAGES.UNAUTHORIZED,
+            statusCode: 500
+        });
     }
 };
 

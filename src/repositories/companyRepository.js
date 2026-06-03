@@ -27,10 +27,26 @@ const createCompanyRole = async (companyRoleData, { transaction }) => {
     return await CompanyRole.create(companyRoleData, { transaction });
 };
 
+const updateEmailVerifiedStatus = async (company_id, status, { transaction }) => {
+    return await Company.update(
+        { is_email_verified: status },
+        { where: { id: company_id }, transaction }
+    );
+};
+
+const updatePhoneVerifiedStatus = async (company_id, status, { transaction }) => {
+    return await Company.update(
+        { is_mobile_number_verified: status },
+        { where: { id: company_id }, transaction }
+    );
+};
+
 module.exports = {
     findByEmail,
     findByPhoneNumber,
     findRoleMasterByCode,
     createCompany,
-    createCompanyRole
+    createCompanyRole,
+    updateEmailVerifiedStatus,
+    updatePhoneVerifiedStatus
 };

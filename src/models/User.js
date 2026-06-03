@@ -15,33 +15,6 @@ module.exports = (sequelize) => {
             allowNull: false
         },
 
-        company_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'company',
-                key: 'id'
-            }
-        },
-
-        company_role_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'company_role',
-                key: 'id'
-            }
-        },
-
-        sub_role_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'sub_role_master',
-                key: 'id'
-            }
-        },
-
         first_name: {
             type: DataTypes.STRING,
             allowNull: false
@@ -80,6 +53,32 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true
         },
+        
+        aadhar_number: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        aadhar_number_iv: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        aadhar_number_auth_tag: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        
+        pan_number: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        pan_number_iv: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        pan_number_auth_tag: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
 
         company_website_url: {
             type: DataTypes.STRING,
@@ -90,6 +89,22 @@ module.exports = (sequelize) => {
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: false
+        },
+
+        company_email: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true
+        },
+
+        mobile_number: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+
+        password: {
+            type: DataTypes.STRING,
+            allowNull: false
         },
         
         created_at: {

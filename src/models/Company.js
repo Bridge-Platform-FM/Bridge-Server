@@ -41,8 +41,24 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true
         },
+        gst_number_iv: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        gst_number_auth_tag: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
 
         cin_number: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        cin_number_iv: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        cin_number_auth_tag: {
             type: DataTypes.STRING,
             allowNull: true
         },
@@ -61,25 +77,37 @@ module.exports = (sequelize) => {
 
         is_mobile_number_verified: {
             type: DataTypes.BOOLEAN,
-            allowNull: false,
+            allowNull: true,
             defaultValue: false
         },
 
         is_email_verified: {
             type: DataTypes.BOOLEAN,
-            allowNull: false,
+            allowNull: true,
             defaultValue: false
         },
 
         is_gst_verified: {
             type: DataTypes.BOOLEAN,
-            allowNull: false,
+            allowNull: true,
             defaultValue: false
         },
 
         is_cin_verified: {
             type: DataTypes.BOOLEAN,
-            allowNull: false,
+            allowNull: true,
+            defaultValue: false
+        },
+
+        is_kyc_uploaded: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        },
+
+        is_kyc_verified: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
             defaultValue: false
         },
 

@@ -27,4 +27,25 @@ const AUTH_MESSAGES = {
     
 }
 
-module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES };
+const ROLE_FIELD_METADATA_MESSAGES = {
+    CREATE_SUCCESS:  'Role field metadata created successfully',
+    UPDATE_SUCCESS:  'Role field metadata updated successfully',
+    DELETE_SUCCESS:  'Role field metadata deleted successfully',
+    NOT_FOUND:       'Role field metadata not found',
+    DUPLICATE_FIELD: 'Field already exists for this role and source table',
+    INVALID_ROLE:    'Specified role does not exist',
+    FETCH_FAILED:    'Error encountered while fetching role field metadata',
+    CREATE_FAILED:   'Error encountered while creating role field metadata',
+    UPDATE_FAILED:   'Error encountered while updating role field metadata',
+    DELETE_FAILED:   'Error encountered while deleting role field metadata'
+};
+
+const USER_MESSAGES = {
+    CREATE_SUCCESS:       'User profile created successfully',
+    CREATE_FAILED:        'Error encountered while creating user profile',
+    EMAIL_ALREADY_EXISTS: 'A user with this email already exists',
+    ROLE_NOT_FOUND:       'Company role not found for this account',
+    VALIDATION_FAILED:    'Validation failed for the submitted fields'
+};
+
+module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES, USER_MESSAGES };

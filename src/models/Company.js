@@ -159,11 +159,6 @@ module.exports = (sequelize) => {
             as: 'companyRoles'
         });
 
-        Company.hasMany(models.User, {
-            foreignKey: 'company_id',
-            as: 'users'
-        });
-
     };
 
     return Company;

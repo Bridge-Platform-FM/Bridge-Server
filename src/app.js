@@ -5,6 +5,7 @@ const errorMiddleware = require('./middleware/errorLogger');
 const HttpResponse = require('./utils/HttpResponse');
 const db = require('./models');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Application request response logger
 app.use(requestResponseLogger);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {

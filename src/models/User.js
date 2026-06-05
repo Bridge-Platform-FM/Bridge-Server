@@ -45,7 +45,7 @@ module.exports = (sequelize) => {
         },
 
         primary_sector: {
-            type: DataTypes.JSON,
+            type: DataTypes.ARRAY(DataTypes.STRING),
             allowNull: true
         },
 
@@ -93,18 +93,18 @@ module.exports = (sequelize) => {
 
         company_email: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
             unique: true
         },
 
         mobile_number: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
 
         password: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
         
         created_at: {
@@ -147,25 +147,6 @@ module.exports = (sequelize) => {
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });
-
-    User.associate = (models) => {
-
-        User.belongsTo(models.Company, {
-            foreignKey: 'company_id',
-            as: 'company'
-        });
-
-        User.belongsTo(models.CompanyRole, {
-            foreignKey: 'company_role_id',
-            as: 'companyRole'
-        });
-
-        User.belongsTo(models.SubRoleMaster, {
-            foreignKey: 'sub_role_id',
-            as: 'subRole'
-        });
-
-    };
 
     return User;
 };

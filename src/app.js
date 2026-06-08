@@ -6,9 +6,11 @@ const HttpResponse = require('./utils/HttpResponse');
 const db = require('./models');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-
-
-
+const fileRoutes = require('./routes/fileRoutes');
+const scanErrorMiddleware = require('./middleware/scanError');
+const s3Service = require('./services/s3.service');
+const { S3_FILE_TYPE } = require('./utils/constant');
+const { addImageWatermark, addPdfWatermark } = require('./services/watermark.service');
 
 const app = express();
 app.use(express.json());
@@ -17,6 +19,7 @@ app.use(express.json());
 app.use(requestResponseLogger);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/file', fileRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {
@@ -24,10 +27,9 @@ app.get('/', (req, res) => {
     });
 });
 
-// Error logger middleware
+// middleware
 app.use(errorMiddleware);
-
-
+app.use(scanErrorMiddleware);
 
 const SERVER_PORT = env_config.SERVER_PORT || 3000;
 

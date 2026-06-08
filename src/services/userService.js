@@ -8,7 +8,7 @@ const { USER_MESSAGES } = require('../utils/constant');
 const createUserProfile = async ({ userData, companyId, role }) => {
     const transaction = await sequelize.transaction();
     try {
-        const companyRole = await userRepository.findCompanyRoleByCompanyAndRole(companyId, role);
+        const companyRole = await userRepository.findCompanyUserRoleByCompanyAndRole(companyId, role);
         if (!companyRole) {
             await transaction.rollback();
             return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 400 });

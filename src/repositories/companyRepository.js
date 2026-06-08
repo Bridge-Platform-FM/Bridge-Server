@@ -1,5 +1,5 @@
 'use strict';
-const { Company, CompanyRole, CompanyRoleMaster } = require('../models');
+const { Company, CompanyUserRole, CompanyRoleMaster } = require('../models');
 
 const findByEmail = async (email) => {
     return await Company.findOne({
@@ -23,8 +23,8 @@ const createCompany = async (companyData, { transaction }) => {
     return await Company.create(companyData, { transaction });
 };
 
-const createCompanyRole = async (companyRoleData, { transaction }) => {
-    return await CompanyRole.create(companyRoleData, { transaction });
+const createCompanyUserRole = async (companyUserRoleData, { transaction }) => {
+    return await CompanyUserRole.create(companyUserRoleData, { transaction });
 };
 
 const updateEmailVerifiedStatus = async (company_id, status, { transaction }) => {
@@ -46,7 +46,7 @@ module.exports = {
     findByPhoneNumber,
     findRoleMasterByCode,
     createCompany,
-    createCompanyRole,
+    createCompanyUserRole,
     updateEmailVerifiedStatus,
     updatePhoneVerifiedStatus
 };

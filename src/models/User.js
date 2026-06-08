@@ -14,15 +14,15 @@ module.exports = (sequelize) => {
             autoIncrement: true,
             allowNull: false
         },
-
+        // basic info
         first_name: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
 
         last_name: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
 
         profile_photo: {
@@ -44,38 +44,17 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        continent: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         primary_sector: {
             type: DataTypes.ARRAY(DataTypes.STRING),
             allowNull: true
         },
 
         linkedin_profile_url: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        
-        aadhar_number: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        aadhar_number_iv: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        aadhar_number_auth_tag: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        
-        pan_number: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        pan_number_iv: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        pan_number_auth_tag: {
             type: DataTypes.STRING,
             allowNull: true
         },
@@ -97,6 +76,11 @@ module.exports = (sequelize) => {
             unique: true
         },
 
+        country_code: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         mobile_number: {
             type: DataTypes.STRING,
             allowNull: true
@@ -107,6 +91,46 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         
+        // startup info
+        startup_industry_sector: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
+        funding_stage:  { type: DataTypes.STRING, allowNull: true },
+        funding_currency: {type: DataTypes.STRING, allowNull: true },
+        funding_ask_amt_min: { type: DataTypes.FLOAT, allowNull: true},
+        funding_ask_amt_max: { type: DataTypes.FLOAT, allowNull: true},
+        use_of_funds: { type: DataTypes.STRING, allowNull: true },
+        funding_currency: { type: DataTypes.STRING, allowNull: true },
+        team_size_min: { type: DataTypes.INTEGER, allowNull: true },
+        team_size_max: { type: DataTypes.INTEGER, allowNull: true },
+        incorporation_certificate: { type: DataTypes.STRING, allowNull: true },
+        pitch_deck_certificate: { type: DataTypes.STRING, allowNull: true },
+        business_description: { type: DataTypes.STRING, allowNull: true },
+        startup_intent: { type: DataTypes.STRING, allowNull: true },
+
+        // Investor info
+        ticket_size_amt_min: { type: DataTypes.FLOAT, allowNull: true },
+        ticket_size_amt_max: { type: DataTypes.FLOAT, allowNull: true },
+        prefrerred_investment_stage: { type:DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
+        stage_focus: { type: DataTypes.STRING, allowNull: true },
+        investor_sector_preference: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
+        geographic_investment_preference: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
+        investor_type: { type: DataTypes.STRING, allowNull: true },
+        investor_portfolio_overview: { type: DataTypes.STRING, allowNull: true },
+        number_of_investments_to_date: { type: DataTypes.INTEGER, allowNull: true },
+        investor_intent: { type: DataTypes.STRING, allowNull: true },
+
+        // B2B info
+        b2b_sector: { type: DataTypes.STRING, allowNull: true },
+        b2b_sub_sector: { type: DataTypes.STRING, allowNull: true },
+        revenue_band: { type: DataTypes.STRING, allowNull: true },
+        min_order_quantity: { type: DataTypes.INTEGER, allowNull: true },
+        export_rediness: { type: DataTypes.STRING, allowNull: true },
+        industry_vertical: { type: DataTypes.STRING, allowNull: true },
+        years_in_operation: { type: DataTypes.FLOAT, allowNull: true },
+        operational_capacity_description: { type: DataTypes.STRING, allowNull: true },
+        products_ervice_Offered: { type: DataTypes.STRING, allowNull: true },
+        business_requirements: { type: DataTypes.STRING, allowNull: true },
+        b2b_intent: { type: DataTypes.STRING, allowNull: true },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -147,6 +171,15 @@ module.exports = (sequelize) => {
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });
+
+    User.associate = (models) => {
+
+        User.hasMany(models.CompanyUserRole, {
+            foreignKey: 'user_id',
+            as: 'companyUserRoles'
+        });
+
+    };
 
     return User;
 };

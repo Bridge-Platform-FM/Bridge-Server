@@ -8,13 +8,19 @@ const generateOTP = () => {
 };
 
 // Hash password using bcrypt
-
 const hashPassword = async (password) => {
     const saltRounds = process.env.HASH_SALT_ROUNDS || 10;
     return await bcrypt.hash(password, Number(saltRounds));
 };
 
+// watermark data
+const waterMarkFunction = (company_id, user_id) => {
+    const date = new Date().toISOString().split('T')[0]
+    return `${company_id} | ${user_id} | ${date}`
+}
+
 module.exports = {
     generateOTP,
-    hashPassword
+    hashPassword,
+    waterMarkFunction
 };

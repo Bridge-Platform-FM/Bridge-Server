@@ -11,6 +11,7 @@ const {
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
 
+
 // Route for starting Company registration and generating OTPs
 router.post('/company-registration', validate(companyRegistrationSchema), authController.companyRegistration);
 
@@ -22,5 +23,7 @@ router.post('/resend-otp', authMiddleware, validate(resendOtpSchema), authContro
 
 // Route for updating access tokens via refresh tokens
 router.post('/refresh', validate(refreshTokenSchema), authController.updateAccessToken);
+
+
 
 module.exports = router;

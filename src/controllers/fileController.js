@@ -30,13 +30,13 @@ const scanFile = async (req, res, next) => {
         // req.file.buffer
         const fileBuffer = req.file.buffer;
         // Virus Scan
-        // const scanResult = await scanUploadedFile(fileBuffer);
-        // if (!scanResult.success) {
-        //     return HttpResponse.error(res, {
-        //         message: scanResult.message,
-        //         statusCode: 400
-        //     });
-        // }
+        const scanResult = await scanUploadedFile(fileBuffer);
+        if (!scanResult.success) {
+            return HttpResponse.error(res, {
+                message: scanResult.message,
+                statusCode: 400
+            });
+        }
 
         let s3_file_type = S3_FILE_TYPE.PROFILE
         if (KYC_DOC_TYPES.includes(docType)) {

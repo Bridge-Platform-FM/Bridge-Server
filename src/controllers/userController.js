@@ -11,6 +11,8 @@ const HttpResponse = require('../utils/HttpResponse');
 const createUserProfile = async (req, res, next) => {
     try {
         const { companyId, email, role } = req;
+        const userId = req.userId;
+        const roleId = req.roleId;
         const requestPayload = req.body;
         const validationResult = await fieldMetadataService.validateUserPayload(role, requestPayload);
         if (!validationResult.success) {
@@ -22,7 +24,7 @@ const createUserProfile = async (req, res, next) => {
         }
         const userData = { ...requestPayload };
 
-        const userProfileResponse = await userService.createUserProfile({ userData, companyId, role });
+        const userProfileResponse = await userService.createUserProfile({ userData, companyId, userId, roleId });
         if (!userProfileResponse.success) {
             return HttpResponse.error(res, {
                 message: userProfileResponse.message,

@@ -16,7 +16,7 @@ const hashPassword = async (password) => {
 // watermark data
 const waterMarkFunction = (company_id, user_id) => {
     const date = new Date().toISOString().split('T')[0]
-    return `${company_id} | ${user_id} | ${date}`
+    return `Bridge |${company_id} | ${user_id} | ${date}`
 }
 
 module.exports = {

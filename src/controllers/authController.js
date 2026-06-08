@@ -91,6 +91,13 @@ const verifyOtp = async (req, res, next) => {
             statusResult = await authService.updateChannelVerifiedStatus('PHONE', req.companyId);
         }
 
+        if (!statusResult.success) {
+            return HttpResponse.error(res, {
+                message: statusResult.message,
+                statusCode: statusResult.statusCode
+            });
+        }
+
         // If both channels verified, send status to client to enable continue button
         if (statusResult.success) {
             const companyData = statusResult.data;

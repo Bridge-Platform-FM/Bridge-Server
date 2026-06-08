@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const env_config = require('./configs/env_configs');
 const requestResponseLogger = require('./middleware/requestResponseLogger');
 const errorMiddleware = require('./middleware/errorLogger');
@@ -11,6 +12,7 @@ const userRoutes = require('./routes/userRoutes');
 
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // Application request response logger

@@ -5,7 +5,7 @@ const tokenRepository = require('../repositories/tokenRepository');
 // const generateAccessToken = require('../utils/generateAccessToken');
 // const generateRefreshToken = require('../utils/generateRefreshToken');
 // const verifyRefreshToken = require('../utils/verifyRefreshToken');
-const { Company, CompanyRole, CompanyRoleMaster } = require('../models');
+const { Company, CompanyUserRole, CompanyRoleMaster } = require('../models');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
@@ -21,13 +21,17 @@ const createError = (message, status = 400) => {
 /**
 * Generates a pair of access and refresh tokens.
 */
-const generateTokens = async (company, roleCode) => {
+const generateTokens = async (company, role, user) => {
     try {
 
         const payload = {
             companyId: company.id,
             email: company.company_email,
-            role: roleCode
+            companyName: company.company_name,
+            role: role.role_code,
+            roleId: role.id,
+            userId: user.id,
+            userName: user?.first_name
         };
 
         const accessToken = generateAccessToken(payload);

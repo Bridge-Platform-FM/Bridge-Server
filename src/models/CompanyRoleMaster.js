@@ -70,9 +70,9 @@ module.exports = (sequelize) => {
             as: 'createdBy'
         });
 
-        CompanyRoleMaster.hasMany(models.CompanyRole, {
+        CompanyRoleMaster.hasMany(models.CompanyUserRole, {
             foreignKey: 'role_id',
-            as: 'companyRoles'
+            as: 'companyUserRoles'
         });
 
         CompanyRoleMaster.hasMany(models.SubRoleMaster, {

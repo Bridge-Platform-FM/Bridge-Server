@@ -1,12 +1,10 @@
 'use strict';
 
 const { DataTypes } = require('sequelize');
-const TimestampFields = require('./base/TimestampFields');
-const SoftDeleteFields = require('./base/SoftDeleteFields');
 
 module.exports = (sequelize) => {
 
-    const CompanyRole = sequelize.define('CompanyRole', {
+    const CompanyUserRole = sequelize.define('CompanyUserRole', {
 
         id: {
             type: DataTypes.INTEGER,
@@ -21,6 +19,15 @@ module.exports = (sequelize) => {
             allowNull: false,
             references: {
                 model: 'company',
+                key: 'id'
+            }
+        },
+
+        user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'user',
                 key: 'id'
             }
         },
@@ -69,7 +76,7 @@ module.exports = (sequelize) => {
 
     }, {
 
-        tableName: 'company_role',
+        tableName: 'company_user_role',
         timestamps: false,
         initialAutoIncrement: 1,
         createdAt: 'created_at',
@@ -77,19 +84,24 @@ module.exports = (sequelize) => {
 
     });
 
-    CompanyRole.associate = (models) => {
+    CompanyUserRole.associate = (models) => {
 
-        CompanyRole.belongsTo(models.Company, {
+        CompanyUserRole.belongsTo(models.Company, {
             foreignKey: 'company_id',
             as: 'company'
         });
 
-        CompanyRole.belongsTo(models.CompanyRoleMaster, {
+        CompanyUserRole.belongsTo(models.User, {
+            foreignKey: 'user_id',
+            as: 'user'
+        });
+
+        CompanyUserRole.belongsTo(models.CompanyRoleMaster, {
             foreignKey: 'role_id',
             as: 'role'
         });
 
     };
 
-    return CompanyRole;
+    return CompanyUserRole;
 };

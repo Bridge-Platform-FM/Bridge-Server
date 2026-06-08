@@ -34,15 +34,21 @@ const companyRegistration = async (req, res, next) => {
             return HttpResponse.error(res, {message: createCompanyRes.message, statusCode: createCompanyRes.statusCode});
         }
 
+        // TODO: handle service response
         await otpService.sendOTP("EMAIL", email);
         await otpService.sendOTP("PHONE", phoneNumber);
 
-        const tokens = await tokenService.generateTokens(createCompanyRes.data, role);
+        const companyObj = createCompanyRes.data.company
+        const roleObj = createCompanyRes.data.role
+        const userObj = createCompanyRes.data.user
+
+
+        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj);
         const { accessToken, refreshToken } = tokens.data;
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,
-            data: { accessToken, refreshToken},
+            data: { accessToken, refreshToken },
             statusCode: 200
         });
 

@@ -2,6 +2,7 @@
 const bcrypt = require('bcrypt');
 const { sequelize } = require('../models');
 const companyRepository = require('../repositories/companyRepository');
+const userRepository = require('../repositories/userRepository');
 const otpRepository = require('../repositories/otpRepository');
 const tokenService = require('./tokenService');
 const { errorLogger } = require('../configs/logger');
@@ -67,12 +68,25 @@ const createCompany = async (data) => {
             is_mobile_number_verified: false,
             created_at: new Date(),
         };
+        // TODO: consistant mobile and email id variables
         const company = await companyRepository.createCompany(companyData, transaction);
         const role = await companyRepository.findRoleMasterByCode(data.role);
-        const companyRole = await companyRepository.createCompanyRole({company_id: company.id, role_id: role.id}, transaction);
+
+        const userData = {
+            company_email: data.email,
+            password: await hashPassword(data.password),
+            mobile_number: data.phoneNumber,
+            created_at: new Date()
+        };
+        const user = await userRepository.createUser(userData, { transaction });
+
+        await companyRepository.createCompanyUserRole(
+            { company_id: company.id, role_id: role.id, user_id: user.id },
+            { transaction }
+        );
         await transaction.commit();
 
-        return ServiceResponse.success({message: REGISTRATION_MESSAGES.REGISTRATION_SUCCESS, data: company, statusCode: 201});
+        return ServiceResponse.success({message: REGISTRATION_MESSAGES.REGISTRATION_SUCCESS, data: { company, role, user }, statusCode: 201});
     }
     catch (error) {
         await transaction.rollback();

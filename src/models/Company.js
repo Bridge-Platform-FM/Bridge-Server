@@ -154,9 +154,9 @@ module.exports = (sequelize) => {
 
     Company.associate = (models) => {
 
-        Company.hasMany(models.CompanyRole, {
+        Company.hasMany(models.CompanyUserRole, {
             foreignKey: 'company_id',
-            as: 'companyRoles'
+            as: 'companyUserRoles'
         });
 
     };

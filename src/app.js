@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
 app.use(errorMiddleware);
 app.use(scanErrorMiddleware);
 
-const SERVER_PORT = env_config.SERVER_PORT || 3000;
+const SERVER_PORT = env_config.SERVER_PORT || 3001;
 
 app.listen(SERVER_PORT, () => {
     db.sequelize.authenticate()

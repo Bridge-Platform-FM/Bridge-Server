@@ -52,6 +52,11 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        display_format: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+
         file_extensions: {
             type: DataTypes.STRING(200),
             allowNull: true

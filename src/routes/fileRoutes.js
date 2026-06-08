@@ -6,11 +6,11 @@ const authMiddleware = require('../middleware/authMiddleware');
 const { picUpload, fileUpload } = require('../configs/scan');
 
 // File scan for Img and Pdf
-router.post('/scan-img', picUpload.single("image"), fileController.scanFile);
-router.post('/scan-document', fileUpload.single("document"), fileController.scanFile);
-
+router.post('/scan-img', authMiddleware, picUpload.single("image"), fileController.scanFile);
+router.post('/scan-document', authMiddleware, fileUpload.single("document"), fileController.scanFile);
+router.post('/save-kyc-info', authMiddleware, fileController.saveKycInfo);
 // file preview
 // TODO: Add authmiddleware
-router.get('/file-preview', fileController.filePreview);
+router.get('/file-preview', authMiddleware, fileController.filePreview);
 
 module.exports = router

@@ -2,13 +2,14 @@
 const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
+const { scanImgFile, scanUploadedFile } = require('../services/scan.service');
 const tokenService = require('../services/tokenService');
-const { OTP_MESSAGES, AUTH_MESSAGES } = require('../utils/constant');
+const { uploadToS3 } = require('../services/s3.service');
+const { OTP_MESSAGES, AUTH_MESSAGES, S3_FILE_TYPE } = require('../utils/constant');
+const { encrypt, encryptFile } = require('../utils/encryption');
 const HttpResponse = require('../utils/HttpResponse');
 
-/**
- * POST /api/v1/auth/company-registration
- */
+//  POST /api/v1/auth/company-registration
 const companyRegistration = async (req, res, next) => {
     try {
         const { companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber } = req.body;
@@ -17,7 +18,7 @@ const companyRegistration = async (req, res, next) => {
             return HttpResponse.error(res, {
                 message: 'You must accept the terms and conditions to register.',
                 statusCode: 400
-            }); 
+            });
         }
 
         const checkEmailExistsRes = await authService.checkEmailExists(email);
@@ -29,9 +30,9 @@ const companyRegistration = async (req, res, next) => {
         }
 
         // remove termsAccepted from payload before saving in db
-        const createCompanyRes = await authService.createCompany({companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber});
+        const createCompanyRes = await authService.createCompany({ companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber });
         if (!createCompanyRes.success) {
-            return HttpResponse.error(res, {message: createCompanyRes.message, statusCode: createCompanyRes.statusCode});
+            return HttpResponse.error(res, { message: createCompanyRes.message, statusCode: createCompanyRes.statusCode });
         }
 
         // TODO: handle service response
@@ -62,9 +63,8 @@ const companyRegistration = async (req, res, next) => {
     }
 };
 
-/**
- * POST /api/v1/auth/verify-otp
- */
+
+//  POST /api/v1/auth/verify-otp
 const verifyOtp = async (req, res, next) => {
     try {
         const { channel, otp, email, phoneNumber } = req.body;
@@ -102,7 +102,7 @@ const verifyOtp = async (req, res, next) => {
                 });
             }
         }
-        
+
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
             statusCode: 200,
@@ -117,9 +117,7 @@ const verifyOtp = async (req, res, next) => {
     }
 };
 
-/**
- * POST /api/v1/auth/resend-otp
- */
+//  POST /api/v1/auth/resend-otp
 const resendOtp = async (req, res, next) => {
     try {
         const { channel, email, phoneNumber } = req.body;
@@ -151,9 +149,7 @@ const resendOtp = async (req, res, next) => {
     }
 };
 
-/**
- * POST /api/v1/auth/refresh
- */
+//  POST /api/v1/auth/refresh
 const updateAccessToken = async (req, res, next) => {
     try {
         const { refreshToken } = req.body;

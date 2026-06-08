@@ -157,9 +157,9 @@ const updateChannelVerifiedStatus = async (channel, company_id) => {
         // 1. Update the respective channel verified status in company table
         let updatedCompany;
         if (channel === 'EMAIL') {
-            updatedCompany = await companyRepository.updateEmailVerifiedStatus(company_id, true);
+            updatedCompany = await companyRepository.updateEmailVerifiedStatus(company_id, true, {transaction});
         } else if (channel === 'PHONE') {
-            updatedCompany = await companyRepository.updatePhoneVerifiedStatus(company_id, true);
+            updatedCompany = await companyRepository.updatePhoneVerifiedStatus(company_id, true, {transaction});
         } else {
             throw new Error('Invalid channel specified');
         }

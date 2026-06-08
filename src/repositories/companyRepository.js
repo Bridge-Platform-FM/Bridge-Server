@@ -28,17 +28,19 @@ const createCompanyUserRole = async (companyUserRoleData, { transaction }) => {
 };
 
 const updateEmailVerifiedStatus = async (company_id, status, { transaction }) => {
-    return await Company.update(
+    const [, [updatedCompany]] = await Company.update(
         { is_email_verified: status },
-        { where: { id: company_id }, transaction }
+        { where: { id: company_id }, transaction, returning: true }
     );
+    return updatedCompany;
 };
 
 const updatePhoneVerifiedStatus = async (company_id, status, { transaction }) => {
-    return await Company.update(
+    const [, [updatedCompany]] = await Company.update(
         { is_mobile_number_verified: status },
-        { where: { id: company_id }, transaction }
+        { where: { id: company_id }, transaction, returning: true }
     );
+    return updatedCompany;
 };
 
 module.exports = {

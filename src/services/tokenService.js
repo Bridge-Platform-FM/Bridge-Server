@@ -1,21 +1,8 @@
 'use strict';
-const bcrypt = require('bcrypt');
-const env = require('../configs/env_configs');
-const tokenRepository = require('../repositories/tokenRepository');
-// const generateAccessToken = require('../utils/generateAccessToken');
-// const generateRefreshToken = require('../utils/generateRefreshToken');
-// const verifyRefreshToken = require('../utils/verifyRefreshToken');
-const { Company, CompanyUserRole, CompanyRoleMaster } = require('../models');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const { AUTH_MESSAGES } = require('../utils/constant');
-
-const createError = (message, status = 400) => {
-    const err = new Error(message);
-    err.status = status;
-    return err;
-};
 
 
 /**
@@ -48,20 +35,7 @@ const generateTokens = async (company, role, user) => {
     }
 };
 
-// Saved refresh token in db with company id, ipaddress, device, os, broswer
-const saveRefreshToken = async (companyId, refreshToken, { transaction } = {}) => {
-    const hashedToken = await bcrypt.hash(refreshToken, 10);
-    const expiresAt = new Date();
-    // Parse the refresh expiry duration
-    const days = parseInt(env.JWT.REFRESH_EXPIRY, 10) || 7;
-    expiresAt.setDate(expiresAt.getDate() + days);
 
-    await tokenRepository.saveRefreshToken({
-        companyId,
-        token: hashedToken,
-        expiresAt
-    }, { transaction });
-};
 
 /**
  * create an access token using a valid refresh token.
@@ -117,6 +91,5 @@ const refreshToken = async (plainRefreshToken) => {
 
 module.exports = {
     generateTokens,
-    saveRefreshToken,
     refreshToken
 };

@@ -7,11 +7,11 @@ const findByEmail = async (email) => {
     });
 };
 
-const findByPhoneNumber = async (phoneNumber) => {
-    return await Company.findOne({
-        where: { mobile_number: phoneNumber }
-    });
-};
+// const findByPhoneNumber = async (phoneNumber) => {
+//     return await Company.findOne({
+//         where: { mobile_number: phoneNumber }
+//     });
+// };
 
 const findRoleMasterByCode = async (roleCode) => {
     return await CompanyRoleMaster.findOne({
@@ -45,7 +45,7 @@ const updatePhoneVerifiedStatus = async (company_id, status, { transaction }) =>
 
 module.exports = {
     findByEmail,
-    findByPhoneNumber,
+    // findByPhoneNumber,
     findRoleMasterByCode,
     createCompany,
     createCompanyUserRole,

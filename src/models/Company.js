@@ -1,8 +1,6 @@
 'use strict';
 
 const { DataTypes } = require('sequelize');
-const TimestampFields = require('./base/TimestampFields');
-const SoftDeleteFields = require('./base/SoftDeleteFields');
 
 module.exports = (sequelize) => {
 

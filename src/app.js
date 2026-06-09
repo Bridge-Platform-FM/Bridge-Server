@@ -9,9 +9,6 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const scanErrorMiddleware = require('./middleware/scanError');
-const s3Service = require('./services/s3.service');
-const { S3_FILE_TYPE } = require('./utils/constant');
-const { addImageWatermark, addPdfWatermark } = require('./services/watermark.service');
 
 const app = express();
 app.use(cors());

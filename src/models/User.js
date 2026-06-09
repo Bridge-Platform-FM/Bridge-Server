@@ -1,8 +1,6 @@
 'use strict';
 
 const { DataTypes } = require('sequelize');
-const TimestampFields = require('./base/TimestampFields');
-const SoftDeleteFields = require('./base/SoftDeleteFields');
 
 module.exports = (sequelize) => {
 
@@ -98,7 +96,6 @@ module.exports = (sequelize) => {
         funding_ask_amt_min: { type: DataTypes.FLOAT, allowNull: true},
         funding_ask_amt_max: { type: DataTypes.FLOAT, allowNull: true},
         use_of_funds: { type: DataTypes.STRING, allowNull: true },
-        funding_currency: { type: DataTypes.STRING, allowNull: true },
         team_size_min: { type: DataTypes.INTEGER, allowNull: true },
         team_size_max: { type: DataTypes.INTEGER, allowNull: true },
         incorporation_certificate: { type: DataTypes.STRING, allowNull: true },

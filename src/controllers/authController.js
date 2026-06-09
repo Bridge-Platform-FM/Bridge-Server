@@ -2,11 +2,8 @@
 const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
-const { scanImgFile, scanUploadedFile } = require('../services/scan.service');
 const tokenService = require('../services/tokenService');
-const { uploadToS3 } = require('../services/s3.service');
-const { OTP_MESSAGES, AUTH_MESSAGES, S3_FILE_TYPE } = require('../utils/constant');
-const { encrypt, encryptFile } = require('../utils/encryption');
+const { OTP_MESSAGES, AUTH_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 //  POST /api/v1/auth/company-registration

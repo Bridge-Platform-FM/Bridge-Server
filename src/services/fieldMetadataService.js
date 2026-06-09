@@ -1,10 +1,9 @@
 'use strict';
-const { sequelize, CompanyRole, CompanyRoleMaster } = require('../models');
+const { CompanyRoleMaster } = require('../models');
 const roleFieldMetadataRepository = require('../repositories/roleFieldMetadataRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { ROLE_FIELD_METADATA_MESSAGES, USER_MESSAGES } = require('../utils/constant');
-const { validateFieldsAgainstMetadata } = require('../validations/userValidation');
 
 
 const validateUserPayload = async (role, payload) => {
@@ -104,8 +103,6 @@ const validateUserPayload = async (role, payload) => {
         if (errors.length > 0) {
             return ServiceResponse.error({ message: USER_MESSAGES.VALIDATION_FAILED, data: errors, statusCode: 400 });
         }
-        ServiceResponse.success();
-
         return ServiceResponse.success();
     } catch (error) {
         errorLogger.error(error);

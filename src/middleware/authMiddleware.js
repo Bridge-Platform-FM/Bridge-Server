@@ -21,7 +21,6 @@ const authMiddleware = (req, res, next) => {
         const decoded = verifyAccessToken(token);
 
         // Attach decoded payload to request object
-        console.info(decoded);
         req.companyId = decoded.companyId;
         req.companyName = decoded.companyName;
         req.email = decoded.email;

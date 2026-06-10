@@ -29,7 +29,7 @@ const checkEmailExists = async (email) => {
 
 const createCompany = async (data) => {
     const transaction = await sequelize.transaction();
-    console.log("createCompany data: ", data);
+    // console.log("createCompany data: ", data);
     try {
         // TODO:- encyption add
         // TODO:- need to remove termsAccepted

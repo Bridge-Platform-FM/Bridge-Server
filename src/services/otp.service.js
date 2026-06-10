@@ -16,7 +16,7 @@ const sendOtpToPhone = async (phone, otp) => {
             from: process.env.TWILIO_PHONE_NUMBER,
             to: phone,
         });
-        console.log(`OTP sent to phone ${phone}, message SID: ${id}`);
+        // console.log(`OTP sent to phone ${phone}, message SID: ${id}`);
     } catch (err) {
         errorLogger.error(`Error sending OTP to phone ${phone}:`, err);
         console.error(`Error sending OTP to phone ${phone}:`, err);
@@ -85,12 +85,12 @@ const sendOTP = async (channelType, channelId) => {
         await redis.del(`otp_attempt:${channelId}`);
 
         // 6. Send OTP via appropriate channel
-        // if (channelType === "PHONE") {
-        //     // TODO:- Remove hardcoded phone number and use channelId instead after testing
-        //     await sendOtpToPhone("+91" + channelId, otp);
-        // } else {
-        //     await sendOtpToEmail(channelId, otp);
-        // }
+        if (channelType === "PHONE") {
+            // TODO:- Remove hardcoded phone number and use channelId instead after testing
+            await sendOtpToPhone("+91" + channelId, otp);
+        } else {
+            await sendOtpToEmail(channelId, otp);
+        }
 
         // 7. Increment OTP resent count
         await redis.incr(`otp_resend_count:${channelId}`);

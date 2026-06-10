@@ -3,7 +3,7 @@ const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
-const { OTP_MESSAGES, AUTH_MESSAGES } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 //  POST /api/v1/auth/company-registration
@@ -33,8 +33,8 @@ const companyRegistration = async (req, res, next) => {
         }
 
         // TODO: handle service response
-        await otpService.sendOTP("EMAIL", email);
-        await otpService.sendOTP("PHONE", phoneNumber);
+        await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+        await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber);
 
         const companyObj = createCompanyRes.data.company
         const roleObj = createCompanyRes.data.role
@@ -128,9 +128,9 @@ const resendOtp = async (req, res, next) => {
 
         let result;
         if (channel === 'EMAIL') {
-            result = await otpService.sendOTP("email", email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
         } else {
-            result = await otpService.sendOTP("phone", phoneNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber);
         }
 
         if (!result.success) {

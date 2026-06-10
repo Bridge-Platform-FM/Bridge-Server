@@ -85,7 +85,7 @@ const sendOTP = async (channelType, channelId) => {
         await redis.del(`otp_attempt:${channelId}`);
 
         // 6. Send OTP via appropriate channel
-        if (channelType === "PHONE") {
+        if (channelType === CHANNEL_TYPE.PHONE) {
             // TODO:- Remove hardcoded phone number and use channelId instead after testing
             await sendOtpToPhone("+91" + channelId, otp);
         } else {

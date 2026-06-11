@@ -44,7 +44,8 @@ const requestResponseLogger = (req, res, next) => {
             `${req.originalUrl} - ` +
             `${res.statusCode} - ` +
             `${timeConsumed} - ` +
-            `ip: ${req.headers["x-forwarded-for"]?.split(",")[0]} || ${req.socket.remoteAddress} - ` +
+            `Time: ${Date.now()} - ` +
+            `IP Address: ${req.headers["x-forwarded-for"]?.split(",")[0]} || ${req.socket.remoteAddress} - ` +
             `Browser: ${req.headers["sec-ch-ua"]} - ` +
             `Platform: ${req.headers["sec-ch-ua-platform"]} - ` +
             `Mobile: ${req.headers["sec-ch-ua-mobile"] === "?1"} - ` +

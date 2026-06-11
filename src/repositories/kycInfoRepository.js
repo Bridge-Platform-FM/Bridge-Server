@@ -1,5 +1,6 @@
 'use strict';
-const { KycInfo } = require('../models');
+const { KycInfo, sequelize } = require('../models');
+const { QueryTypes } = require('sequelize');
 
 const findKycRecord = async ({ userId, companyId, roleId, documentType }) => {
     return await KycInfo.findOne({
@@ -39,4 +40,46 @@ const bulkCreateKycRecords = async (records, options = {}) => {
 };
 
 
-module.exports = { findKycRecord, createKycRecord, updateKycRecord, bulkCreateKycRecords };
+const findAllKycRecords = async ({ userId, companyId, roleId }) => {
+    return await KycInfo.findAll({
+        where: {
+            user_id: userId,
+            company_id: companyId,
+            role_id: roleId,
+            is_deleted: false
+        }
+    });
+};
+
+const findAllKycRecordsRaw = async ({ userId, companyId, roleId }) => {
+    return await sequelize.query(
+        `SELECT 
+            id,
+            document_type,
+            document_number,
+            document_number_iv,
+            document_number_auth_tag,
+            front_s3_key,
+            back_s3_key,
+            status,
+            rejection_reason,
+            verified_at,
+            verified_by,
+            created_at,
+            back_mime_type,
+            back_file_name,
+            front_mime_type,
+            front_file_name    
+        FROM kyc_info
+        WHERE user_id    = :userId
+        AND company_id = :companyId
+        AND role_id    = :roleId
+        AND is_deleted = false`,
+        {
+            replacements: { userId, companyId, roleId },
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
+module.exports = { findKycRecord, createKycRecord, updateKycRecord, bulkCreateKycRecords, findAllKycRecords, findAllKycRecordsRaw };

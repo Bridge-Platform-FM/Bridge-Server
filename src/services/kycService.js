@@ -3,6 +3,8 @@ const { sequelize } = require('../models');
 const kycInfoRepository = require('../repositories/kycInfoRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
+const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES } = require('../utils/constant');
+const { decrypt } = require("../utils/encryption");
 
 const createKycInfo = async (records) => {
     const transaction = await sequelize.transaction();
@@ -32,4 +34,73 @@ const createKycInfo = async (records) => {
     }
 };
 
-module.exports = { createKycInfo };
+const getKycInfo = async ({ userId, companyId, roleId }) => {
+    try {
+        const records = await kycInfoRepository.findAllKycRecordsRaw({ userId, companyId, roleId });
+        return ServiceResponse.success({
+            message: KYC_MESSAGES.FETCH_SUCCESS,
+            data: records ,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: KYC_MESSAGES.FETCH_FAILED, statusCode: 500 });
+    }
+};
+
+const decyptKycInfo = (records) => {
+    try {
+        let decrypted = [];
+        for (const record of records) {
+            if (!record.document_number || !record.document_number_iv || !record.document_number_auth_tag) {
+                decrypted.push(record);
+                continue;
+            }
+            const { document_number, document_number_iv, document_number_auth_tag } = record;
+            const decryptedData = decrypt(document_number, document_number_iv, document_number_auth_tag);
+            decrypted.push({ ...record, document_number: decryptedData });
+        }
+        return serviceResponse.success({ data: decrypted, message: ENCRYPT_DECRYPT_MESSAGES.DECRYPT_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return serviceResponse.error({ message: ENCRYPT_DECRYPT_MESSAGES.DECRYPT_FAILED, statusCode: 500 });
+    }
+}
+
+const prepareResponse = (decyptedKycInfos) => {
+    try {
+        let tempResponses = [];
+        for (const decyptedKycInfo of decyptedKycInfos) {
+            let tempRespons = {}
+            tempRespons[decyptedKycInfo.document_type] = {}
+            tempRespons[decyptedKycInfo.document_type].number = decyptedKycInfo.document_number
+            tempRespons[decyptedKycInfo.document_type].front = {
+                s3_key: decyptedKycInfo.front_s3_key,
+                file_name: decyptedKycInfo.front_file_name,
+                file_size: decyptedKycInfo.front_file_size,
+                mimetype: decyptedKycInfo.front_mime_type
+            }
+            if (decyptedKycInfo.back_s3_key) {
+                tempRespons[decyptedKycInfo.document_type].back = {
+                    s3_key: decyptedKycInfo.back_s3_key,
+                    file_name: decyptedKycInfo.back_file_name,
+                    file_size: decyptedKycInfo.back_file_size,
+                    mimetype: decyptedKycInfo.back_mime_type
+                }
+            }
+            tempRespons[decyptedKycInfo.document_type].status = decyptedKycInfo.status
+            tempRespons[decyptedKycInfo.document_type].rejection_reason = decyptedKycInfo.rejection_reason
+            tempRespons[decyptedKycInfo.document_type].verified_at = decyptedKycInfo.verified_at
+            tempRespons[decyptedKycInfo.document_type].verified_by = decyptedKycInfo.verified_by
+            tempResponses.push(tempRespons)
+        }
+        return ServiceResponse.success({ data: tempResponses, statusCode: 200 });
+    }
+    catch (error) {
+        errorLogger.error(error);
+        return serviceResponse.error();
+    }
+    
+}
+
+module.exports = { createKycInfo, getKycInfo, decyptKycInfo, prepareResponse };

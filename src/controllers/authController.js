@@ -3,7 +3,7 @@ const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 //  POST /api/v1/auth/company-registration
@@ -25,17 +25,29 @@ const companyRegistration = async (req, res, next) => {
                 statusCode: checkEmailExistsRes.statusCode
             });
         }
-
+        
+        // TODO: handle service response
+        const emailOtpRes = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+        if (!emailOtpRes.success) {
+            return HttpResponse.error(res, {
+                message: REGISTRATION_MESSAGES.COMPANY_CREATION_FAILED,
+                statusCode: 500
+            });
+        }
+        const phoneOtpRes = await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber);
+        if (!phoneOtpRes.success) {
+            return HttpResponse.error(res, {
+                message: REGISTRATION_MESSAGES.COMPANY_CREATION_FAILED,
+                statusCode: 500
+            });
+        }
+        
         // remove termsAccepted from payload before saving in db
         const createCompanyRes = await authService.createCompany({ companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber });
         if (!createCompanyRes.success) {
             return HttpResponse.error(res, { message: createCompanyRes.message, statusCode: createCompanyRes.statusCode });
         }
-
-        // TODO: handle service response
-        await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
-        await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber);
-
+        
         const companyObj = createCompanyRes.data.company
         const roleObj = createCompanyRes.data.role
         const userObj = createCompanyRes.data.user
@@ -54,7 +66,7 @@ const companyRegistration = async (req, res, next) => {
         errorLogger.error(error);
         console.error(error);
         return HttpResponse.error(res, {
-            message: error.message,
+            message: REGISTRATION_MESSAGES.COMPANY_CREATION_FAILED,
             statusCode: 500
         });
     }

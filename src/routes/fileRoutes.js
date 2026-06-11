@@ -12,5 +12,6 @@ router.post('/save-kyc-info', authMiddleware, fileController.saveKycInfo);
 // file preview
 // TODO: Add authmiddleware
 router.get('/file-preview', authMiddleware, fileController.filePreview);
+router.get('/get-kyc-docs', authMiddleware, fileController.getKycDocs);
 
 module.exports = router

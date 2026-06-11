@@ -6,6 +6,7 @@ const { smsClient } = require("../configs/twilio.js");
 const { sgMailClient } = require("../configs/twilio.js");
 const ServiceResponse = require("../utils/ServiceResponse.js");
 const { errorLogger } = require("../configs/logger.js");
+const { CHANNEL_TYPE } = require("../utils/constant.js")
 
 require('dotenv').config();
 

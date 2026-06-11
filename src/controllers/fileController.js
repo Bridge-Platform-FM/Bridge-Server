@@ -1,12 +1,12 @@
 const { errorLogger } = require("../configs/logger");
-const { uploadToS3, getFileBuffer } = require("../services/s3.service");
+const { uploadToS3, getFileBuffer, getFileUrl } = require("../services/s3.service");
 const { scanUploadedFile } = require("../services/scan.service");
 const { addPdfWatermark, addImageWatermark } = require("../services/watermark.service");
 const kycService = require('../services/kycService');
-const { S3_FILE_TYPE, KYC_DOC_TYPES } = require("../utils/constant");
+const { S3_FILE_TYPE, KYC_DOC_TYPES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, KYC_STATUS } = require("../utils/constant");
 const { waterMarkFunction } = require("../utils/Helper");
 const HttpResponse = require("../utils/HttpResponse");
-const { encrypt } = require("../utils/encryption");
+const { encrypt, decrypt } = require("../utils/encryption");
 
 // POST /api/v1/file/scan-img & /scan-document
 const scanFile = async (req, res, next) => {
@@ -30,13 +30,13 @@ const scanFile = async (req, res, next) => {
         // req.file.buffer
         const fileBuffer = req.file.buffer;
         // Virus Scan
-        // const scanResult = await scanUploadedFile(fileBuffer);
-        // if (!scanResult.success) {
-        //     return HttpResponse.error(res, {
-        //         message: scanResult.message,
-        //         statusCode: 400
-        //     });
-        // }
+        const scanResult = await scanUploadedFile(fileBuffer);
+        if (!scanResult.success) {
+            return HttpResponse.error(res, {
+                message: scanResult.message,
+                statusCode: 400
+            });
+        }
 
         let s3_file_type = S3_FILE_TYPE.PROFILE
         if (KYC_DOC_TYPES.includes(docType)) {
@@ -155,6 +155,7 @@ const saveKycInfo = async (req, res) => {
                 document_number: encryptedData,
                 document_number_iv: iv,
                 document_number_auth_tag: authTag,
+                status: KYC_STATUS.PENDING,
                 front_s3_key: frontS3Key,
                 front_file_name: frontFile_name,
                 front_file_size: frontFileSize,
@@ -186,7 +187,6 @@ const saveKycInfo = async (req, res) => {
 
         return HttpResponse.success(res, {
             message: "File uploaded successfully",
-            data: { s3Key },
             statusCode: 200
         });
 
@@ -199,4 +199,61 @@ const saveKycInfo = async (req, res) => {
     }
 }
 
-module.exports = { scanFile, filePreview, saveKycInfo }
+// GET /api/v1/file/get-kyc-docs
+const getKycDocs = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const companyId = req.companyId;
+        const roleId = req.roleId;
+
+        const getKycInfoServiceRes = await kycService.getKycInfo({ userId, companyId, roleId });
+        if (!getKycInfoServiceRes.success) {
+            return HttpResponse.error(res, { message: getKycInfoServiceRes.message, statusCode: getKycInfoServiceRes.statusCode });
+        }
+
+        const kycInfo = getKycInfoServiceRes.data
+
+        const decrypedRecords = kycInfo.map(record => {
+            
+            if (record.document_number && record.document_number_iv && record.document_number_auth_tag) {
+                record.document_number = decrypt(record.document_number, record.document_number_iv, record.document_number_auth_tag);
+            }
+            delete record.document_number_iv;
+            delete record.document_number_auth_tag;
+            return record;
+        });
+
+        const prepareRes = kycService.prepareResponse(decrypedRecords);
+        if (!prepareRes.success) {
+            return HttpResponse.error(res, { message: prepareRes.message, statusCode: prepareRes.statusCode });
+        }
+        const preparedRes = prepareRes.data;
+
+        let submissionTime = null;
+        let expiryTime = null;
+
+        if (decrypedRecords.length > 0) {
+            const maxCreatedAt = decrypedRecords.reduce((max, r) => {
+                const t = new Date(r.created_at);
+                return t > max ? t : max;
+            }, new Date(0));
+            submissionTime = maxCreatedAt.toISOString();
+            expiryTime = new Date(maxCreatedAt.getTime() + DEFAULT_KYC_VERIFICATION_APPROVAL_TIME * 60 * 60 * 1000).toISOString();
+        }
+
+        return HttpResponse.success(res, {
+            message: getKycInfoServiceRes.message,
+            data: { docDetails: preparedRes, submissionTime: submissionTime, expiryTime: expiryTime },
+            statusCode: 200
+        });
+
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: "Failed to fetch KYC documents",
+            statusCode: 500
+        });
+    }
+};
+
+module.exports = { scanFile, filePreview, saveKycInfo, getKycDocs }

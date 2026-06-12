@@ -7,24 +7,28 @@ const tokenService = require('./tokenService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { hashPassword } = require('../utils/Helper');
-const { REGISTRATION_MESSAGES } = require('../utils/constant');
+const { REGISTRATION_MESSAGES, AUTH_MESSAGES } = require('../utils/constant');
 
-const checkEmailExists = async (email) => {
+
+const getCompanyByEmail = async (email) => {
     try {
         const existingEmailUser = await companyRepository.findByEmail(email);
-        if (existingEmailUser) {
-            return ServiceResponse.error({message:'Email is already registered.', data:existingEmailUser, statusCode:400});
-        }
-        else {
-            return ServiceResponse.success({data:existingEmailUser});
-        }
+        return ServiceResponse.success({data:existingEmailUser});
     }
     catch (error) {
-        errorLogger.error(error);
-        console.error(error);
         return ServiceResponse.error({message:'Error occured while checking email.', data:[], statusCode:500});
     }
-};
+}
+
+const getUserByEmail = async (email) => {
+    try {
+        const existingEmailUser = await userRepository.findByEmail(email);
+        return ServiceResponse.success({data:existingEmailUser});
+    }
+    catch (error) {
+        return ServiceResponse.error({message:'Error occured while checking email.', data:[], statusCode:500});
+    }
+}
 
 
 const createCompany = async (data) => {
@@ -58,7 +62,7 @@ const createCompany = async (data) => {
         const user = await userRepository.createUser(userData, { transaction });
 
         await companyRepository.createCompanyUserRole(
-            { company_id: company.id, role_id: role.id, user_id: user.id },
+            { company_id: company.id, role_id: role.id, user_id: user.id, is_default_role: true },
             { transaction }
         );
         await transaction.commit();
@@ -103,10 +107,37 @@ const updateChannelVerifiedStatus = async (channel, company_id) => {
     }
 };
 
+const checkPassword = async (password, hashedPassword) => {
+    try {
+        const isPasswordValid = await bcrypt.compare(password, hashedPassword);
+        if (!isPasswordValid) {
+            return ServiceResponse.error({ message: AUTH_MESSAGES.INVALID_CREDENTIALS, statusCode: 401 });
+        }
+        else {
+            return ServiceResponse.success({ statusCode: 200 });
+        }
+    } catch (error) {
+        return ServiceResponse.error({ message: AUTH_MESSAGES.INVALID_CREDENTIALS, statusCode: 401 });
+    }
+}
+
+
+const getCompanyUser_role = async (company_id, user_id) => {
+    try {
+        const result = await userRepository.getCompanyUser_role(company_id, user_id);
+        return ServiceResponse.success({data: result[0]})
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({data: result[0]});
+    }
+}
 
 
 module.exports = {
-    checkEmailExists,
+    checkPassword,
     createCompany,
-    updateChannelVerifiedStatus
+    updateChannelVerifiedStatus,
+    getCompanyByEmail,
+    getUserByEmail,
+    getCompanyUser_role
 };

@@ -3,7 +3,7 @@ const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 //  POST /api/v1/auth/company-registration
@@ -18,12 +18,17 @@ const companyRegistration = async (req, res, next) => {
             });
         }
 
-        const checkEmailExistsRes = await authService.checkEmailExists(email);
-        if (!checkEmailExistsRes.success) {
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
             return HttpResponse.error(res, {
-                message: checkEmailExistsRes.message,
-                statusCode: checkEmailExistsRes.statusCode
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
             });
+        }
+
+        const existingCompany = existingCompanyRes.data;
+        if (existingCompany) {
+            return HttpResponse.error(res, {message:USER_MESSAGES.EMAIL_ALREADY_EXISTS, statusCode:400});
         }
         
         // TODO: handle service response
@@ -192,9 +197,55 @@ const updateAccessToken = async (req, res, next) => {
     }
 };
 
+//  POST /api/v1/auth/login
+const login = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
+            return HttpResponse.error(res, { message: existingCompanyRes.message, statusCode: existingCompanyRes.statusCode });
+        }
+
+        const existingCompany = existingCompanyRes.data;
+
+        if (!existingCompany) {
+            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompany.statusCode });
+        }
+
+        const passwordRes = await authService.checkPassword(password, existingCompany.password)
+        if (!passwordRes.success) {
+            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompany.statusCode });
+        }
+
+        const existingUserRes = await authService.getUserByEmail(email);
+        if (!existingUserRes.success) {
+            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompany.statusCode });
+        }
+
+        const existingUser = existingUserRes.data
+
+        const companyUserRoleRes = await authService.getCompanyUser_role(existingCompany.id, existingUser.id);
+        if (!companyUserRoleRes) {
+            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: companyUserRoleRes.statusCode });
+        }
+
+        const companyUserRole = companyUserRoleRes.data;
+
+        const tokens = await tokenService.generateTokens(existingCompany, companyUserRole, existingUser);
+        const { accessToken, refreshToken } = tokens.data;
+
+        return HttpResponse.success( res, {data: { accessToken, refreshToken }, message: LOGIN_MESSAGES.VALID_CREDENTIALS })
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: AUTH_MESSAGES.LOGIN_FAILED, statusCode: 500 });
+    }
+};
+
 module.exports = {
     companyRegistration,
     verifyOtp,
     resendOtp,
-    updateAccessToken
+    updateAccessToken,
+    login
 };

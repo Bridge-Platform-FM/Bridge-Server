@@ -1,9 +1,23 @@
 'use strict';
-const { Company, CompanyUserRole, CompanyRoleMaster } = require('../models');
+const { Company, CompanyUserRole, CompanyRoleMaster, User } = require('../models');
 
 const findByEmail = async (email) => {
     return await Company.findOne({
         where: { company_email: email }
+    });
+};
+
+const findCompanyWithRoleByEmail = async (email) => {
+    return await Company.findOne({
+        where: { company_email: email, is_deleted: false },
+        include: [{
+            model: CompanyUserRole,
+            as: 'companyUserRoles',
+            include: [
+                { model: CompanyRoleMaster, as: 'role' },
+                { model: User, as: 'user' }
+            ]
+        }]
     });
 };
 
@@ -45,7 +59,7 @@ const updatePhoneVerifiedStatus = async (company_id, status, { transaction }) =>
 
 module.exports = {
     findByEmail,
-    // findByPhoneNumber,
+    findCompanyWithRoleByEmail,
     findRoleMasterByCode,
     createCompany,
     createCompanyUserRole,

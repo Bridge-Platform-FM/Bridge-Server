@@ -41,6 +41,11 @@ module.exports = (sequelize) => {
             }
         },
 
+        is_default_role: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

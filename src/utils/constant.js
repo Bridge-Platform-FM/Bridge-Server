@@ -90,10 +90,10 @@ const KYC_STATUS = {
 const REDIRECT_ROUTES = {
     REGISTRATION: {
         COMPANY_REGISTRATION: '/registration',
-        VERIFY_COMPANY_ACCOUNT: '/verify-account',
-        BUILD_USER_PROFILE: '/complete-profile',
-        UPLOAD_KYC_DOCUMENTS: '/document-upload',
-        PENDING_KYC_APPROVAL: '/verify-status',
+        VERIFY_COMPANY_ACCOUNT: '/registration/verify-account',
+        BUILD_USER_PROFILE: '/registration/complete-profile',
+        UPLOAD_KYC_DOCUMENTS: '/registration/document-upload',
+        PENDING_KYC_APPROVAL: '/registration/verify-status',
     },
     DASHBOARD: {
         DASHBOARD: '/dashboard'

@@ -88,9 +88,9 @@ const sendOTP = async (channelType, channelId) => {
         // 6. Send OTP via appropriate channel
         if (channelType === CHANNEL_TYPE.PHONE) {
             // TODO:- Remove hardcoded phone number and use channelId instead after testing
-            await sendOtpToPhone("+91" + channelId, otp);
+            // await sendOtpToPhone("+91" + channelId, otp);
         } else {
-            await sendOtpToEmail(channelId, otp);
+            // await sendOtpToEmail(channelId, otp);
         }
 
         // 7. Increment OTP resent count

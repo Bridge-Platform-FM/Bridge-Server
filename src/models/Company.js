@@ -25,6 +25,11 @@ module.exports = (sequelize) => {
             unique: true
         },
 
+        country_code: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         mobile_number: {
             type: DataTypes.STRING,
             allowNull: false

@@ -7,7 +7,8 @@ const {
     companyRegistrationSchema,
     verifyOtpSchema,
     resendOtpSchema,
-    refreshTokenSchema
+    refreshTokenSchema,
+    loginSchema
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -23,6 +24,9 @@ router.post('/resend-otp', authMiddleware, validate(resendOtpSchema), authContro
 
 // Route for updating access tokens via refresh tokens
 router.post('/refresh', validate(refreshTokenSchema), authController.updateAccessToken);
+
+// Route for company login
+router.post('/login', validate(loginSchema), authController.login);
 
 
 

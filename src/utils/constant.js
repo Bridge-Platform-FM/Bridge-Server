@@ -23,8 +23,9 @@ const AUTH_MESSAGES = {
     ACCESS_TOKEN_EXPIRED: 'Unauthorized: Access token has expired',
     UNAUTHORIZED: 'Unauthorized',
     TOKEN_REFRESH_SUCCESS: 'Token refreshed successfully',
-    TOKEN_REFRESH_FAILED: 'Error encountered while refreshing token'
-    
+    TOKEN_REFRESH_FAILED: 'Error encountered while refreshing token',
+    LOGIN_SUCCESS: 'Login successful',
+    LOGIN_FAILED: 'Error encountered while logging in'
 }
 
 const ROLE_FIELD_METADATA_MESSAGES = {
@@ -47,6 +48,12 @@ const USER_MESSAGES = {
     ROLE_NOT_FOUND: 'Company role not found for this account',
     VALIDATION_FAILED: 'Validation failed for the submitted fields'
 };
+
+const LOGIN_MESSAGES = {
+    INVALID_CREDENTIALS: 'Invalid Credentials',
+    VALID_CREDENTIALS: 'Logged in successfully',
+    USER_NOT_FOUND: 'User not found'
+}
 
 const KYC_MESSAGES = {
     FETCH_SUCCESS: 'Fetched KYC documents successfully',
@@ -80,5 +87,9 @@ const KYC_STATUS = {
     APPROVED: 'Approved'
 }
 
-module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES, USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, KYC_STATUS, CHANNEL_TYPE };
+module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES, 
+    USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,  
+    ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, 
+    KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES
+ };
 

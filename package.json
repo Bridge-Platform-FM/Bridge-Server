@@ -4,7 +4,7 @@
     "private": true,
     "type": "commonjs",
     "scripts": {
-        "dev": "node --watch src/app.js",
+        "dev": "node --watch-path=./src src/app.js",
         "debug": "node --inspect src/app.js",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",

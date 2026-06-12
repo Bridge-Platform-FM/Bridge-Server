@@ -15,6 +15,8 @@ const generateTokens = async (company, role, user) => {
             companyId: company.id,
             email: company.company_email,
             companyName: company.company_name,
+            mobileNumber: company.mobile_number,
+            countryCode: company.country_code,
             role: role.role_code,
             roleId: role.id,
             userId: user.id,

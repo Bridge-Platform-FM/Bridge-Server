@@ -57,6 +57,7 @@ const createCompany = async (data) => {
             company_email: data.email,
             password: await hashPassword(data.password),
             mobile_number: data.phoneNumber,
+            country_code: data.countryCode,
             created_at: new Date()
         };
         const user = await userRepository.createUser(userData, { transaction });

@@ -24,6 +24,8 @@ const authMiddleware = (req, res, next) => {
         req.companyId = decoded.companyId;
         req.companyName = decoded.companyName;
         req.email = decoded.email;
+        req.mobileNumber = decoded.mobileNumber;
+        req.coutryCode = decoded.coutryCode;
         req.userId = decoded.userId
         req.roleId = decoded.roleId
         req.role = decoded.role;

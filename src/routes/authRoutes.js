@@ -33,6 +33,6 @@ router.post('/mfa/trigger-otp', authMiddleware, authController.triggerOtp);
 
 router.post('/mfa/verify-otp', authMiddleware, authController.verifyMfaOtp);
 
-// router.post('/mfa/resend-otp', authMiddleware, authController.resendMfaOtp);
+router.post('/mfa/resend-otp', authMiddleware, authController.resendMfaOtp);
 
 module.exports = router;

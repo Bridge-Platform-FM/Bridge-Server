@@ -90,7 +90,7 @@ const sendOTP = async (channelType, channelId) => {
             // TODO:- Remove hardcoded phone number and use channelId instead after testing
             // await sendOtpToPhone("+91" + channelId, otp);
         } else {
-            // await sendOtpToEmail(channelId, otp);
+            await sendOtpToEmail(channelId, otp);
         }
 
         // 7. Increment OTP resent count

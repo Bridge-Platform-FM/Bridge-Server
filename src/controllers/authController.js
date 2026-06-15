@@ -272,7 +272,7 @@ const triggerOtp = async (req, res, next) => {
     }
 };
 
-const verifyMfaOtp = async (req, res, nex) => {
+const verifyMfaOtp = async (req, res, next) => {
     try {
         const email = req.email;
 
@@ -298,7 +298,7 @@ const verifyMfaOtp = async (req, res, nex) => {
         }
 
         let redirectRoute = REDIRECT_ROUTES.DASHBOARD.DASHBOARD;
-        if (!company.is_email_verified || !company.is_phone_verified) {
+        if (!company.is_email_verified || !company.is_mobile_number_verified) {
             redirectRoute = REDIRECT_ROUTES.REGISTRATION.VERIFY_COMPANY_ACCOUNT;
         } else if (!company.is_kyc_verified) {
             redirectRoute = REDIRECT_ROUTES.REGISTRATION.PENDING_KYC_APPROVAL;
@@ -314,6 +314,39 @@ const verifyMfaOtp = async (req, res, nex) => {
     }
 };
 
+const resendMfaOtp = async (req, res, next) => {
+    try {
+        const email = req.email;
+        const mobileNumber = req.mobileNumber;
+        const { channel } = req.body;
+
+        let result;
+        if (channel === 'EMAIL') {
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+        } else {
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber);
+        }
+
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: 400
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: OTP_MESSAGES.OTP_GENERATION_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
 module.exports = {
     companyRegistration,
     verifyOtp,
@@ -321,5 +354,6 @@ module.exports = {
     updateAccessToken,
     login,
     triggerOtp,
-    verifyMfaOtp
+    verifyMfaOtp,
+    resendMfaOtp
 };

@@ -8,6 +8,7 @@ const db = require('./models');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const scanErrorMiddleware = require('./middleware/scanError');
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(requestResponseLogger);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/file', fileRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {

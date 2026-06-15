@@ -28,6 +28,14 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: false
         },
+        country_code: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        mobile_number: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
 
         created_at: {
             type: DataTypes.DATE,

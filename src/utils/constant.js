@@ -67,6 +67,12 @@ const ENCRYPT_DECRYPT_MESSAGES = {
     DECRYPT_SUCCESS: 'Data decrypted successfully'
 }
 
+const ADMIN_MESSAGES = {
+    INVALID_CREDENTIALS: 'Invalid Credentials',
+    LOGIN_SUCCESS: 'Logged in successfully',
+    LOGIN_FAILED: 'Error encountered while logging in'
+}
+
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
     KYC: 'kyc'
@@ -93,16 +99,22 @@ const REDIRECT_ROUTES = {
         VERIFY_COMPANY_ACCOUNT: '/registration/verify-account',
         BUILD_USER_PROFILE: '/registration/complete-profile',
         UPLOAD_KYC_DOCUMENTS: '/registration/document-upload',
-        PENDING_KYC_APPROVAL: '/registration/verify-status',
+        PENDING_KYC_APPROVAL: '/registration/verification-status',
     },
     DASHBOARD: {
         DASHBOARD: '/dashboard'
     }
 }
 
+const ROLES = {
+    user: ['STARTUP', 'INVESTOR', 'B2B'],
+    ADMIN: ['SYS_ADMIN']
+}
+
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES, 
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,  
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, 
-    KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES
+    KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
+    ROLES
  };
 

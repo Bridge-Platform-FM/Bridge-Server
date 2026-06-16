@@ -1,4 +1,7 @@
 const express = require('express');
+require('dotenv').config({
+  path: '.env.uat'
+});
 const cors = require('cors');
 const env_config = require('./configs/env_configs');
 const requestResponseLogger = require('./middleware/requestResponseLogger');

@@ -9,7 +9,7 @@ const redis = new Redis({
     port: process.env.REDIS_PORT || 6381,
     password: process.env.REDIS_PASSWORD,
     // uat
-    // username: process.env.REDIS_USERNAME,
+    username: process.env.REDIS_USERNAME,
 });
 
 

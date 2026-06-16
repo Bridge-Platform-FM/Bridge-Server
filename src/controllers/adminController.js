@@ -4,6 +4,7 @@ const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
+const userService = require('../services/userService');
 
 
 const login = async (req, res, next) => {
@@ -103,5 +104,37 @@ const resendMfaOtp = async (req, res, next) => {
     }
 };
 
+const getUserList = async (req, res, next) => {
+    try {
+        const userListRes = await userService.getUserList();
+        if (!userListRes.success) {
+            return HttpResponse.error(res, { message: userListRes.message, statusCode: userListRes.statusCode });
+        }
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp };
+        const userList = userListRes.data;
+
+        return HttpResponse.success(res, { message: userListRes.message, data: userList, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { data: [], statusCode: 500 });
+    }
+};
+
+
+const getUserKycDocs = async (req, res, next) => {
+    try {
+        const userListRes = await userService.getUserKycDocs();
+        if (!userListRes.success) {
+            return HttpResponse.error(res, { message: userListRes.message, statusCode: userListRes.statusCode });
+        }
+
+        const userList = userListRes.data;
+
+        return HttpResponse.success(res, { message: userListRes.message, data: userList, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { data: [], statusCode: 500 });
+    }
+};
+
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs };

@@ -46,7 +46,9 @@ const USER_MESSAGES = {
     CREATE_FAILED: 'Error encountered while creating user profile',
     EMAIL_ALREADY_EXISTS: 'A user with this email already exists',
     ROLE_NOT_FOUND: 'Company role not found for this account',
-    VALIDATION_FAILED: 'Validation failed for the submitted fields'
+    VALIDATION_FAILED: 'Validation failed for the submitted fields',
+    USER_LISTING_FAILURE: 'Error encountered while fetching user list',
+    USER_LISTING_SUCCESS: 'User list fetched successfully',
 };
 
 const LOGIN_MESSAGES = {
@@ -57,7 +59,9 @@ const LOGIN_MESSAGES = {
 
 const KYC_MESSAGES = {
     FETCH_SUCCESS: 'Fetched KYC documents successfully',
-    FETCH_FAILED: 'Error encountered while fetching KYC documents'
+    FETCH_FAILED: 'Error encountered while fetching KYC documents',
+    KYC_LISTING_SUCCESS: 'KYC documents fetched successfully',
+    KYC_LISTING_FAILED: 'Error encountered while fetching KYC documents',
 }
 
 const ENCRYPT_DECRYPT_MESSAGES = {

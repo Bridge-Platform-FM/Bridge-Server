@@ -48,9 +48,70 @@ const getCompanyUser_role = async (userId, companyId) => {
     );
 };
 
+const getUserList = async () => {
+    return await sequelize.query(
+        `select 
+            u.first_name, 
+            u.last_name, 
+            c.company_email, 
+            c.company_name, 
+            c.country_code, 
+            c.mobile_number, 
+            c.is_email_verified, 
+            c.is_mobile_number_verified, 
+            c.is_kyc_verified     
+        from "user" u join company c on u.company_email = c.company_email 
+        where u.is_deleted is not true and c.is_deleted is not true`,
+        {
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
+const getUserKycDocs = async () => {
+    return await sequelize.query(
+        `SELECT
+            u.id AS uid,
+            c.id AS cid,
+            u.first_name,
+            u.last_name,
+            c.company_email,
+            c.company_name,
+            c.country_code,
+            c.mobile_number,
+            c.is_email_verified,
+            c.is_mobile_number_verified,
+            c.is_kyc_verified,
+            k.id AS kyc_id,
+            k.document_type,
+            k.document_number,
+            k.document_number_iv,
+            k.document_number_auth_tag,
+            k.front_s3_key,
+            k.front_file_name,
+            k.back_s3_key,
+            k.back_file_name,
+            k.status AS kyc_status,
+            k.rejection_reason,
+            k.verified_at,
+            k.created_at AS kyc_uploaded_at
+        FROM "user" u
+        JOIN company c ON u.company_email = c.company_email
+        LEFT JOIN kyc_info k ON k.user_id = u.id AND k.is_deleted IS NOT TRUE
+        WHERE u.is_deleted IS NOT TRUE
+        ORDER BY u.id, k.created_at`,
+        {
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
+
 module.exports = {
     createUser,
     updateUser,
     findByEmail,
-    getCompanyUser_role
+    getCompanyUser_role,
+    getUserList,
+    getUserKycDocs
 };

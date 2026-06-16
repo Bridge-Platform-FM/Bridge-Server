@@ -14,4 +14,8 @@ router.post('/auth/mfa/verify-otp', adminMiddleware, adminController.verifyMfaOt
 
 router.post('auth/mfa/resend-otp', adminMiddleware, adminController.resendMfaOtp);
 
+router.get('/get-user-list', adminMiddleware, adminController.getUserList);
+
+router.get('/get-user-kyc_docs', adminMiddleware, adminController.getUserKycDocs);
+
 module.exports = router;

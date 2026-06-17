@@ -57,6 +57,14 @@ const updatePhoneVerifiedStatus = async (company_id, status, { transaction }) =>
     return updatedCompany;
 };
 
+const updateKycStatus = async (companyId, { isKycVerified, status, rejectionReason }, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { is_kyc_verified: isKycVerified, kyc_status: status, kyc_rejection_reason: rejectionReason ?? null, is_kyc_verified: status === 'Approved' },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
 module.exports = {
     findByEmail,
     findCompanyWithRoleByEmail,
@@ -64,5 +72,6 @@ module.exports = {
     createCompany,
     createCompanyUserRole,
     updateEmailVerifiedStatus,
-    updatePhoneVerifiedStatus
+    updatePhoneVerifiedStatus,
+    updateKycStatus
 };

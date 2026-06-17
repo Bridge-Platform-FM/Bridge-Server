@@ -44,8 +44,8 @@ const getUserKycDocs = async () => {
         for (const row of rows) {
             if (!userMap.has(row.uid)) {
                 userMap.set(row.uid, {
-                    uid: row.uid,
-                    cid: row.cid,
+                    user_id: row.uid,
+                    company_id: row.cid,
                     first_name: row.first_name,
                     last_name: row.last_name,
                     company_email: row.company_email,
@@ -54,7 +54,7 @@ const getUserKycDocs = async () => {
                     mobile_number: row.mobile_number,
                     is_email_verified: row.is_email_verified,
                     is_mobile_number_verified: row.is_mobile_number_verified,
-                    is_kyc_verified: row.is_kyc_verified,
+                    kyc_status: row.kyc_status,
                     kyc_documents: []
                 });
             }

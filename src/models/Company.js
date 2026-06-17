@@ -114,6 +114,17 @@ module.exports = (sequelize) => {
             defaultValue: false
         },
 
+        kyc_status: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: 'Pending'
+        },
+
+        kyc_rejection_reason: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

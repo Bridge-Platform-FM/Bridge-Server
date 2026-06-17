@@ -3,6 +3,7 @@ const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
+const userRepository = require('../repositories/userRepository');
 const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
@@ -112,13 +113,18 @@ const verifyOtp = async (req, res, next) => {
             });
         }
 
+        const user = await userRepository.findByEmail(req.email);
+        const first_name = user?.first_name ?? null;
+        const last_name = user?.last_name ?? null;
+        const role = req.role ?? null;
+
         // If both channels verified, send status to client to enable continue button
         if (statusResult.success) {
             const companyData = statusResult.data;
             if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
                 return HttpResponse.success(res, {
                     message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
-                    data: { bothChannelsVerified: true },
+                    data: { bothChannelsVerified: true, first_name, last_name, role },
                     statusCode: 200
                 });
             }
@@ -126,6 +132,7 @@ const verifyOtp = async (req, res, next) => {
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
+            data: { first_name, last_name, role },
             statusCode: 200,
         });
 

@@ -1,10 +1,11 @@
 'use strict';
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES } = require('../utils/constant');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
 const userService = require('../services/userService');
+const kycService = require('../services/kycService');
 
 
 const login = async (req, res, next) => {
@@ -137,4 +138,66 @@ const getUserKycDocs = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs };
+const kycDocumentAction = async (req, res, next) => {
+    try {
+        const adminId = req.adminId;
+        const { kyc_id, action } = req.body;
+
+        if (!kyc_id || !action) {
+            return HttpResponse.error(res, { message: 'kyc_id and action are required', statusCode: 400 });
+        }
+
+        if (!['approve', 'reject'].includes(action)) {
+            return HttpResponse.error(res, { message: 'action must be approve or reject', statusCode: 400 });
+        }
+
+        const result = await kycService.updateDocumentStatus({ kycInfoId: kyc_id, action, adminId });
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: KYC_MESSAGES.DOCUMENT_ACTION_FAILED, statusCode: 500 });
+    }
+};
+
+const kycReviewAction = async (req, res, next) => {
+    try {
+        console.log("Innnnnn")
+        const adminId = req.adminId;
+        const { company_id, action, rejection_reason } = req.body;
+
+        if (!company_id || !action) {
+            return HttpResponse.error(res, { message: 'company_id and action are required', statusCode: 400 });
+        }
+
+        if (!['approve', 'reject'].includes(action)) {
+            return HttpResponse.error(res, { message: 'action must be approve or reject', statusCode: 400 });
+        }
+
+        if (action === 'reject' && !rejection_reason) {
+            return HttpResponse.error(res, { message: 'rejection_reason is required when rejecting', statusCode: 400 });
+        }
+
+        const result = await kycService.updateReviewStatus({
+            companyId: company_id,
+            action,
+            rejectionReason: rejection_reason,
+            adminId
+        });
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: KYC_MESSAGES.REVIEW_ACTION_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction };

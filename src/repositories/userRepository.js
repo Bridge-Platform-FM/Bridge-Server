@@ -59,9 +59,12 @@ const getUserList = async () => {
             c.mobile_number, 
             c.is_email_verified, 
             c.is_mobile_number_verified, 
-            c.is_kyc_verified     
-        from "user" u join company c on u.company_email = c.company_email 
-        where u.is_deleted is not true and c.is_deleted is not true`,
+            c.kyc_status,
+            (select crm.role_code from company_role_master crm where id = cur.role_id) as role
+        from "user" u 
+        join company c on u.company_email = c.company_email 
+        join company_user_role cur on cur.company_id = c.id and cur.user_id = u.id
+        where u.is_deleted is not true and c.is_deleted is not true and cur.is_default_role is true`,
         {
             type: QueryTypes.SELECT
         }
@@ -81,7 +84,7 @@ const getUserKycDocs = async () => {
             c.mobile_number,
             c.is_email_verified,
             c.is_mobile_number_verified,
-            c.is_kyc_verified,
+            c.kyc_status,
             k.id AS kyc_id,
             k.document_type,
             k.document_number,

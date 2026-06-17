@@ -62,6 +62,11 @@ const KYC_MESSAGES = {
     FETCH_FAILED: 'Error encountered while fetching KYC documents',
     KYC_LISTING_SUCCESS: 'KYC documents fetched successfully',
     KYC_LISTING_FAILED: 'Error encountered while fetching KYC documents',
+    DOCUMENT_ACTION_SUCCESS: 'KYC document status updated successfully',
+    DOCUMENT_ACTION_FAILED: 'Error encountered while updating KYC document status',
+    REVIEW_ACTION_SUCCESS: 'KYC review status updated successfully',
+    REVIEW_ACTION_FAILED: 'Error encountered while updating KYC review status',
+    DOCUMENT_NOT_FOUND: 'KYC document not found',
 }
 
 const ENCRYPT_DECRYPT_MESSAGES = {

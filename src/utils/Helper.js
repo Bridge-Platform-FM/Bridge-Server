@@ -19,8 +19,24 @@ const waterMarkFunction = (company_id, user_id) => {
     return `Bridge |${company_id} | ${user_id} | ${date}`
 }
 
+const maskPhone = (phone) => {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 4) return "(+91 ••• ••• 4493)";
+  return `••• ••• ${digits.slice(-4)}`;
+}
+ 
+const maskEmail = (email) => {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "(j•••@company.com)";
+  if (local.length <= 5) return `${local}@${domain}`;
+  const hidden = local.length - 5; // 1 first char + 4 last chars revealed
+  return `${local[0]}${".".repeat(hidden)}${local.slice(-4)}@${domain}`;
+}
+
 module.exports = {
     generateOTP,
     hashPassword,
-    waterMarkFunction
+    waterMarkFunction,
+    maskPhone,
+    maskEmail
 };

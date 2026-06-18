@@ -64,8 +64,15 @@ const verifyMfaOtp = async (req, res, next) => {
         }
 
         let redirectRoute = REDIRECT_ROUTES.DASHBOARD.DASHBOARD;
+
+        const adminRes = await adminService.findByEmail(email);
+        if (!adminRes.success) {
+            return HttpResponse.error(res, { message: adminRes.message, statusCode: adminRes.statusCode });
+        }
+
+        const admin = adminRes.data;
         
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { redirectRoute: redirectRoute }, statusCode: 200 });
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });

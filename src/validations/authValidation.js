@@ -13,6 +13,10 @@ const companyRegistrationSchema = Joi.object({
         'string.email': 'email must be a valid email address',
         'any.required': 'email is required'
     }),
+    countryCode: Joi.string().length(3).required().messages({
+        'string.length': 'countryCode must be 3 characters long',
+        'any.required': 'countryCode is required'
+    }),
     phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).required().messages({
         'string.pattern.base': 'phoneNumber must be a valid 10-digit Indian phone number',
         'any.required': 'phoneNumber is required'

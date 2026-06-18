@@ -40,6 +40,7 @@ const createCompany = async (data) => {
         const companyData = {
             company_name: data.companyName,
             company_email: data.email, 
+            country_code: data.countryCode,
             mobile_number: data.phoneNumber,
             password: await hashPassword(data.password),
             gst_number: data?.gstNumber,

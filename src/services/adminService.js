@@ -5,6 +5,8 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { ADMIN_MESSAGES } = require('../utils/constant');
+const { maskPhone, maskEmail } = require('../utils/Helper');
+
 
 const login = async (email, password) => {
     try {
@@ -28,9 +30,12 @@ const login = async (email, password) => {
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
+        const maskedMobile = maskPhone(admin.country_code + admin.mobile_number);
+        const maskedEmail = maskEmail(admin.email);
+
         return ServiceResponse.success({
             message: ADMIN_MESSAGES.LOGIN_SUCCESS,
-            data: { accessToken, refreshToken },
+            data: { accessToken, refreshToken, maskedMobile, maskedEmail },
             statusCode: 200
         });
     } catch (error) {
@@ -51,4 +56,4 @@ const findByEmail = async (email) => {
 
 
 
-module.exports = { login };
+module.exports = { login, findByEmail };

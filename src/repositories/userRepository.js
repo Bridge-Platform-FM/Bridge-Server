@@ -102,7 +102,7 @@ const getUserKycDocs = async () => {
         JOIN company c ON u.company_email = c.company_email
         LEFT JOIN kyc_info k ON k.user_id = u.id AND k.is_deleted IS NOT TRUE
         WHERE u.is_deleted IS NOT TRUE
-        ORDER BY u.id, k.created_at`,
+        ORDER BY k.created_at DESC`,
         {
             type: QueryTypes.SELECT
         }

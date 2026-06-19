@@ -165,6 +165,7 @@ const verifyOTP = async (channelId, enteredOTP) => {
 
         // Success cleanup
         await redis.del(`otp:${channelId}`);
+        await redis.del(`otp_resend:${channelId}`);
         await redis.del(`otp_attempt:${channelId}`);
 
         return ServiceResponse.success({

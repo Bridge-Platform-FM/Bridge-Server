@@ -111,7 +111,7 @@ const getUserProfile = async ({ companyId, userId, roleId }) => {
 
         const fieldsConfig = await userRepository.getUserProfileFieldsConfig(roleId);
 
-        const data = fieldsConfig.map(config => {
+        const data = fieldsConfig.filter(config => config.field_name !== 'company_name').map(config => {
             let value = '';
             if (config.source_table === 'user') {
                 value = user[config.field_name];
@@ -144,4 +144,21 @@ const getUserProfile = async ({ companyId, userId, roleId }) => {
     }
 };
 
-module.exports = { createUserProfile, getUserList, getUserKycDocs, getUserProfile };
+const updateUserProfile = async (userData, user_id) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const user = await userRepository.updateUser(userData, user_id, { transaction });
+        await transaction.commit();
+        return ServiceResponse.success({
+            message: USER_MESSAGES.UPDATE_SUCCESS,
+            data: { user },
+            statusCode: 200
+        });
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.UPDATE_FAILED, statusCode: 500 });
+    }
+}
+
+module.exports = { createUserProfile, getUserList, getUserKycDocs, getUserProfile, updateUserProfile };

@@ -44,6 +44,8 @@ const ROLE_FIELD_METADATA_MESSAGES = {
 const USER_MESSAGES = {
     CREATE_SUCCESS: 'User profile created successfully',
     CREATE_FAILED: 'Error encountered while creating user profile',
+    UPDATE_SUCCESS: 'User profile updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating user profile',
     EMAIL_ALREADY_EXISTS: 'A user with this email already exists',
     ROLE_NOT_FOUND: 'Company role not found for this account',
     VALIDATION_FAILED: 'Validation failed for the submitted fields',

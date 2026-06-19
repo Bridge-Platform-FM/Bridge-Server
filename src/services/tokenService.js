@@ -58,7 +58,13 @@ const refreshToken = async (plainRefreshToken) => {
         const userData = {
             companyId: decoded.companyId,
             email: decoded.email,
-            role: decoded.role
+            companyName: decoded.companyName,
+            mobileNumber: decoded.mobileNumber,
+            countryCode: decoded.countryCode,
+            role: decoded.role,
+            roleId: decoded.roleId,
+            userId: decoded.userId,
+            userName: decoded.userName
         }
 
         // 2. Create a new access token

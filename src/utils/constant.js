@@ -82,6 +82,13 @@ const ADMIN_MESSAGES = {
     LOGIN_FAILED: 'Error encountered while logging in'
 }
 
+const MATCHING_MESSAGES = {
+    MATCH_SUCCESS: 'Matches retrieved successfully',
+    MATCH_FAILED: 'Error encountered while retrieving matches',
+    PROFILE_NOT_FOUND: 'Profile not found',
+    NO_MATCHES_FOUND: 'No matching profiles found'
+};
+
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
     KYC: 'kyc'
@@ -124,6 +131,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,  
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, 
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
-    ROLES
+    ROLES, MATCHING_MESSAGES
  };
 

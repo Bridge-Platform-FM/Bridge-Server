@@ -65,6 +65,12 @@ const updateKycStatus = async (companyId, { isKycVerified, status, rejectionReas
     return updatedCompany;
 };
 
+const getCompanyById = async (companyId) => {
+    return await Company.findOne({
+        where: { id: companyId, is_deleted: false }
+    });
+};
+
 module.exports = {
     findByEmail,
     findCompanyWithRoleByEmail,
@@ -73,5 +79,6 @@ module.exports = {
     createCompanyUserRole,
     updateEmailVerifiedStatus,
     updatePhoneVerifiedStatus,
-    updateKycStatus
+    updateKycStatus,
+    getCompanyById
 };

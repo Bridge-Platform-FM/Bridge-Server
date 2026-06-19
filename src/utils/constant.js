@@ -44,6 +44,8 @@ const ROLE_FIELD_METADATA_MESSAGES = {
 const USER_MESSAGES = {
     CREATE_SUCCESS: 'User profile created successfully',
     CREATE_FAILED: 'Error encountered while creating user profile',
+    UPDATE_SUCCESS: 'User profile updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating user profile',
     EMAIL_ALREADY_EXISTS: 'A user with this email already exists',
     ROLE_NOT_FOUND: 'Company role not found for this account',
     VALIDATION_FAILED: 'Validation failed for the submitted fields',
@@ -81,6 +83,13 @@ const ADMIN_MESSAGES = {
     LOGIN_SUCCESS: 'Logged in successfully',
     LOGIN_FAILED: 'Error encountered while logging in'
 }
+
+const MATCHING_MESSAGES = {
+    MATCH_SUCCESS: 'Matches retrieved successfully',
+    MATCH_FAILED: 'Error encountered while retrieving matches',
+    PROFILE_NOT_FOUND: 'Profile not found',
+    NO_MATCHES_FOUND: 'No matching profiles found'
+};
 
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
@@ -124,6 +133,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,  
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, 
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
-    ROLES
+    ROLES, MATCHING_MESSAGES
  };
 

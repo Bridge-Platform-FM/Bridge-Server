@@ -1,6 +1,7 @@
 'use strict';
 const { sequelize } = require('../models');
 const userRepository = require('../repositories/userRepository');
+const companyRepository = require('../repositories/companyRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { USER_MESSAGES, KYC_MESSAGES } = require('../utils/constant');
@@ -89,4 +90,75 @@ const getUserKycDocs = async () => {
     }
 }
 
-module.exports = { createUserProfile, getUserList, getUserKycDocs };
+const getUserProfile = async ({ companyId, userId, roleId }) => {
+    try {
+        if (!userId || !roleId || !companyId) {
+            return ServiceResponse.error({
+                message: `Missing required token fields: userId=${userId}, roleId=${roleId}, companyId=${companyId}. Please log in again to get a fresh token.`,
+                statusCode: 400
+            });
+        }
+
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            return ServiceResponse.error({ message: 'User not found.', statusCode: 404 });
+        }
+
+        const company = await companyRepository.getCompanyById(companyId);
+        if (!company) {
+            return ServiceResponse.error({ message: 'Company not found.', statusCode: 404 });
+        }
+
+        const fieldsConfig = await userRepository.getUserProfileFieldsConfig(roleId);
+
+        const data = fieldsConfig.filter(config => config.field_name !== 'company_name').map(config => {
+            let value = '';
+            if (config.source_table === 'user') {
+                value = user[config.field_name];
+            } else if (config.source_table === 'company') {
+                value = company[config.field_name];
+            }
+
+            if (value === null || value === undefined) {
+                value = '';
+            }
+
+            return {
+                label: config.display_name,
+                columnName: config.field_name,
+                value: value,
+                isEditable: config.is_editable,
+                type: config.type
+            };
+        });
+
+        return ServiceResponse.success({
+            message: 'User profile retrieved successfully.',
+            data: data,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        console.error('[getUserProfile ERROR]', error.message, error.stack);
+        return ServiceResponse.error({ message: error.message || 'Error retrieving user profile.', statusCode: 500 });
+    }
+};
+
+const updateUserProfile = async (userData, user_id) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const user = await userRepository.updateUser(userData, user_id, { transaction });
+        await transaction.commit();
+        return ServiceResponse.success({
+            message: USER_MESSAGES.UPDATE_SUCCESS,
+            data: { user },
+            statusCode: 200
+        });
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.UPDATE_FAILED, statusCode: 500 });
+    }
+}
+
+module.exports = { createUserProfile, getUserList, getUserKycDocs, getUserProfile, updateUserProfile };

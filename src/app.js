@@ -3,6 +3,7 @@ const express = require('express');
 // require('dotenv').config({
 //   path: '.env.uat'
 // });
+// local
 require('dotenv').config()
 const cors = require('cors');
 const env_config = require('./configs/env_configs');
@@ -14,6 +15,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const matchingRoutes = require('./routes/matchingRoutes');
 const scanErrorMiddleware = require('./middleware/scanError');
 
 const app = express();
@@ -26,6 +28,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/file', fileRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/matching', matchingRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {

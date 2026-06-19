@@ -1,5 +1,5 @@
 'use strict';
-const { User, sequelize } = require('../models');
+const { User, UserProfileFieldMaster, sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
 
 const createUser = async (userData, transaction) => {
@@ -109,6 +109,18 @@ const getUserKycDocs = async () => {
     );
 };
 
+const getUserById = async (userId) => {
+    return await User.findOne({
+        where: { id: userId, is_deleted: false }
+    });
+};
+
+const getUserProfileFieldsConfig = async (roleId) => {
+    return await UserProfileFieldMaster.findAll({
+        where: { role_id: roleId, is_deleted: false },
+        order: [['id', 'ASC']]
+    });
+};
 
 module.exports = {
     createUser,
@@ -116,5 +128,7 @@ module.exports = {
     findByEmail,
     getCompanyUser_role,
     getUserList,
-    getUserKycDocs
+    getUserKycDocs,
+    getUserById,
+    getUserProfileFieldsConfig
 };

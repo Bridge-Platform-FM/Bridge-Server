@@ -45,4 +45,62 @@ const createUserProfile = async (req, res, next) => {
     }
 };
 
-module.exports = { createUserProfile };
+const getUserProfile = async (req, res, next) => {
+    try {
+        const { companyId } = req;
+        const userId = req.userId;
+        const roleId = req.roleId;
+
+        const profileResponse = await userService.getUserProfile({ companyId, userId, roleId });
+        if (!profileResponse.success) {
+            return HttpResponse.error(res, {
+                message: profileResponse.message,
+                data: profileResponse.data,
+                statusCode: profileResponse.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: profileResponse.message,
+            data: profileResponse.data,
+            statusCode: profileResponse.statusCode
+        });
+    } catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: 'Failed to retrieve profile details.', statusCode: 500 });
+    }
+};
+
+const updateUserProfile = async (req, res, next) => {
+    try {
+
+        const companyId = req.companyId; ;
+        const userId = req.userId;
+        const roleId = req.roleId;
+    
+        const requstPayload = req.body;
+    
+        const updateUserRes = await userService.updateUserProfile(requstPayload, userId);
+        if (!updateUserRes.success) {
+            return HttpResponse.error(res, {
+                message: updateUserRes.message,
+                data: updateUserRes.data,
+                statusCode: updateUserRes.statusCode
+            });
+    
+        }
+        return HttpResponse.success(res, {
+            message: updateUserRes.message,
+            data: updateUserRes.data,
+            statusCode: updateUserRes.statusCode
+        });
+    }
+    catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: USER_MESSAGES.UPDATE_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { createUserProfile, getUserProfile, updateUserProfile };

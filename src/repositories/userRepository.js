@@ -36,7 +36,7 @@ const findByEmail = async (email) => {
 } 
 
 
-const getCompanyUser_role = async (userId, companyId) => {
+const getCompanyUser_role = async (companyId, userId) => {
     return await sequelize.query(
         `select crm.id, crm.role_name, crm.role_code, crm.role_description
         from company_user_role cur join company_role_master crm on cur.role_id = crm.id

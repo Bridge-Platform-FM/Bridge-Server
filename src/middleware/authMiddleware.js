@@ -1,6 +1,6 @@
 'use strict';
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES } = require('../utils/constant');
+const { AUTH_MESSAGES, TOKEN_TYPES, ROLES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken } = require('../utils/token');
 
@@ -20,14 +20,28 @@ const authMiddleware = (req, res, next) => {
         const token = authHeader.split(' ')[1];
         const decoded = verifyAccessToken(token);
 
+        if (!decoded.type === TOKEN_TYPES.AUTH_ACCESS_TOKEN) {
+            return HttpResponse.error(res, {
+                message: AUTH_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 401
+            });
+        }
+
+        if (!ROLES.USER.includes(decoded.role)) {
+            return HttpResponse.error(res, {
+                message: AUTH_MESSAGES.FORBIDDEN,
+                statusCode: 403
+            });
+        }
+
         // Attach decoded payload to request object
         req.companyId = decoded.companyId;
         req.companyName = decoded.companyName;
         req.email = decoded.email;
         req.mobileNumber = decoded.mobileNumber;
         req.coutryCode = decoded.coutryCode;
-        req.userId = decoded.userId
-        req.roleId = decoded.roleId
+        req.userId = decoded.userId;
+        req.roleId = decoded.roleId;
         req.role = decoded.role;
         next();
     } catch (error) {

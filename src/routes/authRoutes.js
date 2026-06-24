@@ -8,9 +8,11 @@ const {
     verifyOtpSchema,
     resendOtpSchema,
     refreshTokenSchema,
-    loginSchema
+    loginSchema,
+    resetPasswordSchema
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
+const resetPasswordMiddleware = require('../middleware/resetPasswordMiddleware');
 
 
 // Route for starting Company registration and generating OTPs
@@ -34,5 +36,11 @@ router.post('/mfa/trigger-otp', authMiddleware, authController.triggerOtp);
 router.post('/mfa/verify-otp', authMiddleware, authController.verifyMfaOtp);
 
 router.post('/mfa/resend-otp', authMiddleware, authController.resendMfaOtp);
+
+router.post('/reset-password/trigger-otp', authController.resetPasswordTriggerOtp);
+
+router.post('/reset-password/verify-otp', authController.resetPasswordVerifyOtp);
+
+router.post('/reset-password', resetPasswordMiddleware, validate(resetPasswordSchema), authController.resetPassword);
 
 module.exports = router;

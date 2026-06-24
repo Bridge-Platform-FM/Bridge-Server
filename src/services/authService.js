@@ -135,11 +135,29 @@ const getCompanyUser_role = async (company_id, user_id) => {
 }
 
 
+const resetPassword = async (email, newPassword) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const hashedPassword = await hashPassword(newPassword);
+
+        await companyRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
+        await userRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
+
+        await transaction.commit();
+        return ServiceResponse.success({ message: AUTH_MESSAGES.PASSWORD_RESET_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: AUTH_MESSAGES.PASSWORD_RESET_FAILED, statusCode: 500 });
+    }
+};
+
 module.exports = {
     checkPassword,
     createCompany,
     updateChannelVerifiedStatus,
     getCompanyByEmail,
     getUserByEmail,
-    getCompanyUser_role
+    getCompanyUser_role,
+    resetPassword
 };

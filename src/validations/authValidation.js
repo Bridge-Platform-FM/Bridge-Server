@@ -127,11 +127,20 @@ const validate = (schema) => {
     };
 };
 
+const resetPasswordSchema = Joi.object({
+    newPassword: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/).required().messages({
+        'string.min': 'newPassword must be at least 8 characters long',
+        'string.pattern.base': 'newPassword must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'any.required': 'newPassword is required'
+    })
+});
+
 module.exports = {
     validate,
     companyRegistrationSchema,
     verifyOtpSchema,
     resendOtpSchema,
     refreshTokenSchema,
-    loginSchema
+    loginSchema,
+    resetPasswordSchema
 };

@@ -363,6 +363,120 @@ const resendMfaOtp = async (req, res, next) => {
     }
 };
 
+const resetPasswordTriggerOtp = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
+        }
+        const existingCompany = existingCompanyRes.data;
+        if (!existingCompany) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.USER_NOT_FOUND,
+                statusCode: 400
+            });
+        }
+
+        const result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: 400
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            statusCode: 200
+        });
+
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: OTP_MESSAGES.OTP_GENERATION_FAILED,
+            statusCode: 500
+        });
+    }
+}
+
+const resetPasswordVerifyOtp = async (req, res, next) => {
+    try {
+        const { email, otp } = req.body;
+
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
+        }
+
+        const company = existingCompanyRes.data;
+        if (!company) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.USER_NOT_FOUND,
+                statusCode: 400
+            });
+        }
+
+        const tokenRes = await tokenService.generateResetPasswordAcessToken(email);
+        if (!tokenRes.success) {
+            return HttpResponse.error(res, { message: tokenRes.message, statusCode: tokenRes.statusCode });
+        }
+
+        const accessToken = tokenRes.data.accessToken;
+
+        const verifyOtpRes = await otpService.verifyOTP(email, otp);
+
+        if (!verifyOtpRes.success) {
+            return HttpResponse.error(res, { message: verifyOtpRes.message, statusCode: verifyOtpRes.statusCode });
+        }
+
+        return HttpResponse.success(res, { data: { accessToken }, message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
+    }
+};
+
+const resetPassword = async (req, res, next) => {
+    try {
+        const email = req.email;
+        const { newPassword } = req.body;
+
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
+        }
+
+        const company = existingCompanyRes.data;
+        if (!company) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.USER_NOT_FOUND,
+                statusCode: 400
+            });
+        }
+
+        const result = await authService.resetPassword(email, newPassword);
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: AUTH_MESSAGES.PASSWORD_RESET_FAILED, statusCode: 500 });
+    }
+};
+
 module.exports = {
     companyRegistration,
     verifyOtp,
@@ -371,5 +485,8 @@ module.exports = {
     login,
     triggerOtp,
     verifyMfaOtp,
-    resendMfaOtp
+    resendMfaOtp,
+    resetPasswordTriggerOtp,
+    resetPasswordVerifyOtp,
+    resetPassword
 };

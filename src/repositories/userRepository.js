@@ -115,6 +115,14 @@ const getUserById = async (userId) => {
     });
 };
 
+const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}) => {
+    const [, [updatedUser]] = await User.update(
+        { password: hashedPassword },
+        { where: { company_email: email, is_deleted: false }, transaction, returning: true }
+    );
+    return updatedUser;
+};
+
 const getUserProfileFieldsConfig = async (roleId) => {
     return await UserProfileFieldMaster.findAll({
         where: { role_id: roleId, is_deleted: false },
@@ -130,5 +138,6 @@ module.exports = {
     getUserList,
     getUserKycDocs,
     getUserById,
-    getUserProfileFieldsConfig
+    getUserProfileFieldsConfig,
+    updatePasswordByEmail
 };

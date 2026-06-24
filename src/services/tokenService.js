@@ -2,7 +2,7 @@
 const ServiceResponse = require('../utils/ServiceResponse');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES } = require('../utils/constant');
+const { AUTH_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
 
 
 /**
@@ -28,6 +28,21 @@ const generateTokens = async (company, role, user) => {
 
         return ServiceResponse.success({
             data: { accessToken, refreshToken }
+        });
+    } catch (err) {
+        return ServiceResponse.error({
+            message: err.message || 'Error encountered while generating and sending OTP.',
+            data: []
+        });
+    }
+};
+
+const generateResetPasswordAcessToken = async (emailId) => {
+    try {
+        const payload = { emailId };
+        const accessToken = await generateAccessToken(payload, TOKEN_TYPES.RESET_PASSWORD_ACCESS_TOKEN);
+        return ServiceResponse.success({
+            data: { accessToken }
         });
     } catch (err) {
         return ServiceResponse.error({
@@ -99,5 +114,6 @@ const refreshToken = async (plainRefreshToken) => {
 
 module.exports = {
     generateTokens,
-    refreshToken
+    refreshToken,
+    generateResetPasswordAcessToken
 };

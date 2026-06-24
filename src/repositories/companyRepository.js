@@ -71,6 +71,14 @@ const getCompanyById = async (companyId) => {
     });
 };
 
+const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { password: hashedPassword },
+        { where: { company_email: email, is_deleted: false }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
 module.exports = {
     findByEmail,
     findCompanyWithRoleByEmail,
@@ -80,5 +88,6 @@ module.exports = {
     updateEmailVerifiedStatus,
     updatePhoneVerifiedStatus,
     updateKycStatus,
-    getCompanyById
+    getCompanyById,
+    updatePasswordByEmail
 };

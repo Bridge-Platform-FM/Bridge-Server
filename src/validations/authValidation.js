@@ -13,6 +13,10 @@ const companyRegistrationSchema = Joi.object({
         'string.email': 'email must be a valid email address',
         'any.required': 'email is required'
     }),
+    countryCode: Joi.string().length(3).required().messages({
+        'string.length': 'countryCode must be 3 characters long',
+        'any.required': 'countryCode is required'
+    }),
     phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).required().messages({
         'string.pattern.base': 'phoneNumber must be a valid 10-digit Indian phone number',
         'any.required': 'phoneNumber is required'
@@ -123,11 +127,20 @@ const validate = (schema) => {
     };
 };
 
+const resetPasswordSchema = Joi.object({
+    newPassword: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/).required().messages({
+        'string.min': 'newPassword must be at least 8 characters long',
+        'string.pattern.base': 'newPassword must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'any.required': 'newPassword is required'
+    })
+});
+
 module.exports = {
     validate,
     companyRegistrationSchema,
     verifyOtpSchema,
     resendOtpSchema,
     refreshTokenSchema,
-    loginSchema
+    loginSchema,
+    resetPasswordSchema
 };

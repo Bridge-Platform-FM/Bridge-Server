@@ -3,13 +3,15 @@ const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
+const userRepository = require('../repositories/userRepository');
 const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
+const { maskPhone, maskEmail } = require('../utils/Helper');
 
 //  POST /api/v1/auth/company-registration
 const companyRegistration = async (req, res, next) => {
     try {
-        const { companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber } = req.body;
+        const { companyName, email, countryCode, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber } = req.body;
 
         if (!termsAccepted) {
             return HttpResponse.error(res, {
@@ -48,7 +50,7 @@ const companyRegistration = async (req, res, next) => {
         }
         
         // remove termsAccepted from payload before saving in db
-        const createCompanyRes = await authService.createCompany({ companyName, email, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber });
+        const createCompanyRes = await authService.createCompany({ companyName, email, countryCode, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber });
         if (!createCompanyRes.success) {
             return HttpResponse.error(res, { message: createCompanyRes.message, statusCode: createCompanyRes.statusCode });
         }
@@ -112,13 +114,18 @@ const verifyOtp = async (req, res, next) => {
             });
         }
 
+        const user = await userRepository.findByEmail(req.email);
+        const first_name = user?.first_name ?? null;
+        const last_name = user?.last_name ?? null;
+        const role = req.role ?? null;
+
         // If both channels verified, send status to client to enable continue button
         if (statusResult.success) {
             const companyData = statusResult.data;
             if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
                 return HttpResponse.success(res, {
                     message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
-                    data: { bothChannelsVerified: true },
+                    data: { bothChannelsVerified: true, first_name, last_name, role },
                     statusCode: 200
                 });
             }
@@ -126,6 +133,7 @@ const verifyOtp = async (req, res, next) => {
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
+            data: { first_name, last_name, role },
             statusCode: 200,
         });
 
@@ -232,8 +240,8 @@ const login = async (req, res, next) => {
 
         const role = companyUserRoleRes.data;
 
-        const maskedMobile = existingCompany.country_code + existingCompany.mobile_number;
-        const maskedEmail = existingCompany.company_email;
+        const maskedMobile = maskPhone(existingCompany.country_code + existingCompany.mobile_number);
+        const maskedEmail = maskEmail(existingCompany.company_email);
 
         const tokens = await tokenService.generateTokens(existingCompany, role, existingUser);
         const { accessToken, refreshToken } = tokens.data;
@@ -284,9 +292,17 @@ const verifyMfaOtp = async (req, res, next) => {
             });
         }
 
-        const company = existingCompanyRes.data;
+        const existingUserRes = await authService.getUserByEmail(email);
+        if (!existingUserRes.success) {
+            return HttpResponse.error(res, {
+                message: existingUserRes.message,
+                statusCode: existingUserRes.statusCode
+            });
+        }
 
+        const company = existingCompanyRes.data;
         const mobileNumber = company.mobile_number;
+        const user = existingUserRes.data;
 
         const { otp, channel } = req.body;
         let channelId = channel === CHANNEL_TYPE.EMAIL ? email : mobileNumber;
@@ -307,7 +323,7 @@ const verifyMfaOtp = async (req, res, next) => {
         }
 
 
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified }, statusCode: 200 });
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
@@ -347,6 +363,120 @@ const resendMfaOtp = async (req, res, next) => {
     }
 };
 
+const resetPasswordTriggerOtp = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
+        }
+        const existingCompany = existingCompanyRes.data;
+        if (!existingCompany) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.USER_NOT_FOUND,
+                statusCode: 400
+            });
+        }
+
+        const result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: 400
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            statusCode: 200
+        });
+
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: OTP_MESSAGES.OTP_GENERATION_FAILED,
+            statusCode: 500
+        });
+    }
+}
+
+const resetPasswordVerifyOtp = async (req, res, next) => {
+    try {
+        const { email, otp } = req.body;
+
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
+        }
+
+        const company = existingCompanyRes.data;
+        if (!company) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.USER_NOT_FOUND,
+                statusCode: 400
+            });
+        }
+
+        const tokenRes = await tokenService.generateResetPasswordAcessToken(email);
+        if (!tokenRes.success) {
+            return HttpResponse.error(res, { message: tokenRes.message, statusCode: tokenRes.statusCode });
+        }
+
+        const accessToken = tokenRes.data.accessToken;
+
+        const verifyOtpRes = await otpService.verifyOTP(email, otp);
+
+        if (!verifyOtpRes.success) {
+            return HttpResponse.error(res, { message: verifyOtpRes.message, statusCode: verifyOtpRes.statusCode });
+        }
+
+        return HttpResponse.success(res, { data: { accessToken }, message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
+    }
+};
+
+const resetPassword = async (req, res, next) => {
+    try {
+        const email = req.email;
+        const { newPassword } = req.body;
+
+        const existingCompanyRes = await authService.getCompanyByEmail(email);
+        if (!existingCompanyRes.success) {
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
+        }
+
+        const company = existingCompanyRes.data;
+        if (!company) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.USER_NOT_FOUND,
+                statusCode: 400
+            });
+        }
+
+        const result = await authService.resetPassword(email, newPassword);
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: AUTH_MESSAGES.PASSWORD_RESET_FAILED, statusCode: 500 });
+    }
+};
+
 module.exports = {
     companyRegistration,
     verifyOtp,
@@ -355,5 +485,8 @@ module.exports = {
     login,
     triggerOtp,
     verifyMfaOtp,
-    resendMfaOtp
+    resendMfaOtp,
+    resetPasswordTriggerOtp,
+    resetPasswordVerifyOtp,
+    resetPassword
 };

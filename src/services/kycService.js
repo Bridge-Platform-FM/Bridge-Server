@@ -1,9 +1,10 @@
 'use strict';
 const { sequelize } = require('../models');
 const kycInfoRepository = require('../repositories/kycInfoRepository');
+const companyRepository = require('../repositories/companyRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES } = require('../utils/constant');
+const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS } = require('../utils/constant');
 const { decrypt } = require("../utils/encryption");
 
 const createKycInfo = async (records) => {
@@ -103,4 +104,41 @@ const prepareResponse = (decyptedKycInfos) => {
     
 }
 
-module.exports = { createKycInfo, getKycInfo, decyptKycInfo, prepareResponse };
+const updateDocumentStatus = async ({ kycInfoId, action, adminId }) => {
+    try {
+        const updated = await kycInfoRepository.updateKycRecord(kycInfoId, {
+            status: action === 'approve' ? KYC_STATUS.APPROVED : KYC_STATUS.REJECTED,
+            verified_by: adminId,
+            verified_at: new Date(),
+            updated_by: adminId
+        });
+        return ServiceResponse.success({ message: KYC_MESSAGES.DOCUMENT_ACTION_SUCCESS, data: updated, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: KYC_MESSAGES.DOCUMENT_ACTION_FAILED, statusCode: 500 });
+    }
+};
+
+const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId }) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const status = action === 'approve' ? KYC_STATUS.APPROVED : KYC_STATUS.REJECTED;
+        const reason = action === 'reject' ? (rejectionReason ?? null) : null;
+        const isKycVerified = status === KYC_STATUS.APPROVED ? true : false;
+
+        const updatedCompany = await companyRepository.updateKycStatus(
+            companyId,
+            { isKycVerified, status, rejectionReason: reason },
+            { transaction }
+        );
+
+        await transaction.commit();
+        return ServiceResponse.success({ message: KYC_MESSAGES.REVIEW_ACTION_SUCCESS, data: updatedCompany, statusCode: 200 });
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: KYC_MESSAGES.REVIEW_ACTION_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { createKycInfo, getKycInfo, updateDocumentStatus, updateReviewStatus, decyptKycInfo, prepareResponse };

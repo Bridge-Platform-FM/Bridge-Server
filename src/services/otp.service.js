@@ -54,7 +54,7 @@ const sendOTP = async (channelType, channelId) => {
         if (blocked) {
             return ServiceResponse.error({ message: OTP_MESSAGES.BLOCKED, statusCode: 403 });
         }
-        
+
         // 2. Check resend timer
         const resendExists = await redis.get(`otp_resend:${channelId}`);
         if (resendExists) {
@@ -66,7 +66,7 @@ const sendOTP = async (channelType, channelId) => {
         if (resendCount && Number(resendCount) >= Number(process.env.MAX_RESEND)) {
             return ServiceResponse.error({ message: OTP_MESSAGES.MAX_RESEND, statusCode: 400 });
         }
-        
+
         // 3. Generate OTP
         const otp = generateOTP();
         console.log(`Generated OTP for channel ${channelId}: ${otp}`);
@@ -90,7 +90,7 @@ const sendOTP = async (channelType, channelId) => {
             // TODO:- Remove hardcoded phone number and use channelId instead after testing
             // await sendOtpToPhone("+91" + channelId, otp);
         } else {
-            await sendOtpToEmail(channelId, otp);
+            // await sendOtpToEmail(channelId, otp);
         }
 
         // 7. Increment OTP resent count
@@ -165,6 +165,7 @@ const verifyOTP = async (channelId, enteredOTP) => {
 
         // Success cleanup
         await redis.del(`otp:${channelId}`);
+        await redis.del(`otp_resend:${channelId}`);
         await redis.del(`otp_attempt:${channelId}`);
 
         return ServiceResponse.success({
@@ -183,6 +184,6 @@ const verifyOTP = async (channelId, enteredOTP) => {
 };
 
 module.exports = {
-  sendOTP,
-  verifyOTP,
+    sendOTP,
+    verifyOTP,
 };

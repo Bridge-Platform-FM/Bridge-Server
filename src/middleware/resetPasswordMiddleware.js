@@ -1,6 +1,6 @@
 'use strict';
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, ROLES, TOKEN_TYPES } = require('../utils/constant');
+const { AUTH_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken } = require('../utils/token');
 
@@ -8,7 +8,7 @@ const { verifyAccessToken } = require('../utils/token');
 /**
  * Middleware to authenticate requests via JWT access token.
  */
-const adminMiddleware = (req, res, next) => {
+const resetPasswordMiddleware = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization || req.headers.Authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -19,27 +19,18 @@ const adminMiddleware = (req, res, next) => {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = verifyAccessToken(token);
+        const decoded = verifyAccessToken(token, TOKEN_TYPES.RESET_PASSWORD_ACCESS_TOKEN);
 
-        if (!decoded.type === TOKEN_TYPES.AUTH_ACCESS_TOKEN) {
+        if (!decoded.type === TOKEN_TYPES.RESET_PASSWORD_ACCESS_TOKEN) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 401
             });
         }
 
-        if (!ROLES.ADMIN.includes(decoded.role)) {
-            return HttpResponse.error(res, {
-                message: AUTH_MESSAGES.FORBIDDEN,
-                statusCode: 403
-            });
-        }
 
         // Attach decoded payload to request object
-        req.email = decoded.email;
-        req.mobileNumber = decoded.mobileNumber;
-        req.role = decoded.role;
-        req.adminId = decoded.adminId;
+        req.email = decoded.emailId;
         next();
     } catch (error) {
         errorLogger.error(error);
@@ -62,4 +53,4 @@ const adminMiddleware = (req, res, next) => {
     }
 };
 
-module.exports = adminMiddleware;
+module.exports = resetPasswordMiddleware;

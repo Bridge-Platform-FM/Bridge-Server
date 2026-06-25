@@ -1,5 +1,5 @@
 'use strict';
-const { User, sequelize } = require('../models');
+const { User, UserProfileFieldMaster, sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
 
 const createUser = async (userData, transaction) => {
@@ -36,7 +36,7 @@ const findByEmail = async (email) => {
 } 
 
 
-const getCompanyUser_role = async (userId, companyId) => {
+const getCompanyUser_role = async (companyId, userId) => {
     return await sequelize.query(
         `select crm.id, crm.role_name, crm.role_code, crm.role_description
         from company_user_role cur join company_role_master crm on cur.role_id = crm.id
@@ -59,9 +59,12 @@ const getUserList = async () => {
             c.mobile_number, 
             c.is_email_verified, 
             c.is_mobile_number_verified, 
-            c.is_kyc_verified     
-        from "user" u join company c on u.company_email = c.company_email 
-        where u.is_deleted is not true and c.is_deleted is not true`,
+            c.kyc_status,
+            (select crm.role_code from company_role_master crm where id = cur.role_id) as role
+        from "user" u 
+        join company c on u.company_email = c.company_email 
+        join company_user_role cur on cur.company_id = c.id and cur.user_id = u.id
+        where u.is_deleted is not true and c.is_deleted is not true and cur.is_default_role is true`,
         {
             type: QueryTypes.SELECT
         }
@@ -81,7 +84,7 @@ const getUserKycDocs = async () => {
             c.mobile_number,
             c.is_email_verified,
             c.is_mobile_number_verified,
-            c.is_kyc_verified,
+            c.kyc_status,
             k.id AS kyc_id,
             k.document_type,
             k.document_number,
@@ -99,13 +102,33 @@ const getUserKycDocs = async () => {
         JOIN company c ON u.company_email = c.company_email
         LEFT JOIN kyc_info k ON k.user_id = u.id AND k.is_deleted IS NOT TRUE
         WHERE u.is_deleted IS NOT TRUE
-        ORDER BY u.id, k.created_at`,
+        ORDER BY k.created_at DESC`,
         {
             type: QueryTypes.SELECT
         }
     );
 };
 
+const getUserById = async (userId) => {
+    return await User.findOne({
+        where: { id: userId, is_deleted: false }
+    });
+};
+
+const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}) => {
+    const [, [updatedUser]] = await User.update(
+        { password: hashedPassword },
+        { where: { company_email: email, is_deleted: false }, transaction, returning: true }
+    );
+    return updatedUser;
+};
+
+const getUserProfileFieldsConfig = async (roleId) => {
+    return await UserProfileFieldMaster.findAll({
+        where: { role_id: roleId, is_deleted: false },
+        order: [['id', 'ASC']]
+    });
+};
 
 module.exports = {
     createUser,
@@ -113,5 +136,8 @@ module.exports = {
     findByEmail,
     getCompanyUser_role,
     getUserList,
-    getUserKycDocs
+    getUserKycDocs,
+    getUserById,
+    getUserProfileFieldsConfig,
+    updatePasswordByEmail
 };

@@ -25,7 +25,9 @@ const AUTH_MESSAGES = {
     TOKEN_REFRESH_SUCCESS: 'Token refreshed successfully',
     TOKEN_REFRESH_FAILED: 'Error encountered while refreshing token',
     LOGIN_SUCCESS: 'Login successful',
-    LOGIN_FAILED: 'Error encountered while logging in'
+    LOGIN_FAILED: 'Error encountered while logging in',
+    PASSWORD_RESET_SUCCESS: 'Password updated successfully',
+    PASSWORD_RESET_FAILED: 'Error encountered while updating password'
 }
 
 const ROLE_FIELD_METADATA_MESSAGES = {
@@ -44,11 +46,14 @@ const ROLE_FIELD_METADATA_MESSAGES = {
 const USER_MESSAGES = {
     CREATE_SUCCESS: 'User profile created successfully',
     CREATE_FAILED: 'Error encountered while creating user profile',
+    UPDATE_SUCCESS: 'User profile updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating user profile',
     EMAIL_ALREADY_EXISTS: 'A user with this email already exists',
     ROLE_NOT_FOUND: 'Company role not found for this account',
     VALIDATION_FAILED: 'Validation failed for the submitted fields',
     USER_LISTING_FAILURE: 'Error encountered while fetching user list',
     USER_LISTING_SUCCESS: 'User list fetched successfully',
+    USER_NOT_FOUND: 'User not found'
 };
 
 const LOGIN_MESSAGES = {
@@ -62,6 +67,11 @@ const KYC_MESSAGES = {
     FETCH_FAILED: 'Error encountered while fetching KYC documents',
     KYC_LISTING_SUCCESS: 'KYC documents fetched successfully',
     KYC_LISTING_FAILED: 'Error encountered while fetching KYC documents',
+    DOCUMENT_ACTION_SUCCESS: 'KYC document status updated successfully',
+    DOCUMENT_ACTION_FAILED: 'Error encountered while updating KYC document status',
+    REVIEW_ACTION_SUCCESS: 'KYC review status updated successfully',
+    REVIEW_ACTION_FAILED: 'Error encountered while updating KYC review status',
+    DOCUMENT_NOT_FOUND: 'KYC document not found',
 }
 
 const ENCRYPT_DECRYPT_MESSAGES = {
@@ -76,6 +86,13 @@ const ADMIN_MESSAGES = {
     LOGIN_SUCCESS: 'Logged in successfully',
     LOGIN_FAILED: 'Error encountered while logging in'
 }
+
+const MATCHING_MESSAGES = {
+    MATCH_SUCCESS: 'Matches retrieved successfully',
+    MATCH_FAILED: 'Error encountered while retrieving matches',
+    PROFILE_NOT_FOUND: 'Profile not found',
+    NO_MATCHES_FOUND: 'No matching profiles found'
+};
 
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
@@ -111,14 +128,20 @@ const REDIRECT_ROUTES = {
 }
 
 const ROLES = {
-    user: ['STARTUP', 'INVESTOR', 'B2B'],
+    USER: ['STARTUP', 'INVESTOR', 'B2B'],
     ADMIN: ['SYS_ADMIN']
-}
+};
+
+const TOKEN_TYPES = {
+    AUTH_ACCESS_TOKEN: 'AUTH_ACCESS_TOKEN',
+    AUTH_REFRESH_ACCESS_TOKEN: 'REFRESH_ACCESS_TOKEN',
+    RESET_PASSWORD_ACCESS_TOKEN: 'RESET_PASSWORD_ACCESS_TOKEN'
+};
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES, 
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,  
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, 
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
-    ROLES
- };
+    ROLES, MATCHING_MESSAGES, TOKEN_TYPES
+};
 

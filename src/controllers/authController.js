@@ -60,7 +60,12 @@ const companyRegistration = async (req, res, next) => {
         const userObj = createCompanyRes.data.user
 
 
-        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj);
+        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj,
+            {
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
+            }
+        );
         const { accessToken, refreshToken } = tokens.data;
 
         return HttpResponse.success(res, {
@@ -210,40 +215,90 @@ const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
+        console.log('LOGIN EMAIL:', email);
+
         const existingCompanyRes = await authService.getCompanyByEmail(email);
+
+        console.log('existingCompanyRes:', existingCompanyRes);
+
         if (!existingCompanyRes.success) {
-            return HttpResponse.error(res, { message: existingCompanyRes.message, statusCode: existingCompanyRes.statusCode });
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
         }
 
         const existingCompany = existingCompanyRes.data;
 
+        console.log('existingCompany:', existingCompany);
+
         if (!existingCompany) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompanyRes.statusCode });
+            console.log('FAILED: Company not found');
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
-        const passwordRes = await authService.checkPassword(password, existingCompany.password)
+        const passwordRes = await authService.checkPassword(
+            password,
+            existingCompany.password
+        );
+
+        console.log('passwordRes:', passwordRes);
+
         if (!passwordRes.success) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompany.statusCode });
+            console.log('FAILED: Password mismatch');
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
         const existingUserRes = await authService.getUserByEmail(email);
+
+        console.log('existingUserRes:', existingUserRes);
+
         if (!existingUserRes.success) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompany.statusCode });
+            console.log('FAILED: User lookup');
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
-        const existingUser = existingUserRes.data
+        const existingUser = existingUserRes.data;
 
-        const companyUserRoleRes = await authService.getCompanyUser_role(existingCompany.id, existingUser.id);
+        console.log('existingUser:', existingUser);
+
+        const companyUserRoleRes =
+            await authService.getCompanyUser_role(
+                existingCompany.id,
+                existingUser.id
+            );
+
+        console.log('companyUserRoleRes:', companyUserRoleRes);
+
         if (!companyUserRoleRes) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: companyUserRoleRes.statusCode });
+            console.log('FAILED: CompanyUserRole');
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
+        // rest unchanged
         const role = companyUserRoleRes.data;
 
         const maskedMobile = maskPhone(existingCompany.country_code + existingCompany.mobile_number);
         const maskedEmail = maskEmail(existingCompany.company_email);
 
-        const tokens = await tokenService.generateTokens(existingCompany, role, existingUser);
+        const tokens = await tokenService.generateTokens(existingCompany, role, existingUser,
+            {
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
+            }
+        );
         const { accessToken, refreshToken } = tokens.data;
 
         return HttpResponse.success( res, {data: { accessToken, refreshToken, role: role.role_code, maskedMobile, maskedEmail }, message: LOGIN_MESSAGES.VALID_CREDENTIALS })

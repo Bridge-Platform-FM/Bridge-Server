@@ -6,6 +6,7 @@ const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS } = require('../utils/constant');
 const { decrypt } = require("../utils/encryption");
+const userService = require('./userService');
 
 const createKycInfo = async (records) => {
     const transaction = await sequelize.transaction();
@@ -131,6 +132,15 @@ const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId 
             { isKycVerified, status, rejectionReason: reason },
             { transaction }
         );
+
+        const user = await companyRepository.getCompanyUser(companyId);
+        const userDataToUpdate = {is_active: true};
+        const userId = user[0].id;
+
+        const updateUserRes = await userService.updateUserProfile(userDataToUpdate, userId);
+        if (!updateUserRes.success) {
+            return ServiceResponse.error({ message: updateUserRes.message, statusCode: updateUserRes.statusCode });
+        }
 
         await transaction.commit();
         return ServiceResponse.success({ message: KYC_MESSAGES.REVIEW_ACTION_SUCCESS, data: updatedCompany, statusCode: 200 });

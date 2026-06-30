@@ -37,14 +37,14 @@ const companyRegistration = async (req, res, next) => {
         const emailOtpRes = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
         if (!emailOtpRes.success) {
             return HttpResponse.error(res, {
-                message: REGISTRATION_MESSAGES.COMPANY_CREATION_FAILED,
+                message: emailOtpRes.message || OTP_MESSAGES.OTP_SEND_FAILED,
                 statusCode: 500
             });
         }
         const phoneOtpRes = await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber);
         if (!phoneOtpRes.success) {
             return HttpResponse.error(res, {
-                message: REGISTRATION_MESSAGES.COMPANY_CREATION_FAILED,
+                message: phoneOtpRes.message || OTP_MESSAGES.OTP_SEND_FAILED,
                 statusCode: 500
             });
         }

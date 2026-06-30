@@ -1,10 +1,26 @@
 'use strict';
 const { Company, CompanyUserRole, CompanyRoleMaster, User } = require('../models');
+const { sequelize } = require('../models');
+const { QueryTypes } = require('sequelize');
 
 const findByEmail = async (email) => {
     return await Company.findOne({
         where: { company_email: email }
     });
+};
+
+const getCompanyUser = async (companyId) => {
+    return await sequelize.query(
+        `SELECT u.*
+         FROM "user" u
+         JOIN company c
+           ON u.company_email = c.company_email
+         WHERE c.id = :companyId`,
+        {
+            replacements: { companyId },
+            type: QueryTypes.SELECT
+        }
+    );
 };
 
 const findCompanyWithRoleByEmail = async (email) => {
@@ -89,5 +105,6 @@ module.exports = {
     updatePhoneVerifiedStatus,
     updateKycStatus,
     getCompanyById,
-    updatePasswordByEmail
+    updatePasswordByEmail,
+    getCompanyUser
 };

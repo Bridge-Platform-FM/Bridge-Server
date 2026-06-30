@@ -8,7 +8,8 @@ const OTP_MESSAGES = {
     OTP_GENERATION_FAILED: 'Error encountered while generating and sending OTP.',
     OTP_VERIFICATION_FAILED: 'Error encountered while verifying OTP.',
     OTP_VERIFY_SUCCESS: "OTP verified successfully",
-    OTP_SEND_SUCCESS: "OTP sent successfully"
+    OTP_SEND_SUCCESS: "OTP sent successfully",
+    OTP_SEND_FAILED: "failed to send OTP"
 };
 
 const REGISTRATION_MESSAGES = {

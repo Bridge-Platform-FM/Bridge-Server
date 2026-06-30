@@ -94,7 +94,13 @@ const sendOTP = async (channelType, channelId) => {
         }
 
         // 7. Increment OTP resent count
-        await redis.incr(`otp_resend_count:${channelId}`);
+        const newCount = await redis.incr(`otp_resend_count:${channelId}`);
+        if (newCount === 1) {
+            await redis.expire(
+                `otp_resend_count:${channelId}`,
+                Number(process.env.RESEND_COUNT_TTL || 3600)
+            );
+        }
 
         return ServiceResponse.success({
             message: OTP_MESSAGES.OTP_SEND_SUCCESS,
@@ -166,6 +172,7 @@ const verifyOTP = async (channelId, enteredOTP) => {
         // Success cleanup
         await redis.del(`otp:${channelId}`);
         await redis.del(`otp_resend:${channelId}`);
+        await redis.del(`otp_resend_count:${channelId}`)
         await redis.del(`otp_attempt:${channelId}`);
 
         return ServiceResponse.success({

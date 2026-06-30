@@ -1,5 +1,5 @@
 'use strict';
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES } = require('../utils/constant');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, OTP_PURPOSE, REDIRECT_ROUTES, KYC_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
@@ -33,9 +33,9 @@ const triggerOtp = async (req, res, next) => {
 
         let result;
         if (channel === CHANNEL_TYPE.EMAIL) {
-            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, { purpose: OTP_PURPOSE.ADMIN_LOGIN, isResend: false });
         } else {
-            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber, { purpose: OTP_PURPOSE.ADMIN_LOGIN, isResend: false });
         }
 
         if (!result.success) {
@@ -87,9 +87,9 @@ const resendMfaOtp = async (req, res, next) => {
 
         let result;
         if (channel === 'EMAIL') {
-            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, { purpose: OTP_PURPOSE.ADMIN_LOGIN, isResend: true });
         } else {
-            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber, { purpose: OTP_PURPOSE.ADMIN_LOGIN, isResend: true });
         }
 
         if (!result.success) {

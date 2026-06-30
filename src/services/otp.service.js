@@ -44,8 +44,19 @@ const sendOtpToEmail = async (email, otp) => {
     }
 };
 
-const sendOTP = async (channelType, channelId) => {
+const sendOTP = async (channelType, channelId, { purpose = 'default', isResend = false } = {}) => {
     try {
+        // Resend counter is scoped per flow (purpose) AND per channel, so each
+        // flow has its own independent allowance.
+        const countKey = `otp_resend_count:${purpose}:${channelId}`;
+
+        // A send counts as a "resend" if the caller flagged it OR an OTP session
+        // is already active for this channel. The login/admin MFA screen resends
+        // by re-calling trigger-otp (isResend:false), so a repeat trigger while a
+        // previous OTP is still alive must be treated as a resend.
+        const activeOtp = await redis.get(`otp:${channelId}`);
+        const countsAsResend = isResend || Boolean(activeOtp);
+
         // 0. Remove previous otp
         await redis.del(`otp:${channelId}`);
 
@@ -61,10 +72,18 @@ const sendOTP = async (channelType, channelId) => {
             return ServiceResponse.error({ message: OTP_MESSAGES.RESEND_TIMER, statusCode: 429 });
         }
 
-        // 3. Check resend count        
-        const resendCount = await redis.get(`otp_resend_count:${channelId}`);
-        if (resendCount && Number(resendCount) >= Number(process.env.MAX_RESEND)) {
-            return ServiceResponse.error({ message: OTP_MESSAGES.MAX_RESEND, statusCode: 400 });
+        // 3. Check resend count (only resends count toward the limit)
+        if (countsAsResend) {
+            const resendCount = await redis.get(countKey);
+            if (resendCount && Number(resendCount) >= Number(process.env.MAX_RESEND || 10)) {
+                return ServiceResponse.error({ message: OTP_MESSAGES.MAX_RESEND, statusCode: 400 });
+            }
+        }
+
+        // An initial send starts a fresh flow, so reset that flow's resend count.
+        // Done after the checks above so a blocked/cooldown attempt never wipes it.
+        if (!countsAsResend) {
+            await redis.del(countKey);
         }
 
         // 3. Generate OTP
@@ -93,8 +112,14 @@ const sendOTP = async (channelType, channelId) => {
             // await sendOtpToEmail(channelId, otp);
         }
 
-        // 7. Increment OTP resent count
-        await redis.incr(`otp_resend_count:${channelId}`);
+        // 7. Increment resend count (only for resends), with a rolling 1-hour
+        // window so the limit recovers automatically and never locks out forever.
+        if (countsAsResend) {
+            const total = await redis.incr(countKey);
+            if (total === 1) {
+                await redis.expire(countKey, 3600);
+            }
+        }
 
         return ServiceResponse.success({
             message: OTP_MESSAGES.OTP_SEND_SUCCESS,

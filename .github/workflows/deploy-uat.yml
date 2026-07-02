@@ -19,10 +19,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
 
           script: |
+            export PATH="/home/ubuntu/.nvm/versions/node/v22.22.3/bin:$PATH"
+
             cd /home/ubuntu/Bridge-Server
 
             git pull origin uat
 
-            /home/ubuntu/.nvm/versions/node/v22.22.3/bin/npm ci
+            npm ci
 
-            /home/ubuntu/.nvm/versions/node/v22.22.3/bin/pm2 restart backend
+            pm2 restart backend

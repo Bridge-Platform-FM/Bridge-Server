@@ -23,6 +23,6 @@ jobs:
 
             git pull origin uat
 
-            npm install
+            /home/ubuntu/.nvm/versions/node/v22.22.3/bin/npm ci
 
-            pm2 restart backend
+            /home/ubuntu/.nvm/versions/node/v22.22.3/bin/pm2 restart backend

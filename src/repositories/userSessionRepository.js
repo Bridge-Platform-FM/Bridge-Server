@@ -69,6 +69,18 @@ const revokeAllSessionsByUser = async (userId, { transaction } = {}) => {
     );
 };
 
+// Used by the "choose which device(s) to log out" login flow — revokes
+// exactly the selected session IDs, scoped to this user (same ownership
+// guard as revokeSessionById: a user can never revoke a session that
+// isn't theirs, even by passing someone else's session id here).
+const revokeSessionsByIds = async (userId, sessionIds, { transaction } = {}) => {
+    const [affectedCount] = await UserSession.update(
+        { is_revoked: true },
+        { where: { id: sessionIds, user_id: userId, is_revoked: false }, transaction }
+    );
+    return affectedCount;
+};
+
 // Called on every authenticated request by authMiddleware.js directly
 // (bypassing the service layer — see note in userSessionService.js).
 const findSessionByJti = async (jti, userId) => {
@@ -105,6 +117,7 @@ module.exports = {
     revokeSessionById,
     revokeOldestActiveSession,
     revokeAllSessionsByUser,
+    revokeSessionsByIds,
     findSessionByJti,
     updateLastActivity
 };

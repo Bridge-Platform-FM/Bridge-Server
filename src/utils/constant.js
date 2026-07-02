@@ -103,6 +103,8 @@ const SESSION_MESSAGES = {
     SESSION_NOT_FOUND: 'Session not found',
     LOGOUT_ALL_SUCCESS: 'All sessions revoked. Please log in again.',
     LOGOUT_ALL_FAILED: 'Failed to revoke all sessions',
+    LOGOUT_SUCCESS: 'Logged out successfully',
+    LOGOUT_FAILED: 'Failed to log out',
     SESSION_CREATE_SUCCESS: 'Session created successfully',
     SESSION_CREATE_FAILED: 'Failed to create session',
     SESSION_LIMIT_REACHED: 'Maximum number of active devices reached. Please choose a device to log out.',

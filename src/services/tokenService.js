@@ -9,17 +9,23 @@ const {
 } = require('../utils/token');
 
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, TOKEN_TYPES } = require('../utils/constant'); // TOKEN_TYPES kept from develop branch
+const { AUTH_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
 
 const { v4: uuidv4 } = require('uuid');
 
-const userSessionService = require('./userSessionService');
+/*
+ * Changed from userSessionService to userSessionRepository.
+ * With Option B (device chooser), session creation at login is a simple
+ * INSERT with no eviction logic — eviction is now the user's explicit
+ * choice via GET /sessions/limit-status + POST /sessions/revoke-selected.
+ * The service layer's enforceMaxSessionsAndCreate is no longer called here.
+ */
+const userSessionRepository = require('../repositories/userSessionRepository');
 
 const { parseDeviceInfo } = require('../utils/deviceInfo');
 
 const {
-    SESSION_LIMIT_ENABLED,
-    MAX_ACTIVE_SESSIONS
+    SESSION_LIMIT_ENABLED
 } = require('../configs/sessionConfig');
 
 
@@ -83,7 +89,22 @@ const generateTokens = async (
             generateRefreshToken(payload);
 
         /*
-         * Enforce session limit + create session record
+         * Create session record — no auto-eviction.
+         *
+         * Previously this called enforceMaxSessionsAndCreate(), which
+         * silently evicted the oldest session if the user was already at
+         * the limit. With Option B (device chooser flow), that decision
+         * belongs to the user, not the system:
+         *
+         *   1. Login → session created here (count may temporarily exceed
+         *      MAX_ACTIVE_SESSIONS by 1)
+         *   2. After OTP → frontend calls GET /api/v1/sessions/limit-status
+         *   3. If atLimit → frontend shows chooser modal
+         *   4. User selects sessions to revoke → POST /api/v1/sessions/revoke-selected
+         *   5. Count back within limit → redirect to dashboard
+         *
+         * The session is always created unconditionally here so that the
+         * user has a valid token for steps 2–4 above.
          */
         if (SESSION_LIMIT_ENABLED) {
 
@@ -101,26 +122,20 @@ const generateTokens = async (
                 (7 * 24 * 60 * 60 * 1000)
             );
 
-            const sessionResult =
-                await userSessionService.enforceMaxSessionsAndCreate(
+            try {
+                await userSessionRepository.createSession(
                     user,
                     jti,
                     deviceInfo,
                     ipAddress,
-                    expiresAt,
-                    MAX_ACTIVE_SESSIONS
+                    expiresAt
                 );
-
-            if (!sessionResult.success) {
-
+            } catch (sessionErr) {
                 /*
                  * Never block login on a session-tracking failure — log
                  * it and still return the tokens below.
                  */
-                errorLogger.error(
-                    'Failed to create session during login',
-                    sessionResult
-                );
+                errorLogger.error('Failed to create session during login:', sessionErr);
             }
         }
 

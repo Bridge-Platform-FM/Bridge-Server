@@ -16,6 +16,7 @@ const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const matchingRoutes = require('./routes/matchingRoutes');
+const connectionRoutes = require('./routes/connectionRoutes');
 const scanErrorMiddleware = require('./middleware/scanError');
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/file', fileRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/matching', matchingRoutes);
+app.use('/api/v1/connections', connectionRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {

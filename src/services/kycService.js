@@ -133,13 +133,15 @@ const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId 
             { transaction }
         );
 
-        const user = await companyRepository.getCompanyUser(companyId);
-        const userDataToUpdate = {is_active: true};
-        const userId = user[0].id;
+        if (action === 'approve') {
+            const user = await companyRepository.getCompanyUser(companyId);
+            const userDataToUpdate = {is_active: true};
+            const userId = user[0].id;
 
-        const updateUserRes = await userService.updateUserProfile(userDataToUpdate, userId);
-        if (!updateUserRes.success) {
-            return ServiceResponse.error({ message: updateUserRes.message, statusCode: updateUserRes.statusCode });
+            const updateUserRes = await userService.updateUserProfile(userDataToUpdate, userId);
+            if (!updateUserRes.success) {
+                return ServiceResponse.error({ message: updateUserRes.message, statusCode: updateUserRes.statusCode });
+            }
         }
 
         await transaction.commit();

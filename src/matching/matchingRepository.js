@@ -39,9 +39,11 @@ const getCandidateProfiles = async (excludeUserId) => {
     return await sequelize.query(
         `SELECT
             u.*,
+            cur.role_id,
             crm.role_code,
             crm.role_name,
-            c.company_name
+            c.company_name,
+            c.id AS company_id
         FROM "user" u
         JOIN company_user_role cur ON cur.user_id = u.id
         JOIN company_role_master crm ON crm.id = cur.role_id

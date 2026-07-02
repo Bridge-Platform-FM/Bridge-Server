@@ -75,8 +75,10 @@ const getMatches = async (profileId) => {
 
             const matchResponse = {
                 profileId: candidate.id,
+                companyId: candidate.company_id,
                 companyName: candidate.company_name || candidate.organization_name || 'Unknown',
                 role: candidateRole,
+                roleId: candidate.role_id,
                 compatibility: totalScore,
                 breakdown,
                 topFactors,

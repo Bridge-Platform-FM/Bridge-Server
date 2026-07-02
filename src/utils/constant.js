@@ -8,7 +8,8 @@ const OTP_MESSAGES = {
     OTP_GENERATION_FAILED: 'Error encountered while generating and sending OTP.',
     OTP_VERIFICATION_FAILED: 'Error encountered while verifying OTP.',
     OTP_VERIFY_SUCCESS: "OTP verified successfully",
-    OTP_SEND_SUCCESS: "OTP sent successfully"
+    OTP_SEND_SUCCESS: "OTP sent successfully",
+    OTP_SEND_FAILED: "failed to send OTP"
 };
 
 const REGISTRATION_MESSAGES = {
@@ -138,10 +139,73 @@ const TOKEN_TYPES = {
     RESET_PASSWORD_ACCESS_TOKEN: 'RESET_PASSWORD_ACCESS_TOKEN'
 };
 
-module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES, 
-    USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,  
-    ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, 
+const CONNECTION_VALID_TRANSITIONS = {
+    Viewed:    ['Pending'],
+    Accepted:  ['Pending', 'Viewed', 'Deferred'],
+    Declined:  ['Pending', 'Viewed', 'Deferred'],
+    Deferred:  ['Pending', 'Viewed'],
+    Withdrawn: ['Pending', 'Viewed', 'Deferred']
+};
+
+const CONNECTION_STATUS = {
+    PENDING: 'Pending',
+    VIEWED: 'Viewed',
+    ACCEPTED: 'Accepted',
+    DECLINED: 'Declined',
+    DEFERRED: 'Deferred',
+    WITHDRAWN: 'Withdrawn',
+    EXPIRED: 'Expired'
+};
+
+const SUBSCRIPTION_MESSAGES = {
+    NO_ACTIVE_SUBSCRIPTION: 'Access denied: No active subscription found',
+    SUBSCRIPTION_EXPIRED: 'Access denied: Your subscription has expired',
+    SUBSCRIPTION_CHECK_FAILED: 'Error encountered while verifying subscription',
+    SUBSCRIPTION_FETCH_FAILED: 'Error encountered while fetching subscription',
+    SUBSCRIPTION_FETCH_SUCCESS: 'Subscription fetched successfully'
+};
+
+const CONNECTION_REQUEST_LIMITS = {
+    FREE: 3,
+    PREMIUM: 50
+};
+
+const CONNECTION_MESSAGES = {
+    REQUEST_SENT: 'Connection request sent successfully',
+    CONNECTION_LIMIT_REACHED: 'Connection request limit reached for this billing period',
+    REQUEST_ACCEPTED: 'Connection request accepted',
+    REQUEST_DECLINED: 'Connection request declined',
+    REQUEST_DEFERRED: 'Connection request deferred',
+    REQUEST_WITHDRAWN: 'Connection request withdrawn',
+    REQUEST_VIEWED: 'Connection request marked as viewed',
+    ALREADY_EXISTS: 'A connection with this user already exists',
+    RECIPIENT_NOT_FOUND: 'Recipient user not found',
+    RECIPIENT_ROLE_NOT_FOUND: 'Recipient role not found',
+    NOT_FOUND: 'Connection not found',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    INVALID_TRANSITION: 'This status change is not allowed',
+    INVALID_ROLE_PAIR: 'Connection is not allowed between these roles',
+    FETCH_SUCCESS: 'Connections fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching connections',
+    REQUEST_FAILED: 'Error encountered while sending connection request'
+};
+
+const DEAL_ROOM_STATUS = {
+    ACTIVE: 'Active',
+    CLOSED: 'Closed'
+};
+
+const DEAL_ROOM_MESSAGES = {
+    CREATE_SUCCESS: 'Deal room created successfully',
+    CREATE_FAILED: 'Error encountered while creating deal room'
+};
+
+module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
+    USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
+    ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
-    ROLES, MATCHING_MESSAGES, TOKEN_TYPES
+    ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
+    CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
+    DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES
 };
 

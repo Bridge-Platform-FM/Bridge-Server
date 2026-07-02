@@ -173,7 +173,6 @@ const kycDocumentAction = async (req, res, next) => {
 
 const kycReviewAction = async (req, res, next) => {
     try {
-        console.log("Innnnnn")
         const adminId = req.adminId;
         const { company_id, action, rejection_reason } = req.body;
 

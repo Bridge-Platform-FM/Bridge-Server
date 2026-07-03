@@ -3,12 +3,12 @@
 const { errorLogger } = require('../configs/logger');
 const connectionService = require('../services/connectionService');
 const subscriptionService = require('../services/subscriptionService');
-const { CONNECTION_MESSAGES } = require('../utils/constant');
+const { CONNECTION_MESSAGES, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 const sendConnectionRequest = async (req, res, next) => {
     try {
-        const { recipientUserId, recipientRoleId, recipientCompanyId, message } = req.body;
+        const { recipientUserId, recipientRoleId, recipientCompanyId, personalMessage, bussinessIntent, expectedDealSize, productServiceDetails } = req.body;
         const { userId, roleId, companyId, role } = req;
 
         // 1. Find whether user has an active subscription
@@ -17,7 +17,7 @@ const sendConnectionRequest = async (req, res, next) => {
             return HttpResponse.error(res, { message: subscriptionResult.message, statusCode: subscriptionResult.statusCode });
         }
 
-        userSubscriptions = subscriptionResult.data; // userSubscriptions
+        const userSubscriptions = subscriptionResult.data; // userSubscriptions
 
         // 2. Find the billing window for connection requests
         const windowResult = await connectionService.getConnectionBillingWindow(userId);
@@ -37,7 +37,7 @@ const sendConnectionRequest = async (req, res, next) => {
         // 4. Validate the limit — return message if exceeded
         const hasActiveSubscription =  userSubscriptions? true : false;
 
-        const limit = hasActiveSubscription ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
+        const limit = hasActiveSubscription === true ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
 
         if (requestCount >= limit) {
             return HttpResponse.error({ message: CONNECTION_MESSAGES.CONNECTION_LIMIT_REACHED, statusCode: 403 });
@@ -57,7 +57,10 @@ const sendConnectionRequest = async (req, res, next) => {
             recipientUserId,
             recipientRoleId,
             recipientCompanyId,
-            message
+            personalMessage, 
+            bussinessIntent, 
+            expectedDealSize, 
+            productServiceDetails
         });
         if (!result.success) {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
@@ -67,16 +70,17 @@ const sendConnectionRequest = async (req, res, next) => {
 
     } catch (error) {
         errorLogger.error(error);
+        return HttpResponse.error(res);
         next(error);
     }
 };
 
 const changeConnectionStatus = async (req, res, next) => {
     try {
-        const { connectionId, status } = req.body;
+        const { connectionId, status, reason } = req.body;
         const { userId } = req;
 
-        const result = await connectionService.changeStatus({ connectionId, status, userId });
+        const result = await connectionService.changeStatus({ connectionId, status, reason, userId });
 
         if (!result.success) {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
@@ -90,4 +94,40 @@ const changeConnectionStatus = async (req, res, next) => {
     }
 };
 
-module.exports = { sendConnectionRequest, changeConnectionStatus };
+const getSentConnections = async (req, res, next) => {
+    try {
+        const { userId, roleId } = req;
+
+        const result = await connectionService.getSentConnections(userId, roleId);
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { data: result.data, message: result.message, statusCode: result.statusCode });
+
+    } catch (error) {
+        errorLogger.error(error);
+        next(error);
+    }
+};
+
+const getReceivedConnections = async (req, res, next) => {
+    try {
+        const { userId, roleId } = req;
+
+        const result = await connectionService.getReceivedConnections(userId, roleId);
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { data: result.data, message: result.message, statusCode: result.statusCode });
+
+    } catch (error) {
+        errorLogger.error(error);
+        next(error);
+    }
+};
+
+module.exports = { sendConnectionRequest, changeConnectionStatus, getSentConnections, getReceivedConnections };

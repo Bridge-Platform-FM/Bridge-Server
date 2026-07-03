@@ -40,6 +40,9 @@ const changeStatusSchema = Joi.object({
     status: Joi.string().valid('Viewed', 'Accepted', 'Declined', 'Deferred', 'Withdrawn').required().messages({
         'any.only': 'status must be one of: Viewed, Accepted, Declined, Deferred, Withdrawn',
         'any.required': 'status is required'
+    }),
+    reason: Joi.string().max(500).optional().allow(null, '').messages({
+        'string.max': 'message must not exceed 500 characters'
     })
 });
 

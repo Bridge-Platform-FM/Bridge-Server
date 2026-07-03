@@ -78,6 +78,26 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        bussiness_intent: {
+            type: DataTypes.ARRAY(DataTypes.STRING),
+            allowNull: true
+        },
+
+        expected_deal_size: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        product_service_details: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        reason: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

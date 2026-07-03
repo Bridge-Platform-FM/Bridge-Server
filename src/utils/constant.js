@@ -187,7 +187,11 @@ const CONNECTION_MESSAGES = {
     INVALID_ROLE_PAIR: 'Connection is not allowed between these roles',
     FETCH_SUCCESS: 'Connections fetched successfully',
     FETCH_FAILED: 'Error encountered while fetching connections',
-    REQUEST_FAILED: 'Error encountered while sending connection request'
+    REQUEST_FAILED: 'Error encountered while sending connection request',
+    SENT_FETCH_SUCCESS: 'Sent connection requests fetched successfully',
+    SENT_FETCH_FAILED: 'Error encountered while fetching sent connection requests',
+    RECEIVED_FETCH_SUCCESS: 'Received connection requests fetched successfully',
+    RECEIVED_FETCH_FAILED: 'Error encountered while fetching received connection requests'
 };
 
 const DEAL_ROOM_STATUS = {
@@ -197,7 +201,9 @@ const DEAL_ROOM_STATUS = {
 
 const DEAL_ROOM_MESSAGES = {
     CREATE_SUCCESS: 'Deal room created successfully',
-    CREATE_FAILED: 'Error encountered while creating deal room'
+    CREATE_FAILED: 'Error encountered while creating deal room',
+    FETCH_SUCCESS: 'Deal rooms fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching deal rooms'
 };
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,

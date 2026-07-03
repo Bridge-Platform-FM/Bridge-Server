@@ -138,8 +138,6 @@ const checkPassword = async (password, hashedPassword) => {
 /*
 const checkPassword = async (password, hashedPassword) => {
     try {
-        console.log('INPUT PASSWORD:', password);
-        console.log('DB PASSWORD:', hashedPassword);
 
         if (password === hashedPassword) {
             return ServiceResponse.success({ statusCode: 200 });

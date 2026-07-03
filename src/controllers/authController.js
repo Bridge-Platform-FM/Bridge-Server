@@ -215,11 +215,7 @@ const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        console.log('LOGIN EMAIL:', email);
-
         const existingCompanyRes = await authService.getCompanyByEmail(email);
-
-        console.log('existingCompanyRes:', existingCompanyRes);
 
         if (!existingCompanyRes.success) {
             return HttpResponse.error(res, {
@@ -230,10 +226,7 @@ const login = async (req, res, next) => {
 
         const existingCompany = existingCompanyRes.data;
 
-        console.log('existingCompany:', existingCompany);
-
         if (!existingCompany) {
-            console.log('FAILED: Company not found');
             return HttpResponse.error(res, {
                 message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 400
@@ -245,10 +238,7 @@ const login = async (req, res, next) => {
             existingCompany.password
         );
 
-        console.log('passwordRes:', passwordRes);
-
         if (!passwordRes.success) {
-            console.log('FAILED: Password mismatch');
             return HttpResponse.error(res, {
                 message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 400
@@ -257,10 +247,7 @@ const login = async (req, res, next) => {
 
         const existingUserRes = await authService.getUserByEmail(email);
 
-        console.log('existingUserRes:', existingUserRes);
-
         if (!existingUserRes.success) {
-            console.log('FAILED: User lookup');
             return HttpResponse.error(res, {
                 message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 400
@@ -269,18 +256,13 @@ const login = async (req, res, next) => {
 
         const existingUser = existingUserRes.data;
 
-        console.log('existingUser:', existingUser);
-
         const companyUserRoleRes =
             await authService.getCompanyUser_role(
                 existingCompany.id,
                 existingUser.id
             );
 
-        console.log('companyUserRoleRes:', companyUserRoleRes);
-
         if (!companyUserRoleRes) {
-            console.log('FAILED: CompanyUserRole');
             return HttpResponse.error(res, {
                 message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 400

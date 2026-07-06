@@ -17,6 +17,10 @@ const getDealRooms = async (userId, roleId) => {
     }
 };
 
+const isParticipant = (dealRoom, userId) => {
+    return dealRoom.requester_user_id === userId || dealRoom.recipient_user_id === userId;
+};
+
 const createDealRoom = async (connection, { transaction } = {}) => {
     try {
         const dealRoom = await dealRoomRepository.create({
@@ -51,8 +55,7 @@ const closeDealRoom = async (dealRoomId, { reason, userId }) => {
             return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.ALREADY_CLOSED, statusCode: 400 });
         }
 
-        const isParticipant = dealRoom.requester_user_id === userId || dealRoom.recipient_user_id === userId;
-        if (!isParticipant) {
+        if (!isParticipant(dealRoom, userId)) {
             await transaction.rollback();
             return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.FORBIDDEN, statusCode: 403 });
         }
@@ -71,4 +74,4 @@ const closeDealRoom = async (dealRoomId, { reason, userId }) => {
     }
 };
 
-module.exports = { getDealRooms, createDealRoom, closeDealRoom };
+module.exports = { getDealRooms, createDealRoom, closeDealRoom, isParticipant };

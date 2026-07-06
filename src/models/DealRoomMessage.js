@@ -2,11 +2,11 @@
 
 const { DataTypes } = require('sequelize');
 
-const { DEAL_ROOM_STATUS } = require('../utils/constant');
+const { CHAT_MESSAGE_TYPE } = require('../utils/constant');
 
 module.exports = (sequelize) => {
 
-    const DealRoom = sequelize.define('DealRoom', {
+    const DealRoomMessage = sequelize.define('DealRoomMessage', {
 
         id: {
             type: DataTypes.INTEGER,
@@ -15,17 +15,16 @@ module.exports = (sequelize) => {
             allowNull: false
         },
 
-        connection_id: {
+        deal_room_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            unique: true,
             references: {
-                model: 'user_connection',
+                model: 'deal_room',
                 key: 'id'
             }
         },
 
-        requester_user_id: {
+        sender_user_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -34,20 +33,11 @@ module.exports = (sequelize) => {
             }
         },
 
-        requester_role_id: {
+        sender_role_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
                 model: 'company_role_master',
-                key: 'id'
-            }
-        },
-
-        requester_company_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'company',
                 key: 'id'
             }
         },
@@ -70,43 +60,40 @@ module.exports = (sequelize) => {
             }
         },
 
-        recipient_company_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'company',
-                key: 'id'
-            }
-        },
-
-        title: {
-            type: DataTypes.STRING(255),
-            allowNull: true
-        },
-
-        status: {
-            type: DataTypes.STRING(50),
-            allowNull: false,
-            defaultValue: DEAL_ROOM_STATUS.ACTIVE
-        },
-
-        closed_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-
-        closed_reason: {
+        message: {
             type: DataTypes.TEXT,
             allowNull: true
         },
 
-        closed_by: {
+        message_type: {
+            type: DataTypes.STRING(20),
+            allowNull: false,
+            defaultValue: CHAT_MESSAGE_TYPE.TEXT
+        },
+
+        attachment_s3_key: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        attachment_file_name: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        attachment_mime_type: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        attachment_file_size: {
             type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: 'user',
-                key: 'id'
-            }
+            allowNull: true
+        },
+
+        read_at: {
+            type: DataTypes.DATE,
+            allowNull: true
         },
 
         created_at: {
@@ -143,56 +130,49 @@ module.exports = (sequelize) => {
         }
 
     }, {
-        tableName: 'deal_room',
+        tableName: 'deal_room_message',
         timestamps: true,
         initialAutoIncrement: 1,
         createdAt: 'created_at',
-        updatedAt: 'updated_at'
+        updatedAt: 'updated_at',
+        indexes: [
+            {
+                fields: ['deal_room_id', 'created_at']
+            },
+            {
+                fields: ['recipient_user_id', 'read_at']
+            }
+        ]
     });
 
-    DealRoom.associate = (models) => {
+    DealRoomMessage.associate = (models) => {
 
-        DealRoom.belongsTo(models.UserConnection, {
-            foreignKey: 'connection_id',
-            as: 'connection'
+        DealRoomMessage.belongsTo(models.DealRoom, {
+            foreignKey: 'deal_room_id',
+            as: 'dealRoom'
         });
 
-        DealRoom.belongsTo(models.User, {
-            foreignKey: 'requester_user_id',
-            as: 'requester'
+        DealRoomMessage.belongsTo(models.User, {
+            foreignKey: 'sender_user_id',
+            as: 'sender'
         });
 
-        DealRoom.belongsTo(models.CompanyRoleMaster, {
-            foreignKey: 'requester_role_id',
-            as: 'requesterRole'
+        DealRoomMessage.belongsTo(models.CompanyRoleMaster, {
+            foreignKey: 'sender_role_id',
+            as: 'senderRole'
         });
 
-        DealRoom.belongsTo(models.Company, {
-            foreignKey: 'requester_company_id',
-            as: 'requesterCompany'
-        });
-
-        DealRoom.belongsTo(models.User, {
+        DealRoomMessage.belongsTo(models.User, {
             foreignKey: 'recipient_user_id',
             as: 'recipient'
         });
 
-        DealRoom.belongsTo(models.CompanyRoleMaster, {
+        DealRoomMessage.belongsTo(models.CompanyRoleMaster, {
             foreignKey: 'recipient_role_id',
             as: 'recipientRole'
         });
 
-        DealRoom.belongsTo(models.Company, {
-            foreignKey: 'recipient_company_id',
-            as: 'recipientCompany'
-        });
-
-        DealRoom.hasMany(models.DealRoomMessage, {
-            foreignKey: 'deal_room_id',
-            as: 'messages'
-        });
-
     };
 
-    return DealRoom;
+    return DealRoomMessage;
 };

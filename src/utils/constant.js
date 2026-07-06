@@ -211,12 +211,50 @@ const DEAL_ROOM_MESSAGES = {
     FORBIDDEN: 'You are not authorized to perform this action'
 };
 
+const CHAT_MESSAGE_TYPE = {
+    TEXT: 'TEXT',
+    IMAGE: 'IMAGE',
+    DOCUMENT: 'DOCUMENT',
+    AUDIO: 'AUDIO',
+    VIDEO: 'VIDEO'
+};
+
+const CHAT_MESSAGES = {
+    SEND_SUCCESS: 'Message sent successfully',
+    SEND_FAILED: 'Error encountered while sending message',
+    FETCH_SUCCESS: 'Messages fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching messages',
+    MARK_READ_SUCCESS: 'Messages marked as read',
+    MARK_READ_FAILED: 'Error encountered while marking messages as read',
+    MEDIA_UPLOAD_SUCCESS: 'Media message sent successfully',
+    MEDIA_UPLOAD_FAILED: 'Error encountered while sending media message',
+    MEDIA_FETCH_FAILED: 'Error encountered while fetching media',
+    MEDIA_REQUIRED: 'Media file is required',
+    MESSAGE_NOT_FOUND: 'Message not found',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; new messages are not allowed',
+    FORBIDDEN: 'You are not authorized to access this deal room chat'
+};
+
+const SOCKET_EVENTS = {
+    JOIN_DEAL_ROOM: 'join_deal_room',
+    LEAVE_DEAL_ROOM: 'leave_deal_room',
+    SEND_MESSAGE: 'send_message',
+    NEW_MESSAGE: 'new_message',
+    MARK_READ: 'mark_read',
+    MESSAGES_READ: 'messages_read',
+    TYPING: 'typing',
+    STOP_TYPING: 'stop_typing',
+    USER_TYPING: 'user_typing',
+    ERROR: 'error'
+};
+
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
     CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
-    DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES
+    DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS
 };
 

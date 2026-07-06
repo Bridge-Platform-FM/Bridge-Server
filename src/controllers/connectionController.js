@@ -40,7 +40,7 @@ const sendConnectionRequest = async (req, res, next) => {
         const limit = hasActiveSubscription === true ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
 
         if (requestCount >= limit) {
-            return HttpResponse.error({ message: CONNECTION_MESSAGES.CONNECTION_LIMIT_REACHED, statusCode: 403 });
+            return HttpResponse.error(res, { message: CONNECTION_MESSAGES.CONNECTION_LIMIT_REACHED, statusCode: 403 });
         }
 
         // const limitResult = connectionService.validateConnectionLimit(requestCount, hasActiveSubscription);
@@ -71,7 +71,6 @@ const sendConnectionRequest = async (req, res, next) => {
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res);
-        next(error);
     }
 };
 

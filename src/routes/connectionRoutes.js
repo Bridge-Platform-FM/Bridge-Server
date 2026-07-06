@@ -7,7 +7,7 @@ const connectionController = require('../controllers/connectionController');
 const { validate, sendConnectionRequestSchema, changeStatusSchema } = require('../validations/connectionValidation');
 
 // POST /api/v1/connections — send a connection request
-router.post('/', authMiddleware, connectionController.sendConnectionRequest);
+router.post('/', authMiddleware, validate(sendConnectionRequestSchema), connectionController.sendConnectionRequest);
 
 // PUT /api/v1/connections/change-status — change status of a connection request
 router.put('/change-status', authMiddleware, validate(changeStatusSchema), connectionController.changeConnectionStatus);

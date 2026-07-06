@@ -152,7 +152,7 @@ const changeStatus = async ({ connectionId, status, reason, userId }) => {
 
         let dealRoomResult = null;
         if (status === CONNECTION_STATUS.ACCEPTED) {
-            dealRoomResult = await dealRoomService.createDealRoom(connection);
+            dealRoomResult = await dealRoomService.createDealRoom(connection, { transaction });
             if (!dealRoomResult.success) {
                 await transaction.rollback();
                 return ServiceResponse.error({ message: dealRoomResult.message, statusCode: dealRoomResult.statusCode });

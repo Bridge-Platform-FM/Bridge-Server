@@ -203,7 +203,12 @@ const DEAL_ROOM_MESSAGES = {
     CREATE_SUCCESS: 'Deal room created successfully',
     CREATE_FAILED: 'Error encountered while creating deal room',
     FETCH_SUCCESS: 'Deal rooms fetched successfully',
-    FETCH_FAILED: 'Error encountered while fetching deal rooms'
+    FETCH_FAILED: 'Error encountered while fetching deal rooms',
+    CLOSE_SUCCESS: 'Deal room closed successfully',
+    CLOSE_FAILED: 'Error encountered while closing deal room',
+    ALREADY_CLOSED: 'Deal room is already closed',
+    NOT_FOUND: 'Deal room not found',
+    FORBIDDEN: 'You are not authorized to perform this action'
 };
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,

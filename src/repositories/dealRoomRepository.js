@@ -2,9 +2,31 @@
 
 const { QueryTypes } = require('sequelize');
 const { DealRoom, sequelize } = require('../models');
+const { DEAL_ROOM_STATUS } = require('../utils/constant');
 
 const create = async (data, { transaction } = {}) => {
     return await DealRoom.create(data, { transaction });
+};
+
+const findById = async (dealRoomId) => {
+    return await DealRoom.findOne({
+        where: { id: dealRoomId, is_deleted: false }
+    });
+};
+
+const closeById = async (dealRoomId, { closedReason, closedBy }, { transaction } = {}) => {
+    const [, [updated]] = await DealRoom.update(
+        {
+            status: DEAL_ROOM_STATUS.CLOSED,
+            closed_at: new Date(),
+            closed_reason: closedReason,
+            closed_by: closedBy,
+            updated_at: new Date(),
+            updated_by: closedBy
+        },
+        { where: { id: dealRoomId }, returning: true, transaction }
+    );
+    return updated;
 };
 
 const findAllByUserId = async (userId, roleId) => {
@@ -62,4 +84,4 @@ const findAllByUserId = async (userId, roleId) => {
     );
 };
 
-module.exports = { create, findAllByUserId };
+module.exports = { create, findById, closeById, findAllByUserId };

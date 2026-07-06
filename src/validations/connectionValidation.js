@@ -16,8 +16,23 @@ const sendConnectionRequestSchema = Joi.object({
         'number.positive': 'recipientRoleId must be a positive number',
         'any.required': 'recipientRoleId is required'
     }),
-    message: Joi.string().max(500).optional().allow(null, '').messages({
-        'string.max': 'message must not exceed 500 characters'
+    recipientCompanyId: Joi.number().integer().positive().required().messages({
+        'number.base': 'recipientCompanyId must be a number',
+        'number.integer': 'recipientCompanyId must be an integer',
+        'number.positive': 'recipientCompanyId must be a positive number',
+        'any.required': 'recipientCompanyId is required'
+    }),
+    personalMessage: Joi.string().max(500).optional().allow(null, '').messages({
+        'string.max': 'personalMessage must not exceed 500 characters'
+    }),
+    bussinessIntent: Joi.array().items(Joi.string()).optional().allow(null).messages({
+        'array.base': 'bussinessIntent must be an array of strings'
+    }),
+    expectedDealSize: Joi.string().max(255).optional().allow(null, '').messages({
+        'string.max': 'expectedDealSize must not exceed 255 characters'
+    }),
+    productServiceDetails: Joi.string().max(500).optional().allow(null, '').messages({
+        'string.max': 'productServiceDetails must not exceed 500 characters'
     })
 });
 

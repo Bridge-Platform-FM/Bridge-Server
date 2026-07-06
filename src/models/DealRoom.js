@@ -100,6 +100,15 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        closed_by: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'user',
+                key: 'id'
+            }
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

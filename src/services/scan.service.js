@@ -3,9 +3,9 @@ const env_config = require("../configs/env_configs");
 const ServiceResponse = require("../utils/ServiceResponse");
 
 const scanUploadedFile = async (buffer) => {
-    if (env_config.SKIP_VIRUS_SCAN) {
-        return ServiceResponse.success({ success: true });
-    }
+    // if (env_config.SKIP_VIRUS_SCAN) {
+    //     return ServiceResponse.success({ success: true });
+    // }
 
     try {
         // Virus Scan

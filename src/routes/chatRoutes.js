@@ -14,7 +14,11 @@ router.get('/', authMiddleware, chatController.getMessages);
 router.put('/read', authMiddleware, chatController.markRead);
 
 // POST /api/v1/deal-rooms/:dealRoomId/messages/media — upload an image/document/audio/video message
-router.post('/media', authMiddleware, chatMediaUpload.single('media'), validate(sendMediaMessageSchema), chatController.uploadMedia);
+// router.post('/media', authMiddleware, chatMediaUpload.single('media'), validate(sendMediaMessageSchema), chatController.uploadMedia);
+router.post('/media', authMiddleware, chatMediaUpload.single('media'), chatController.uploadMedia);
+
+// GET /api/v1/deal-rooms/:dealRoomId/messages/media — list shared files/attachments in the deal room
+router.get('/media', authMiddleware, chatController.getSharedFiles);
 
 // GET /api/v1/deal-rooms/:dealRoomId/messages/:messageId/media — stream a previously uploaded attachment
 router.get('/:messageId/media', authMiddleware, chatController.getMedia);

@@ -27,6 +27,18 @@ const findByDealRoomId = async (dealRoomId, { cursor, limit } = {}) => {
     });
 };
 
+const findSharedFilesByDealRoomId = async (dealRoomId) => {
+    return await DealRoomMessage.findAll({
+        where: { deal_room_id: dealRoomId, is_deleted: false, attachment_s3_key: { [Op.not]: null } },
+        attributes: [
+            'id', 'message_type', 'attachment_s3_key', 'attachment_file_name',
+            'attachment_mime_type', 'download_allowed', 'view_only', 'attachment_file_size', 'created_at'
+        ],
+        include: [{ model: User, as: 'sender', attributes: ['id', 'first_name', 'last_name'] }],
+        order: [['id', 'DESC']]
+    });
+};
+
 const markReadByDealRoom = async (dealRoomId, readerUserId, { transaction } = {}) => {
     const [count] = await DealRoomMessage.update(
         { read_at: new Date() },
@@ -43,4 +55,4 @@ const markReadByDealRoom = async (dealRoomId, readerUserId, { transaction } = {}
     return count;
 };
 
-module.exports = { create, findById, findByDealRoomId, markReadByDealRoom };
+module.exports = { create, findById, findByDealRoomId, findSharedFilesByDealRoomId, markReadByDealRoom };

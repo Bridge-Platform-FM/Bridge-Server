@@ -97,7 +97,8 @@ const MATCHING_MESSAGES = {
 
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
-    KYC: 'kyc'
+    KYC: 'kyc',
+    CHAT: 'chat'
 }
 
 const CHANNEL_TYPE = {
@@ -230,6 +231,8 @@ const CHAT_MESSAGES = {
     MEDIA_UPLOAD_FAILED: 'Error encountered while sending media message',
     MEDIA_FETCH_FAILED: 'Error encountered while fetching media',
     MEDIA_REQUIRED: 'Media file is required',
+    FILES_FETCH_SUCCESS: 'Shared files fetched successfully',
+    FILES_FETCH_FAILED: 'Error encountered while fetching shared files',
     MESSAGE_NOT_FOUND: 'Message not found',
     DEAL_ROOM_NOT_FOUND: 'Deal room not found',
     DEAL_ROOM_CLOSED: 'This deal room is closed; new messages are not allowed',

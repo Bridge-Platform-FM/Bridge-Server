@@ -7,7 +7,7 @@ const dealRoomService = require('./dealRoomService');
 const { uploadToS3, getFileBuffer } = require('./s3.service');
 const { CHAT_MEDIA_RULES } = require('../configs/scan');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { DEAL_ROOM_STATUS, CHAT_MESSAGE_TYPE, CHAT_MESSAGES } = require('../utils/constant');
+const { DEAL_ROOM_STATUS, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, S3_FILE_TYPE } = require('../utils/constant');
 
 const resolveRecipient = (dealRoom, senderUserId) => {
     if (dealRoom.requester_user_id === senderUserId) {
@@ -60,7 +60,7 @@ const sendMessage = async ({ dealRoomId, senderUserId, senderRoleId, message }) 
     }
 };
 
-const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, senderCompanyId, file, caption }) => {
+const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, senderCompanyId, file, caption, download_allowed, view_only }) => {
     try {
         if (!file) {
             return ServiceResponse.error({ message: CHAT_MESSAGES.MEDIA_REQUIRED, statusCode: 400 });
@@ -76,7 +76,9 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
             return ServiceResponse.error({ message: CHAT_MESSAGES.MEDIA_UPLOAD_FAILED, statusCode: 400 });
         }
 
-        const s3Key = await uploadToS3('chat', file.buffer, file.originalname, file.mimetype, senderCompanyId, senderUserId);
+        const s3_file_type = S3_FILE_TYPE.CHAT;
+        const s3KeyToUpload = `dealroom/${dealRoomId}/${s3_file_type}/${Date.now()}-${file.originalname}`;
+        const s3Key = await uploadToS3(S3_FILE_TYPE.CHAT, file.buffer, file.originalname, file.mimetype, senderCompanyId, senderUserId, s3KeyToUpload);
 
         const { recipientUserId, recipientRoleId } = resolveRecipient(dealRoom, senderUserId);
 
@@ -87,6 +89,8 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
             recipient_user_id: recipientUserId,
             recipient_role_id: recipientRoleId,
             message: caption || null,
+            download_allowed: download_allowed, 
+            view_only: view_only,
             message_type: rule.messageType,
             attachment_s3_key: s3Key,
             attachment_file_name: file.originalname,
@@ -114,6 +118,21 @@ const getMessages = async (dealRoomId, userId, { cursor, limit } = {}) => {
     } catch (error) {
         errorLogger.error(error);
         return ServiceResponse.error({ message: CHAT_MESSAGES.FETCH_FAILED, statusCode: 500 });
+    }
+};
+
+const getSharedFiles = async (dealRoomId, userId) => {
+    try {
+        const { error } = await authorize(dealRoomId, userId);
+        if (error) {
+            return error;
+        }
+
+        const files = await chatRepository.findSharedFilesByDealRoomId(dealRoomId);
+        return ServiceResponse.success({ data: files, message: CHAT_MESSAGES.FILES_FETCH_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: CHAT_MESSAGES.FILES_FETCH_FAILED, statusCode: 500 });
     }
 };
 
@@ -155,4 +174,4 @@ const getMedia = async (dealRoomId, messageId, userId) => {
     }
 };
 
-module.exports = { sendMessage, sendMediaMessage, getMessages, markRead, getMedia, authorize };
+module.exports = { sendMessage, sendMediaMessage, getMessages, getSharedFiles, markRead, getMedia, authorize };

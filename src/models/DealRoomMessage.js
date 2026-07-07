@@ -91,6 +91,18 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        download_allowed: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        }, 
+        
+        view_only: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: true
+        },
+
         read_at: {
             type: DataTypes.DATE,
             allowNull: true

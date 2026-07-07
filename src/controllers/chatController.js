@@ -39,6 +39,26 @@ const getMessages = async (req, res, next) => {
     }
 };
 
+const getSharedFiles = async (req, res, next) => {
+    try {
+        const dealRoomId = parseDealRoomId(req, res);
+        if (!dealRoomId) return;
+
+        const { userId } = req;
+
+        const result = await chatService.getSharedFiles(dealRoomId, userId);
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { data: result.data, message: result.message, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        next(error);
+    }
+};
+
 const markRead = async (req, res, next) => {
     try {
         const dealRoomId = parseDealRoomId(req, res);
@@ -66,6 +86,8 @@ const uploadMedia = async (req, res, next) => {
         const dealRoomId = parseDealRoomId(req, res);
         if (!dealRoomId) return;
 
+        const { download_allowed, view_only } = req.body;
+
         if (!req.file) {
             return HttpResponse.error(res, { message: CHAT_MESSAGES.MEDIA_REQUIRED, statusCode: 400 });
         }
@@ -79,7 +101,9 @@ const uploadMedia = async (req, res, next) => {
             senderRoleId: roleId,
             senderCompanyId: companyId,
             file: req.file,
-            caption
+            caption,
+            download_allowed, 
+            view_only
         });
 
         if (!result.success) {
@@ -123,4 +147,4 @@ const getMedia = async (req, res, next) => {
     }
 };
 
-module.exports = { getMessages, markRead, uploadMedia, getMedia };
+module.exports = { getMessages, getSharedFiles, markRead, uploadMedia, getMedia };

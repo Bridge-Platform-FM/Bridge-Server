@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const env = {
     SERVER_PORT: process.env.SERVER_PORT,
+    SKIP_VIRUS_SCAN: process.env.SKIP_VIRUS_SCAN === 'true',
     DB: {
         DB_HOST: process.env.DB_HOST,
         DB_PORT: process.env.DB_PORT,

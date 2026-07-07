@@ -44,13 +44,15 @@ const scanFile = async (req, res, next) => {
         }
 
         // Upload to S3
+        const s3KeyToUpload = `company/${companyId}/${userId}/${s3_file_type}/${Date.now()}-${req.file.originalname}`;
         const s3Key = await uploadToS3(
             s3_file_type,
             fileBuffer,
             req.file.originalname,
             req.file.mimetype,
             companyName,
-            userId
+            userId,
+            s3KeyToUpload
         )
         console.log("s3Key", s3Key)
 

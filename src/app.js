@@ -5,6 +5,8 @@ const express = require('express');
 // });
 // local
 require('dotenv').config()
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const env_config = require('./configs/env_configs');
 const requestResponseLogger = require('./middleware/requestResponseLogger');
@@ -18,7 +20,9 @@ const adminRoutes = require('./routes/adminRoutes');
 const matchingRoutes = require('./routes/matchingRoutes');
 const connectionRoutes = require('./routes/connectionRoutes');
 const dealRoomRoutes = require('./routes/dealRoomRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 const scanErrorMiddleware = require('./middleware/scanError');
+const { initSockets } = require('./sockets');
 
 const app = express();
 app.use(cors());
@@ -33,6 +37,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/matching', matchingRoutes);
 app.use('/api/v1/connections', connectionRoutes);
 app.use('/api/v1/deal-rooms', dealRoomRoutes);
+app.use('/api/v1/deal-rooms/:dealRoomId/messages', chatRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {
@@ -46,7 +51,11 @@ app.use(scanErrorMiddleware);
 
 const SERVER_PORT = env_config.SERVER_PORT || 3001;
 
-app.listen(SERVER_PORT, () => {
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+initSockets(io);
+
+server.listen(SERVER_PORT, () => {
     db.sequelize.authenticate()
         .then(() => console.info('Database connected successfully.'))
         .catch(err => console.error('Unable to connect to the database:', err));

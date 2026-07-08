@@ -103,7 +103,8 @@ const sendOTP = async (channelType, channelId) => {
         }
 
         return ServiceResponse.success({
-            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            message: `OTP - ${otp}`,
+            // message: OTP_MESSAGES.OTP_SEND_SUCCESS,
         });
 
     } catch (err) {

@@ -252,12 +252,29 @@ const SOCKET_EVENTS = {
     ERROR: 'error'
 };
 
+// ─── Meeting ──────────────────────────────────────────────────────────────────
+
+const MEETING_MESSAGES = {
+    CREATE_SUCCESS: 'Meeting created successfully',
+    CREATE_FAILED: 'Error encountered while creating meeting',
+    UPDATE_SUCCESS: 'Meeting updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating meeting',
+    NOT_FOUND: 'Meeting not found',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    PAST_TIME: 'Meeting time cannot be in the past',
+    NOT_DEAL_ROOM_PARTICIPANT: 'You are not a participant in this deal room',
+    RECIPIENT_MISMATCH: 'The recipient does not match the deal room participant',
+    FETCH_SUCCESS: 'Meetings fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching meetings',
+    FORBIDDEN: 'You are not authorized to perform this action'
+};
+
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
     CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
-    DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS
+    DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
+    MEETING_MESSAGES
 };
-

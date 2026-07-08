@@ -21,6 +21,7 @@ const matchingRoutes = require('./routes/matchingRoutes');
 const connectionRoutes = require('./routes/connectionRoutes');
 const dealRoomRoutes = require('./routes/dealRoomRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const meetingRoutes = require('./routes/meetingRoutes');
 const scanErrorMiddleware = require('./middleware/scanError');
 const { initSockets } = require('./sockets');
 
@@ -38,6 +39,7 @@ app.use('/api/v1/matching', matchingRoutes);
 app.use('/api/v1/connections', connectionRoutes);
 app.use('/api/v1/deal-rooms', dealRoomRoutes);
 app.use('/api/v1/deal-rooms/:dealRoomId/messages', chatRoutes);
+app.use('/api/v1/meetings', meetingRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {

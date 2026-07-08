@@ -95,6 +95,25 @@ const MATCHING_MESSAGES = {
     NO_MATCHES_FOUND: 'No matching profiles found'
 };
 
+const SESSION_MESSAGES = {
+    SESSION_LISTING_SUCCESS: 'Active sessions fetched successfully',
+    SESSION_LISTING_FAILED: 'Failed to fetch active sessions',
+    SESSION_REVOKE_SUCCESS: 'Session revoked successfully',
+    SESSION_REVOKE_FAILED: 'Failed to revoke session',
+    SESSION_NOT_FOUND: 'Session not found',
+    LOGOUT_ALL_SUCCESS: 'All sessions revoked. Please log in again.',
+    LOGOUT_ALL_FAILED: 'Failed to revoke all sessions',
+    LOGOUT_SUCCESS: 'Logged out successfully',
+    LOGOUT_FAILED: 'Failed to log out',
+    SESSION_CREATE_SUCCESS: 'Session created successfully',
+    SESSION_CREATE_FAILED: 'Failed to create session',
+    SESSION_LIMIT_REACHED: 'Maximum number of active devices reached. Please choose a device to log out.',
+    SESSION_SELECTION_REQUIRED: 'Please select at least one device to log out.',
+    SESSION_SELECTION_INVALID: 'One or more selected sessions are invalid or do not belong to you.',
+    LOGOUT_SUCCESS: 'Logged out successfully',
+    LOGOUT_FAILED: 'Failed to log out'
+}
+
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
     KYC: 'kyc',
@@ -276,5 +295,5 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
     CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
     DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
-    MEETING_MESSAGES
+    SESSION_MESSAGES, MEETING_MESSAGES
 };

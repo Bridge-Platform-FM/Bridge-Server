@@ -43,6 +43,7 @@ const createMeeting = async (req, res, next) => {
 };
 
 // ─── Get All Meetings for a Deal Room ────────────────────────────────────────
+// GET /api/v1/meetings?dealRoomId=1
 
 const getMeetingsByDealRoom = async (req, res, next) => {
     try {
@@ -79,6 +80,7 @@ const getMeetingsByDealRoom = async (req, res, next) => {
 };
 
 // ─── Get Nearest Upcoming Meeting for a Deal Room ────────────────────────────
+// GET /api/v1/meetings/upcoming?dealRoomId=1
 
 const getUpcomingMeeting = async (req, res, next) => {
     try {
@@ -115,11 +117,19 @@ const getUpcomingMeeting = async (req, res, next) => {
 };
 
 // ─── Get Single Meeting by ID ─────────────────────────────────────────────────
+// GET /api/v1/meetings/detail?meetingId=1
 
 const getMeetingById = async (req, res, next) => {
     try {
         const userId = req.userId;
-        const meetingId = parseInt(req.params.meetingId, 10);
+        const meetingId = parseInt(req.query.meetingId, 10);
+
+        if (!req.query.meetingId || isNaN(meetingId) || meetingId <= 0) {
+            return HttpResponse.error(res, {
+                message: 'meetingId query parameter is required and must be a positive integer',
+                statusCode: 400
+            });
+        }
 
         const response = await meetingService.getMeetingById({ meetingId, userId });
 
@@ -144,12 +154,20 @@ const getMeetingById = async (req, res, next) => {
 };
 
 // ─── Update Meeting ───────────────────────────────────────────────────────────
+// PUT /api/v1/meetings/update?meetingId=1
 
 const updateMeeting = async (req, res, next) => {
     try {
         const userId = req.userId;
-        const meetingId = parseInt(req.params.meetingId, 10);
+        const meetingId = parseInt(req.query.meetingId, 10);
         const updateData = req.body;
+
+        if (!req.query.meetingId || isNaN(meetingId) || meetingId <= 0) {
+            return HttpResponse.error(res, {
+                message: 'meetingId query parameter is required and must be a positive integer',
+                statusCode: 400
+            });
+        }
 
         const response = await meetingService.updateMeeting({ meetingId, updateData, userId });
 

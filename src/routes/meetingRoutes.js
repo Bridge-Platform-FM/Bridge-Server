@@ -8,7 +8,6 @@ const { createMeetingSchema, updateMeetingSchema, validate } = require('../valid
 
 // POST /api/v1/meetings
 // Create a new meeting. Meeting is confirmed immediately upon creation.
-// dealRoomId and recipientUserId are required in the request body.
 router.post(
     '/',
     authMiddleware,
@@ -16,29 +15,22 @@ router.post(
     meetingController.createMeeting
 );
 
-// IMPORTANT: Static sub-paths (/upcoming) must be declared BEFORE the dynamic
-// /:meetingId route, otherwise Express matches "upcoming" as a meetingId value.
-
-// GET /api/v1/meetings/upcoming?dealRoomId=X
+// GET /api/v1/meetings/upcoming?dealRoomId=1
 // Returns the single nearest upcoming meeting for the specified deal room.
-// Used for the "upcoming meeting" notification widget inside the deal room UI.
-// Returns data: null if no upcoming meetings exist for that deal room.
 router.get('/upcoming', authMiddleware, meetingController.getUpcomingMeeting);
 
-// GET /api/v1/meetings?dealRoomId=X
-// Returns ALL meetings (past + upcoming) for the specified deal room, sorted ASC by scheduled_at.
+// GET /api/v1/meetings/detail?meetingId=1
+// Returns full details of a single meeting.
+router.get('/detail', authMiddleware, meetingController.getMeetingById);
+
+// GET /api/v1/meetings?dealRoomId=1
+// Returns ALL meetings (past + upcoming) for the specified deal room.
 router.get('/', authMiddleware, meetingController.getMeetingsByDealRoom);
 
-// GET /api/v1/meetings/:meetingId
-// Returns full details of a single meeting. Only accessible to its two participants.
-router.get('/:meetingId', authMiddleware, meetingController.getMeetingById);
-
-// PUT /api/v1/meetings/:meetingId
+// PUT /api/v1/meetings/update?meetingId=1
 // Updates meeting details. At least one field must be provided.
-// Both participants (requester and recipient) can update.
-// If scheduledAt is updated, it must be a future date.
 router.put(
-    '/:meetingId',
+    '/update',
     authMiddleware,
     validate(updateMeetingSchema),
     meetingController.updateMeeting

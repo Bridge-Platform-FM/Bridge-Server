@@ -45,9 +45,14 @@ module.exports = (sequelize) => {
             allowNull: false
         },
 
-        description: {
+        agenda: {
             type: DataTypes.TEXT,
             allowNull: true
+        },
+
+        duration: {
+            type: DataTypes.STRING(100),
+            allowNull: false
         },
 
         meeting_link: {

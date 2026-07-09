@@ -12,7 +12,8 @@ const createMeeting = async ({
     dealRoomId,
     recipientUserId,
     title,
-    description,
+    agenda,
+    duration,
     meetingLink,
     scheduledAt,
     requesterId
@@ -64,7 +65,8 @@ const createMeeting = async ({
                 requester_user_id: requesterId,
                 recipient_user_id: recipientUserId,
                 title,
-                description: description || null,
+                agenda: agenda || null,
+                duration,
                 meeting_link: meetingLink,
                 scheduled_at: scheduledDate,
                 created_by: requesterId
@@ -94,7 +96,6 @@ const getMeetingsByDealRoom = async ({ dealRoomId, userId }) => {
             return ServiceResponse.error({ message: MEETING_MESSAGES.DEAL_ROOM_NOT_FOUND, statusCode: 404 });
         }
 
-        // Only participants of this deal room can see its meetings
         const isParticipant =
             dealRoom.requester_user_id === userId ||
             dealRoom.recipient_user_id === userId;
@@ -130,11 +131,10 @@ const getUpcomingMeeting = async ({ dealRoomId, userId }) => {
             return ServiceResponse.error({ message: MEETING_MESSAGES.FORBIDDEN, statusCode: 403 });
         }
 
-        // Returns a single meeting object or null if none upcoming
         const meeting = await meetingRepository.getUpcomingMeetingByDealRoom(dealRoomId);
         return ServiceResponse.success({
             message: MEETING_MESSAGES.FETCH_SUCCESS,
-            data: meeting,   // null is a valid response — means no upcoming meetings
+            data: meeting,
             statusCode: 200
         });
     } catch (error) {
@@ -152,7 +152,6 @@ const getMeetingById = async ({ meetingId, userId }) => {
             return ServiceResponse.error({ message: MEETING_MESSAGES.NOT_FOUND, statusCode: 404 });
         }
 
-        // Only the two participants of this meeting can view its details
         if (meeting.requester_user_id !== userId && meeting.recipient_user_id !== userId) {
             return ServiceResponse.error({ message: MEETING_MESSAGES.FORBIDDEN, statusCode: 403 });
         }
@@ -179,27 +178,21 @@ const updateMeeting = async ({ meetingId, updateData, userId }) => {
             return ServiceResponse.error({ message: MEETING_MESSAGES.NOT_FOUND, statusCode: 404 });
         }
 
-        // Both participants can update the meeting (e.g., reschedule)
         if (meeting.requester_user_id !== userId && meeting.recipient_user_id !== userId) {
             await transaction.rollback();
             return ServiceResponse.error({ message: MEETING_MESSAGES.FORBIDDEN, statusCode: 403 });
         }
 
-        // Build the snake_case DB payload from the camelCase request body
+        // Build snake_case DB payload from camelCase request body
         const dbUpdateData = { updated_by: userId };
 
-        if (updateData.title !== undefined) {
-            dbUpdateData.title = updateData.title;
-        }
-        if (updateData.description !== undefined) {
-            dbUpdateData.description = updateData.description;
-        }
-        if (updateData.meetingLink !== undefined) {
-            dbUpdateData.meeting_link = updateData.meetingLink;
-        }
+        if (updateData.title !== undefined)    dbUpdateData.title = updateData.title;
+        if (updateData.agenda !== undefined)   dbUpdateData.agenda = updateData.agenda;
+        if (updateData.duration !== undefined) dbUpdateData.duration = updateData.duration;
+        if (updateData.meetingLink !== undefined) dbUpdateData.meeting_link = updateData.meetingLink;
+
         if (updateData.scheduledAt !== undefined) {
             const scheduledDate = new Date(updateData.scheduledAt);
-            // Server-side guard in addition to Joi validation
             if (scheduledDate <= new Date()) {
                 await transaction.rollback();
                 return ServiceResponse.error({ message: MEETING_MESSAGES.PAST_TIME, statusCode: 400 });

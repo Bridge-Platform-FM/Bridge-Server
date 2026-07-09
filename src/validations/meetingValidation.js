@@ -21,8 +21,12 @@ const createMeetingSchema = Joi.object({
         'string.max': 'title must not exceed 255 characters',
         'any.required': 'title is required'
     }),
-    description: Joi.string().max(1000).optional().allow(null, '').messages({
-        'string.max': 'description must not exceed 1000 characters'
+    agenda: Joi.string().max(1000).optional().allow(null, '').messages({
+        'string.max': 'agenda must not exceed 1000 characters'
+    }),
+    duration: Joi.string().max(100).required().messages({
+        'string.max': 'duration must not exceed 100 characters',
+        'any.required': 'duration is required'
     }),
     meetingLink: Joi.string().uri().max(500).required().messages({
         'string.uri': 'meetingLink must be a valid URL (include https://)',
@@ -42,8 +46,11 @@ const updateMeetingSchema = Joi.object({
         'string.min': 'title must be at least 3 characters long',
         'string.max': 'title must not exceed 255 characters'
     }),
-    description: Joi.string().max(1000).optional().allow(null, '').messages({
-        'string.max': 'description must not exceed 1000 characters'
+    agenda: Joi.string().max(1000).optional().allow(null, '').messages({
+        'string.max': 'agenda must not exceed 1000 characters'
+    }),
+    duration: Joi.string().max(100).optional().messages({
+        'string.max': 'duration must not exceed 100 characters'
     }),
     meetingLink: Joi.string().uri().max(500).optional().messages({
         'string.uri': 'meetingLink must be a valid URL (include https://)',

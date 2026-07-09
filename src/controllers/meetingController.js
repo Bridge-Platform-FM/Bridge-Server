@@ -10,13 +10,14 @@ const HttpResponse = require('../utils/HttpResponse');
 const createMeeting = async (req, res, next) => {
     try {
         const requesterId = req.userId;
-        const { dealRoomId, recipientUserId, title, description, meetingLink, scheduledAt } = req.body;
+        const { dealRoomId, recipientUserId, title, agenda, duration, meetingLink, scheduledAt } = req.body;
 
         const response = await meetingService.createMeeting({
             dealRoomId,
             recipientUserId,
             title,
-            description,
+            agenda,
+            duration,
             meetingLink,
             scheduledAt,
             requesterId

@@ -275,12 +275,10 @@ const login = async (req, res, next) => {
         const maskedMobile = maskPhone(existingCompany.country_code + existingCompany.mobile_number);
         const maskedEmail = maskEmail(existingCompany.company_email);
 
-        const tokens = await tokenService.generateTokens(existingCompany, role, existingUser,
-            {
-                ipAddress: req.ip,
-                userAgent: req.headers['user-agent']
-            }
-        );
+        const tokens = await tokenService.generateTokens(existingCompany, role, existingUser, {
+            ipAddress: req.ip,
+            headers: req.headers          // full headers — parseDeviceInfo reads sec-ch-ua* from these
+        });
         const { accessToken, refreshToken } = tokens.data;
 
         return HttpResponse.success( res, {data: { accessToken, refreshToken, role: role.role_code, maskedMobile, maskedEmail }, message: LOGIN_MESSAGES.VALID_CREDENTIALS })

@@ -135,27 +135,6 @@ const checkPassword = async (password, hashedPassword) => {
         return ServiceResponse.error({ message: AUTH_MESSAGES.INVALID_CREDENTIALS, statusCode: 401 });
     }
 }
-/*
-const checkPassword = async (password, hashedPassword) => {
-    try {
-
-        if (password === hashedPassword) {
-            return ServiceResponse.success({ statusCode: 200 });
-        }
-
-        return ServiceResponse.error({
-            message: AUTH_MESSAGES.INVALID_CREDENTIALS,
-            statusCode: 401
-        });
-
-    } catch (error) {
-        return ServiceResponse.error({
-            message: AUTH_MESSAGES.INVALID_CREDENTIALS,
-            statusCode: 401
-        });
-    }
-}
-*/
 
 const getCompanyUser_role = async (company_id, user_id) => {
     try {

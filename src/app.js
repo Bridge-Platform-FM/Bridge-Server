@@ -21,9 +21,10 @@ const matchingRoutes = require('./routes/matchingRoutes');
 const connectionRoutes = require('./routes/connectionRoutes');
 const dealRoomRoutes = require('./routes/dealRoomRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const meetingRoutes = require('./routes/meetingRoutes');
 const scanErrorMiddleware = require('./middleware/scanError');
-const { initSockets } = require('./sockets');                          // from develop
-const userSessionRoutes = require('./routes/userSessionRoutes');        // from our branch
+const { initSockets } = require('./sockets');
+const userSessionRoutes = require('./routes/userSessionRoutes');
 
 const app = express();
 app.use(cors());
@@ -38,8 +39,9 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/matching', matchingRoutes);
 app.use('/api/v1/connections', connectionRoutes);
 app.use('/api/v1/deal-rooms', dealRoomRoutes);
-app.use('/api/v1/deal-rooms/:dealRoomId/messages', chatRoutes);        // from develop
-app.use('/api/v1/sessions', userSessionRoutes);                        // from our branch
+app.use('/api/v1/deal-rooms/:dealRoomId/messages', chatRoutes);
+app.use('/api/v1/sessions', userSessionRoutes);
+app.use('/api/v1/meetings', meetingRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {

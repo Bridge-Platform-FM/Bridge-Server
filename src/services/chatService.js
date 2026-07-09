@@ -159,7 +159,7 @@ const getMedia = async (dealRoomId, messageId, userId) => {
         }
 
         const chatMessage = await chatRepository.findById(messageId);
-        if (!chatMessage || chatMessage.deal_room_id !== Number(dealRoomId) || !chatMessage.attachment_s3_key) {
+        if (!chatMessage || chatMessage.deal_room_id !== dealRoomId || !chatMessage.attachment_s3_key) {
             return ServiceResponse.error({ message: CHAT_MESSAGES.MESSAGE_NOT_FOUND, statusCode: 404 });
         }
 

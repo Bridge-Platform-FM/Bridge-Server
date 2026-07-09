@@ -5,6 +5,8 @@ const meetingService = require('../services/meetingService');
 const { MEETING_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ─── Create Meeting ───────────────────────────────────────────────────────────
 
 const createMeeting = async (req, res, next) => {
@@ -44,16 +46,16 @@ const createMeeting = async (req, res, next) => {
 };
 
 // ─── Get All Meetings for a Deal Room ────────────────────────────────────────
-// GET /api/v1/meetings?dealRoomId=1
+// GET /api/v1/meetings?dealRoomId=<uuid>
 
 const getMeetingsByDealRoom = async (req, res, next) => {
     try {
         const userId = req.userId;
-        const dealRoomId = parseInt(req.query.dealRoomId, 10);
+        const { dealRoomId } = req.query;
 
-        if (!req.query.dealRoomId || isNaN(dealRoomId) || dealRoomId <= 0) {
+        if (!UUID_REGEX.test(dealRoomId)) {
             return HttpResponse.error(res, {
-                message: 'dealRoomId query parameter is required and must be a positive integer',
+                message: 'dealRoomId query parameter is required and must be a valid UUID',
                 statusCode: 400
             });
         }
@@ -81,16 +83,16 @@ const getMeetingsByDealRoom = async (req, res, next) => {
 };
 
 // ─── Get Nearest Upcoming Meeting for a Deal Room ────────────────────────────
-// GET /api/v1/meetings/upcoming?dealRoomId=1
+// GET /api/v1/meetings/upcoming?dealRoomId=<uuid>
 
 const getUpcomingMeeting = async (req, res, next) => {
     try {
         const userId = req.userId;
-        const dealRoomId = parseInt(req.query.dealRoomId, 10);
+        const { dealRoomId } = req.query;
 
-        if (!req.query.dealRoomId || isNaN(dealRoomId) || dealRoomId <= 0) {
+        if (!UUID_REGEX.test(dealRoomId)) {
             return HttpResponse.error(res, {
-                message: 'dealRoomId query parameter is required and must be a positive integer',
+                message: 'dealRoomId query parameter is required and must be a valid UUID',
                 statusCode: 400
             });
         }

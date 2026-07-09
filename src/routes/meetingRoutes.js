@@ -15,7 +15,7 @@ router.post(
     meetingController.createMeeting
 );
 
-// GET /api/v1/meetings/upcoming?dealRoomId=1
+// GET /api/v1/meetings/upcoming?dealRoomId=<uuid>
 // Returns the single nearest upcoming meeting for the specified deal room.
 router.get('/upcoming', authMiddleware, meetingController.getUpcomingMeeting);
 
@@ -23,7 +23,7 @@ router.get('/upcoming', authMiddleware, meetingController.getUpcomingMeeting);
 // Returns full details of a single meeting.
 router.get('/detail', authMiddleware, meetingController.getMeetingById);
 
-// GET /api/v1/meetings?dealRoomId=1
+// GET /api/v1/meetings?dealRoomId=<uuid>
 // Returns ALL meetings (past + upcoming) for the specified deal room.
 router.get('/', authMiddleware, meetingController.getMeetingsByDealRoom);
 

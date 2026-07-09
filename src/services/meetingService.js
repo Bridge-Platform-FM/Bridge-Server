@@ -183,6 +183,11 @@ const updateMeeting = async ({ meetingId, updateData, userId }) => {
             return ServiceResponse.error({ message: MEETING_MESSAGES.FORBIDDEN, statusCode: 403 });
         }
 
+        if (meeting.created_by !== userId) {
+            await transaction.rollback();
+            return ServiceResponse.error({ message: MEETING_MESSAGES.FORBIDDEN, statusCode: 403 });
+        }
+
         // Build snake_case DB payload from camelCase request body
         const dbUpdateData = { updated_by: userId };
 

@@ -4,10 +4,8 @@ const Joi = require('joi');
 const HttpResponse = require('../utils/HttpResponse');
 
 const createMeetingSchema = Joi.object({
-    dealRoomId: Joi.number().integer().positive().required().messages({
-        'number.base': 'dealRoomId must be a number',
-        'number.integer': 'dealRoomId must be an integer',
-        'number.positive': 'dealRoomId must be a positive number',
+    dealRoomId: Joi.string().guid().required().messages({
+        'string.guid': 'dealRoomId must be a valid UUID',
         'any.required': 'dealRoomId is required'
     }),
     recipientUserId: Joi.number().integer().positive().required().messages({

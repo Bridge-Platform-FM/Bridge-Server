@@ -40,8 +40,12 @@ const {
  *
  * generateTokens(company, role, user, {
  *     ipAddress,
- *     userAgent
+ *     headers    ← full req.headers (replaces the old `userAgent` field)
  * })
+ *
+ * Passing the full headers object lets parseDeviceInfo() use the same
+ * sec-ch-ua* Client Hint headers that requestResponseLogger.js already
+ * reads, with ua-parser-js as a fallback for browsers that don't send them.
  */
 const generateTokens = async (
     company,
@@ -54,7 +58,7 @@ const generateTokens = async (
 
         const {
             ipAddress = null,
-            userAgent = null
+            headers   = {}         // changed from `userAgent` — full req.headers
         } = requestMeta;
 
         /*
@@ -108,8 +112,7 @@ const generateTokens = async (
          */
         if (SESSION_LIMIT_ENABLED) {
 
-            const deviceInfo =
-                parseDeviceInfo(userAgent);
+            const deviceInfo = parseDeviceInfo(headers);   // changed from parseDeviceInfo(userAgent)
 
             /*
              * Match refresh token expiry

@@ -4,6 +4,8 @@ const { errorLogger } = require('../configs/logger');
 const dealRoomService = require('../services/dealRoomService');
 const HttpResponse = require('../utils/HttpResponse');
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const getDealRooms = async (req, res, next) => {
     try {
         const { userId, roleId } = req;
@@ -24,9 +26,9 @@ const getDealRooms = async (req, res, next) => {
 
 const closeDealRoom = async (req, res, next) => {
     try {
-        const dealRoomId = Number(req.params.dealRoomId);
-        if (!Number.isInteger(dealRoomId) || dealRoomId <= 0) {
-            return HttpResponse.error(res, { message: 'dealRoomId must be a positive integer', statusCode: 400 });
+        const { dealRoomId } = req.params;
+        if (!UUID_REGEX.test(dealRoomId)) {
+            return HttpResponse.error(res, { message: 'dealRoomId must be a valid UUID', statusCode: 400 });
         }
 
         const { reason } = req.body;

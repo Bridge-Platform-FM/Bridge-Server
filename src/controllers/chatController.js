@@ -6,10 +6,12 @@ const { emitToDealRoom } = require('../sockets');
 const { SOCKET_EVENTS, CHAT_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const parseDealRoomId = (req, res) => {
-    const dealRoomId = Number(req.params.dealRoomId);
-    if (!Number.isInteger(dealRoomId) || dealRoomId <= 0) {
-        HttpResponse.error(res, { message: 'dealRoomId must be a positive integer', statusCode: 400 });
+    const { dealRoomId } = req.params;
+    if (!UUID_REGEX.test(dealRoomId)) {
+        HttpResponse.error(res, { message: 'dealRoomId must be a valid UUID', statusCode: 400 });
         return null;
     }
     return dealRoomId;

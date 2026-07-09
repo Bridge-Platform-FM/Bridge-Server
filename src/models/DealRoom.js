@@ -9,9 +9,9 @@ module.exports = (sequelize) => {
     const DealRoom = sequelize.define('DealRoom', {
 
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
-            autoIncrement: true,
+            defaultValue: DataTypes.UUIDV4,
             allowNull: false
         },
 
@@ -145,7 +145,6 @@ module.exports = (sequelize) => {
     }, {
         tableName: 'deal_room',
         timestamps: true,
-        initialAutoIncrement: 1,
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });

@@ -73,8 +73,8 @@ function parseDeviceInfo(headers = {}) {
         // Mirror the logger's mobile detection: sec-ch-ua-mobile === "?1"
         const isMobile  = secChUaMobile === '?1';
         const deviceName = isMobile
-            ? `${browser} on ${os} (Mobile)`
-            : `${browser} on ${os}`;
+            ? `Mobile`
+            : `Desktop`;
 
         return { deviceName, browser, os };
 

@@ -4,6 +4,7 @@ const { errorLogger } = require('../configs/logger');
 const { verifyAccessToken } = require('../utils/token');
 const { ROLES } = require('../utils/constant');
 const registerChatHandlers = require('./chatSocketHandler');
+const registerDealRoomStageHandlers = require('./dealRoomStageSocketHandler');
 const { dealRoomChannel } = require('./dealRoomChannel');
 
 let ioInstance = null;
@@ -37,6 +38,7 @@ const initSockets = (io) => {
 
     io.on('connection', (socket) => {
         registerChatHandlers(io, socket);
+        registerDealRoomStageHandlers(io, socket);
     });
 };
 

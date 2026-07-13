@@ -29,6 +29,18 @@ const closeById = async (dealRoomId, { closedReason, closedBy }, { transaction }
     return updated;
 };
 
+const updateStage = async (dealRoomId, stage, { updatedBy, transaction } = {}) => {
+    const [, [updated]] = await DealRoom.update(
+        {
+            stage,
+            updated_at: new Date(),
+            updated_by: updatedBy
+        },
+        { where: { id: dealRoomId }, returning: true, transaction }
+    );
+    return updated;
+};
+
 const findAllByUserId = async (userId, roleId) => {
     return await sequelize.query(
         `SELECT
@@ -84,4 +96,4 @@ const findAllByUserId = async (userId, roleId) => {
     );
 };
 
-module.exports = { create, findById, closeById, findAllByUserId };
+module.exports = { create, findById, closeById, updateStage, findAllByUserId };

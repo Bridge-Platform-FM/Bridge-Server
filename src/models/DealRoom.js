@@ -2,7 +2,7 @@
 
 const { DataTypes } = require('sequelize');
 
-const { DEAL_ROOM_STATUS } = require('../utils/constant');
+const { DEAL_ROOM_STATUS, DEAL_ROOM_STAGES } = require('../utils/constant');
 
 module.exports = (sequelize) => {
 
@@ -89,6 +89,12 @@ module.exports = (sequelize) => {
             allowNull: false,
             defaultValue: DEAL_ROOM_STATUS.ACTIVE
         },
+        stage: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+            defaultValue: DEAL_ROOM_STAGES.INITIAL_CONNECTION
+        },
+
 
         closed_at: {
             type: DataTypes.DATE,
@@ -194,6 +200,11 @@ module.exports = (sequelize) => {
         DealRoom.hasMany(models.DealRoomMedia, {
             foreignKey: 'deal_room_id',
             as: 'media'
+        });
+
+        DealRoom.hasMany(models.DealRoomStageRequest, {
+            foreignKey: 'deal_room_id',
+            as: 'stageRequests'
         });
 
     };

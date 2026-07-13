@@ -1,7 +1,9 @@
 'use strict';
 
+const { sequelize, User } = require('../models');
 const { errorLogger } = require('../configs/logger');
 const chatRepository = require('../repositories/chatRepository');
+const mediaRepository = require('../repositories/mediaRepository');
 const dealRoomRepository = require('../repositories/dealRoomRepository');
 const dealRoomService = require('./dealRoomService');
 const { uploadToS3, getFileBuffer } = require('./s3.service');
@@ -49,11 +51,14 @@ const sendMessage = async ({ dealRoomId, senderUserId, senderRoleId, message }) 
             recipient_user_id: recipientUserId,
             recipient_role_id: recipientRoleId,
             message,
-            message_type: CHAT_MESSAGE_TYPE.TEXT,
             created_by: senderUserId
         });
 
-        return ServiceResponse.success({ data: saved, message: CHAT_MESSAGES.SEND_SUCCESS, statusCode: 201 });
+        return ServiceResponse.success({
+            data: { ...saved.toJSON(), message_type: CHAT_MESSAGE_TYPE.TEXT },
+            message: CHAT_MESSAGES.SEND_SUCCESS,
+            statusCode: 201
+        });
     } catch (error) {
         errorLogger.error(error);
         return ServiceResponse.error({ message: CHAT_MESSAGES.SEND_FAILED, statusCode: 500 });
@@ -82,16 +87,16 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
 
         const { recipientUserId, recipientRoleId } = resolveRecipient(dealRoom, senderUserId);
 
-        const saved = await chatRepository.create({
+        const saved = await mediaRepository.create({
             deal_room_id: dealRoom.id,
             sender_user_id: senderUserId,
             sender_role_id: senderRoleId,
             recipient_user_id: recipientUserId,
             recipient_role_id: recipientRoleId,
-            message: caption || null,
-            download_allowed: download_allowed, 
+            caption: caption || null,
+            download_allowed: download_allowed,
             view_only: view_only,
-            message_type: rule.messageType,
+            media_type: rule.messageType,
             attachment_s3_key: s3Key,
             attachment_file_name: file.originalname,
             attachment_mime_type: file.mimetype,
@@ -99,21 +104,37 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
             created_by: senderUserId
         });
 
-        return ServiceResponse.success({ data: saved, message: CHAT_MESSAGES.MEDIA_UPLOAD_SUCCESS, statusCode: 201 });
+        const { caption, media_type, ...savedMedia } = saved.toJSON();
+
+        return ServiceResponse.success({
+            data: { ...savedMedia, message: caption, message_type: media_type },
+            message: CHAT_MESSAGES.MEDIA_UPLOAD_SUCCESS,
+            statusCode: 201
+        });
     } catch (error) {
         errorLogger.error(error);
         return ServiceResponse.error({ message: CHAT_MESSAGES.MEDIA_UPLOAD_FAILED, statusCode: 500 });
     }
 };
 
-const getMessages = async (dealRoomId, userId, { cursor, limit } = {}) => {
+const getMessages = async (dealRoomId, userId) => {
     try {
         const { error } = await authorize(dealRoomId, userId);
         if (error) {
             return error;
         }
 
-        const messages = await chatRepository.findByDealRoomId(dealRoomId, { cursor, limit });
+        const items = await chatRepository.findMergedByDealRoomId(dealRoomId);
+
+        const senderIds = [...new Set(items.map((item) => item.sender_user_id))];
+        const senders = await User.findAll({
+            where: { id: senderIds },
+            attributes: ['id', 'first_name', 'last_name']
+        });
+        const senderById = new Map(senders.map((sender) => [sender.id, sender]));
+
+        const messages = items.map((item) => ({ ...item, sender: senderById.get(item.sender_user_id) || null }));
+
         return ServiceResponse.success({ data: messages, message: CHAT_MESSAGES.FETCH_SUCCESS, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
@@ -128,7 +149,7 @@ const getSharedFiles = async (dealRoomId, userId) => {
             return error;
         }
 
-        const files = await chatRepository.findSharedFilesByDealRoomId(dealRoomId);
+        const files = await mediaRepository.findSharedFilesByDealRoomId(dealRoomId);
         return ServiceResponse.success({ data: files, message: CHAT_MESSAGES.FILES_FETCH_SUCCESS, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
@@ -143,7 +164,19 @@ const markRead = async (dealRoomId, userId) => {
             return error;
         }
 
-        await chatRepository.markReadByDealRoom(dealRoomId, userId);
+        const readAt = new Date();
+        const transaction = await sequelize.transaction();
+        try {
+            await Promise.all([
+                chatRepository.markReadByDealRoom(dealRoomId, userId, readAt, { transaction }),
+                mediaRepository.markReadByDealRoom(dealRoomId, userId, readAt, { transaction })
+            ]);
+            await transaction.commit();
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+
         return ServiceResponse.success({ message: CHAT_MESSAGES.MARK_READ_SUCCESS, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
@@ -158,14 +191,14 @@ const getMedia = async (dealRoomId, messageId, userId) => {
             return error;
         }
 
-        const chatMessage = await chatRepository.findById(messageId);
-        if (!chatMessage || chatMessage.deal_room_id !== dealRoomId || !chatMessage.attachment_s3_key) {
-            return ServiceResponse.error({ message: CHAT_MESSAGES.MESSAGE_NOT_FOUND, statusCode: 404 });
+        const media = await mediaRepository.findById(messageId);
+        if (!media || media.deal_room_id !== dealRoomId) {
+            return ServiceResponse.error({ message: CHAT_MESSAGES.MEDIA_NOT_FOUND, statusCode: 404 });
         }
 
-        const buffer = await getFileBuffer(chatMessage.attachment_s3_key);
+        const buffer = await getFileBuffer(media.attachment_s3_key);
         return ServiceResponse.success({
-            data: { buffer, mimeType: chatMessage.attachment_mime_type, fileName: chatMessage.attachment_file_name },
+            data: { buffer, mimeType: media.attachment_mime_type, fileName: media.attachment_file_name },
             statusCode: 200
         });
     } catch (error) {

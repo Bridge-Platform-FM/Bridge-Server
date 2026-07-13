@@ -1,47 +1,52 @@
 'use strict';
 
-const { Op } = require('sequelize');
-const { DealRoomMessage, User } = require('../models');
+const { QueryTypes } = require('sequelize');
+const { sequelize, DealRoomMessage } = require('../models');
 
 const create = async (data, { transaction } = {}) => {
     return await DealRoomMessage.create(data, { transaction });
 };
 
-const findById = async (messageId) => {
-    return await DealRoomMessage.findOne({
-        where: { id: messageId, is_deleted: false }
-    });
+// Merges the full deal_room_message + deal_room_media history for a room via
+// a single UNION ALL — the database does the sort, no app-level merge needed.
+// The output columns are named to reproduce the pre-split deal_room_message
+// row shape (message / message_type on every row) so the API response is
+// unchanged regardless of which table a row actually lives in.
+const findMergedByDealRoomId = async (dealRoomId) => {
+    return await sequelize.query(
+        `SELECT * FROM (
+            SELECT
+                id, deal_room_id, sender_user_id, sender_role_id, recipient_user_id, recipient_role_id,
+                message, 'TEXT'::varchar AS message_type,
+                NULL::varchar AS attachment_s3_key, NULL::varchar AS attachment_file_name,
+                NULL::varchar AS attachment_mime_type, NULL::integer AS attachment_file_size,
+                NULL::boolean AS download_allowed, NULL::boolean AS view_only,
+                read_at, created_at
+            FROM deal_room_message
+            WHERE deal_room_id = :dealRoomId AND is_deleted = false
+
+            UNION ALL
+
+            SELECT
+                id, deal_room_id, sender_user_id, sender_role_id, recipient_user_id, recipient_role_id,
+                caption AS message, media_type AS message_type,
+                attachment_s3_key, attachment_file_name, attachment_mime_type, attachment_file_size,
+                download_allowed, view_only,
+                read_at, created_at
+            FROM deal_room_media
+            WHERE deal_room_id = :dealRoomId AND is_deleted = false
+        ) chat_timeline
+        ORDER BY created_at ASC, id ASC`,
+        {
+            replacements: { dealRoomId },
+            type: QueryTypes.SELECT
+        }
+    );
 };
 
-const findByDealRoomId = async (dealRoomId, { cursor, limit } = {}) => {
-    const where = { deal_room_id: dealRoomId, is_deleted: false };
-    if (cursor) {
-        where.id = { [Op.lt]: cursor };
-    }
-
-    return await DealRoomMessage.findAll({
-        where,
-        include: [{ model: User, as: 'sender', attributes: ['id', 'first_name', 'last_name'] }],
-        order: [['id', 'DESC']],
-        limit: limit || 30
-    });
-};
-
-const findSharedFilesByDealRoomId = async (dealRoomId) => {
-    return await DealRoomMessage.findAll({
-        where: { deal_room_id: dealRoomId, is_deleted: false, attachment_s3_key: { [Op.not]: null } },
-        attributes: [
-            'id', 'message_type', 'attachment_s3_key', 'attachment_file_name',
-            'attachment_mime_type', 'download_allowed', 'view_only', 'attachment_file_size', 'created_at'
-        ],
-        include: [{ model: User, as: 'sender', attributes: ['id', 'first_name', 'last_name'] }],
-        order: [['id', 'DESC']]
-    });
-};
-
-const markReadByDealRoom = async (dealRoomId, readerUserId, { transaction } = {}) => {
+const markReadByDealRoom = async (dealRoomId, readerUserId, readAt, { transaction } = {}) => {
     const [count] = await DealRoomMessage.update(
-        { read_at: new Date() },
+        { read_at: readAt },
         {
             where: {
                 deal_room_id: dealRoomId,
@@ -55,4 +60,4 @@ const markReadByDealRoom = async (dealRoomId, readerUserId, { transaction } = {}
     return count;
 };
 
-module.exports = { create, findById, findByDealRoomId, findSharedFilesByDealRoomId, markReadByDealRoom };
+module.exports = { create, findMergedByDealRoomId, markReadByDealRoom };

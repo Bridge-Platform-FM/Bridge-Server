@@ -4,7 +4,7 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
 
-    const DealRoomMessage = sequelize.define('DealRoomMessage', {
+    const DealRoomMedia = sequelize.define('DealRoomMedia', {
 
         id: {
             type: DataTypes.INTEGER,
@@ -58,9 +58,46 @@ module.exports = (sequelize) => {
             }
         },
 
-        message: {
+        caption: {
             type: DataTypes.TEXT,
             allowNull: true
+        },
+
+        media_type: {
+            type: DataTypes.STRING(20),
+            allowNull: false
+        },
+
+        attachment_s3_key: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+
+        attachment_file_name: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+
+        attachment_mime_type: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+
+        attachment_file_size: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+
+        download_allowed: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: false
+        },
+
+        view_only: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: true
         },
 
         read_at: {
@@ -102,7 +139,7 @@ module.exports = (sequelize) => {
         }
 
     }, {
-        tableName: 'deal_room_message',
+        tableName: 'deal_room_media',
         timestamps: true,
         initialAutoIncrement: 1,
         createdAt: 'created_at',
@@ -117,34 +154,34 @@ module.exports = (sequelize) => {
         ]
     });
 
-    DealRoomMessage.associate = (models) => {
+    DealRoomMedia.associate = (models) => {
 
-        DealRoomMessage.belongsTo(models.DealRoom, {
+        DealRoomMedia.belongsTo(models.DealRoom, {
             foreignKey: 'deal_room_id',
             as: 'dealRoom'
         });
 
-        DealRoomMessage.belongsTo(models.User, {
+        DealRoomMedia.belongsTo(models.User, {
             foreignKey: 'sender_user_id',
             as: 'sender'
         });
 
-        DealRoomMessage.belongsTo(models.CompanyRoleMaster, {
+        DealRoomMedia.belongsTo(models.CompanyRoleMaster, {
             foreignKey: 'sender_role_id',
             as: 'senderRole'
         });
 
-        DealRoomMessage.belongsTo(models.User, {
+        DealRoomMedia.belongsTo(models.User, {
             foreignKey: 'recipient_user_id',
             as: 'recipient'
         });
 
-        DealRoomMessage.belongsTo(models.CompanyRoleMaster, {
+        DealRoomMedia.belongsTo(models.CompanyRoleMaster, {
             foreignKey: 'recipient_role_id',
             as: 'recipientRole'
         });
 
     };
 
-    return DealRoomMessage;
+    return DealRoomMedia;
 };

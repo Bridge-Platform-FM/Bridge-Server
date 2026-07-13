@@ -231,6 +231,9 @@ const DEAL_ROOM_MESSAGES = {
     FORBIDDEN: 'You are not authorized to perform this action'
 };
 
+const DEAL_ROOM_STAGES = ["Initial Connection", "Negotiation", "Due Diligence", "Closing"];
+
+
 const CHAT_MESSAGE_TYPE = {
     TEXT: 'TEXT',
     IMAGE: 'IMAGE',
@@ -253,6 +256,7 @@ const CHAT_MESSAGES = {
     FILES_FETCH_SUCCESS: 'Shared files fetched successfully',
     FILES_FETCH_FAILED: 'Error encountered while fetching shared files',
     MESSAGE_NOT_FOUND: 'Message not found',
+    MEDIA_NOT_FOUND: 'Media not found',
     DEAL_ROOM_NOT_FOUND: 'Deal room not found',
     DEAL_ROOM_CLOSED: 'This deal room is closed; new messages are not allowed',
     FORBIDDEN: 'You are not authorized to access this deal room chat'

@@ -191,6 +191,11 @@ module.exports = (sequelize) => {
             as: 'messages'
         });
 
+        DealRoom.hasMany(models.DealRoomMedia, {
+            foreignKey: 'deal_room_id',
+            as: 'media'
+        });
+
     };
 
     return DealRoom;

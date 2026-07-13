@@ -7,7 +7,7 @@ const chatController = require('../controllers/chatController');
 const { chatMediaUpload } = require('../configs/scan');
 const { validate, sendMediaMessageSchema } = require('../validations/chatValidation');
 
-// GET /api/v1/deal-rooms/:dealRoomId/messages — paginated message history
+// GET /api/v1/deal-rooms/:dealRoomId/messages — full message history
 router.get('/', authMiddleware, chatController.getMessages);
 
 // PUT /api/v1/deal-rooms/:dealRoomId/messages/read — mark messages as read

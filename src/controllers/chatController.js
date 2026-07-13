@@ -25,10 +25,8 @@ const getMessages = async (req, res, next) => {
         if (!dealRoomId) return;
 
         const { userId } = req;
-        const cursor = req.query.cursor ? Number(req.query.cursor) : undefined;
-        const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
-        const result = await chatService.getMessages(dealRoomId, userId, { cursor, limit });
+        const result = await chatService.getMessages(dealRoomId, userId);
 
         if (!result.success) {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });

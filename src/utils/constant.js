@@ -303,7 +303,10 @@ const SOCKET_EVENTS = {
     RESPOND_STAGE_UPDATE: 'respond_stage_update',
     STAGE_UPDATE_REQUESTED: 'stage_update_requested',
     STAGE_UPDATE_RESPONDED: 'stage_update_responded',
-    ERROR: 'error'
+    ERROR: 'error',
+    USER_PRESENCE: 'user_presence',
+    MEETING_SCHEDULED: 'meeting_scheduled',
+
 };
 
 // ─── Meeting ──────────────────────────────────────────────────────────────────

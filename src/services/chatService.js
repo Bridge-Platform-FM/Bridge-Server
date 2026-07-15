@@ -106,10 +106,10 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
             created_by: senderUserId
         });
 
-        const { caption, media_type, ...savedMedia } = saved.toJSON();
+        const { caption: savedCaption, media_type, ...savedMedia } = saved.toJSON();
 
         return ServiceResponse.success({
-            data: { ...savedMedia, message: caption, message_type: media_type },
+            data: { ...savedMedia, message: savedCaption, message_type: media_type },
             message: CHAT_MESSAGES.MEDIA_UPLOAD_SUCCESS,
             statusCode: 201
         });

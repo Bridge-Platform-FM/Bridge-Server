@@ -77,7 +77,19 @@ const createMeeting = async ({
         await transaction.commit();
         return ServiceResponse.success({
             message: MEETING_MESSAGES.CREATE_SUCCESS,
-            data: { meetingId: meeting.id },
+            data: {
+                meetingId: meeting.id,
+                id: meeting.id,
+                dealRoomId: meeting.deal_room_id,
+                requesterUserId: meeting.requester_user_id,
+                recipientUserId: meeting.recipient_user_id,
+                title: meeting.title,
+                agenda: meeting.agenda,
+                duration: meeting.duration,
+                meetingLink: meeting.meeting_link,
+                scheduledAt: meeting.scheduled_at,
+                createdBy: meeting.created_by
+            },
             statusCode: 201
         });
     } catch (error) {

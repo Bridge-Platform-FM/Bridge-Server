@@ -7,6 +7,17 @@ const dealRoomService = require('../services/dealRoomService');
 const { dealRoomChannel } = require('./dealRoomChannel');
 const { SOCKET_EVENTS } = require('../utils/constant');
 
+
+const isUserInChannel = (io, channel, userId) => {
+    const socketIds = io.sockets.adapter.rooms.get(channel);
+    if (!socketIds) return false;
+    for (const id of socketIds) {
+        const other = io.sockets.sockets.get(id);
+        if (other && other.userId === userId) return true;
+    }
+    return false;
+};
+
 const registerChatHandlers = (io, socket) => {
 
     const emitError = (message) => {
@@ -27,7 +38,19 @@ const registerChatHandlers = (io, socket) => {
                 return emitError('You are not authorized to access this deal room chat');
             }
 
-            socket.join(dealRoomChannel(dealRoomId));
+            const channel = dealRoomChannel(dealRoomId);
+            const counterpartyUserId = dealRoom.requester_user_id === socket.userId
+                ? dealRoom.recipient_user_id
+                : dealRoom.requester_user_id;
+            const counterpartyOnline = isUserInChannel(io, channel, counterpartyUserId);
+
+            socket.join(channel);
+
+            // Tell the joiner whether the counterparty is already here...
+            socket.emit(SOCKET_EVENTS.USER_PRESENCE, { userId: counterpartyUserId, online: counterpartyOnline });
+            // ...and tell whoever's already here that this user just came online.
+            socket.to(channel).emit(SOCKET_EVENTS.USER_PRESENCE, { userId: socket.userId, online: true });
+ 
         } catch (error) {
             errorLogger.error(error);
             emitError('Unable to join deal room');
@@ -36,7 +59,19 @@ const registerChatHandlers = (io, socket) => {
 
     socket.on(SOCKET_EVENTS.LEAVE_DEAL_ROOM, ({ dealRoomId } = {}) => {
         if (!dealRoomId) return;
-        socket.leave(dealRoomChannel(dealRoomId));
+        const channel = dealRoomChannel(dealRoomId);
+        socket.to(channel).emit(SOCKET_EVENTS.USER_PRESENCE, { userId: socket.userId, online: false });
+        socket.leave(channel);
+    });
+
+    // Fires before Socket.IO clears `socket.rooms` (unlike `disconnect`), so we can still
+    // see which deal-room channels this socket was in and announce it as offline to each.
+    socket.on('disconnecting', () => {
+        for (const room of socket.rooms) {
+            if (room.startsWith('deal_room:')) {
+                socket.to(room).emit(SOCKET_EVENTS.USER_PRESENCE, { userId: socket.userId, online: false });
+            }
+        }
     });
 
     socket.on(SOCKET_EVENTS.SEND_MESSAGE, async ({ dealRoomId, message } = {}) => {

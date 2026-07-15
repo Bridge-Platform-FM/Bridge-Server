@@ -2,8 +2,9 @@
 
 const { errorLogger } = require('../configs/logger');
 const meetingService = require('../services/meetingService');
-const { MEETING_MESSAGES } = require('../utils/constant');
+const { MEETING_MESSAGES, SOCKET_EVENTS } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
+const { emitToDealRoom } = require('../sockets');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -32,6 +33,10 @@ const createMeeting = async (req, res, next) => {
                 statusCode: response.statusCode
             });
         }
+
+        // Let the counterparty (and my other tabs) see the new meeting live, without
+        // needing to poll/refresh — mirrors the chat NEW_MESSAGE broadcast pattern.
+        emitToDealRoom(dealRoomId, SOCKET_EVENTS.MEETING_SCHEDULED, response.data);
 
         return HttpResponse.success(res, {
             message: response.message,

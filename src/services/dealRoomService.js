@@ -137,6 +137,25 @@ const requestStageUpdate = async ({ dealRoomId, requestedStage, requestedByUserI
     }
 };
 
+const getPendingStageUpdate = async (dealRoomId, userId) => {
+    try {
+        const dealRoom = await dealRoomRepository.findById(dealRoomId);
+        if (!dealRoom) {
+            return ServiceResponse.error({ message: DEAL_ROOM_STAGE_MESSAGES.DEAL_ROOM_NOT_FOUND, statusCode: 404 });
+        }
+
+        if (!isParticipant(dealRoom, userId)) {
+            return ServiceResponse.error({ message: DEAL_ROOM_STAGE_MESSAGES.FORBIDDEN, statusCode: 403 });
+        }
+
+        const pending = await dealRoomStageRequestRepository.findPendingByDealRoomId(dealRoomId);
+        return ServiceResponse.success({ data: pending, message: DEAL_ROOM_STAGE_MESSAGES.REQUEST_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: DEAL_ROOM_STAGE_MESSAGES.REQUEST_FAILED, statusCode: 500 });
+    }
+};
+
 const respondStageUpdate = async ({ dealRoomId, requestId, decision, respondedByUserId }) => {
     const transaction = await sequelize.transaction();
     try {
@@ -204,4 +223,4 @@ const respondStageUpdate = async ({ dealRoomId, requestId, decision, respondedBy
     }
 };
 
-module.exports = { getDealRooms, createDealRoom, closeDealRoom, isParticipant, requestStageUpdate, respondStageUpdate };
+module.exports = { getDealRooms, createDealRoom, closeDealRoom, isParticipant, requestStageUpdate, respondStageUpdate, getPendingStageUpdate };

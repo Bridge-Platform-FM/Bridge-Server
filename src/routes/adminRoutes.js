@@ -22,4 +22,9 @@ router.put('/kyc/document-action', adminMiddleware, adminController.kycDocumentA
 
 router.put('/kyc/review-action', adminMiddleware, adminController.kycReviewAction);
 
+// User limit config
+router.get('/users/:userId/limit-config', adminMiddleware, adminController.getUserLimitConfig);
+
+router.put('/users/:userId/limit-config', adminMiddleware, adminController.updateUserLimitConfig);
+
 module.exports = router;

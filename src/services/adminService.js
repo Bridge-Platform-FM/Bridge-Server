@@ -1,10 +1,13 @@
 'use strict';
 const bcrypt = require('bcrypt');
+const { sequelize } = require('../models');
 const adminRepository = require('../repositories/adminRepository');
+const userRepository = require('../repositories/userRepository');
+const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
 const { generateAccessToken, generateRefreshToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_MESSAGES } = require('../utils/constant');
+const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, ROLES } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 
 
@@ -51,9 +54,100 @@ const findByEmail = async (email) => {
     } catch (error) {
         return ServiceResponse.error({ message: 'Error occured while checking email.', data: [], statusCode: 500 });
     }
-}
+};
+
+const getUserLimitConfig = async ({ userId, adminRole }) => {
+    try {
+        // Role check: currently only SYS_ADMIN is permitted.
+        // When SUPER_ADMIN is introduced, add it to ROLES.ADMIN in constant.js.
+        if (!ROLES.ADMIN.includes(adminRole)) {
+            return ServiceResponse.error({
+                message: USER_LIMIT_CONFIG_MESSAGES.FORBIDDEN,
+                statusCode: 403
+            });
+        }
+
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            return ServiceResponse.error({
+                message: USER_LIMIT_CONFIG_MESSAGES.USER_NOT_FOUND,
+                statusCode: 404
+            });
+        }
+
+        const config = await userLimitConfigRepository.findByUserId(userId);
+
+        const data = {
+            user_id: userId,
+            allowed_connections: config?.allowed_connections ?? USER_LIMIT_DEFAULTS.ALLOWED_CONNECTIONS,
+            allowed_free_trial_days: config?.allowed_free_trial_days ?? USER_LIMIT_DEFAULTS.ALLOWED_FREE_TRIAL_DAYS,
+            allowed_premium_days: config?.allowed_premium_days ?? USER_LIMIT_DEFAULTS.ALLOWED_PREMIUM_DAYS,
+            is_custom: !!config
+        };
+
+        return ServiceResponse.success({
+            message: USER_LIMIT_CONFIG_MESSAGES.FETCH_SUCCESS,
+            data,
+            statusCode: 200
+        });
+
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: USER_LIMIT_CONFIG_MESSAGES.FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+const updateUserLimitConfig = async ({ userId, adminId, adminRole, payload }) => {
+    const transaction = await sequelize.transaction();
+    try {
+        // Role check: currently only SYS_ADMIN is permitted.
+        // When SUPER_ADMIN is introduced, add it to ROLES.ADMIN in constant.js.
+        if (!ROLES.ADMIN.includes(adminRole)) {
+            await transaction.rollback();
+            return ServiceResponse.error({
+                message: USER_LIMIT_CONFIG_MESSAGES.FORBIDDEN,
+                statusCode: 403
+            });
+        }
+
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            await transaction.rollback();
+            return ServiceResponse.error({
+                message: USER_LIMIT_CONFIG_MESSAGES.USER_NOT_FOUND,
+                statusCode: 404
+            });
+        }
+
+        const { allowed_connections, allowed_free_trial_days, allowed_premium_days } = payload;
+
+        const updateData = {};
+        if (allowed_connections !== undefined) updateData.allowed_connections = allowed_connections;
+        if (allowed_free_trial_days !== undefined) updateData.allowed_free_trial_days = allowed_free_trial_days;
+        if (allowed_premium_days !== undefined) updateData.allowed_premium_days = allowed_premium_days;
+
+        const result = await userLimitConfigRepository.upsertUserLimitConfig(userId, updateData, adminId, { transaction });
+
+        await transaction.commit();
+
+        return ServiceResponse.success({
+            message: USER_LIMIT_CONFIG_MESSAGES.UPDATE_SUCCESS,
+            data: result,
+            statusCode: 200
+        });
+
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: USER_LIMIT_CONFIG_MESSAGES.UPDATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
 
 
-
-
-module.exports = { login, findByEmail };
+module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig };

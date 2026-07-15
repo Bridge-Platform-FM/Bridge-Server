@@ -109,9 +109,7 @@ const SESSION_MESSAGES = {
     SESSION_CREATE_FAILED: 'Failed to create session',
     SESSION_LIMIT_REACHED: 'Maximum number of active devices reached. Please choose a device to log out.',
     SESSION_SELECTION_REQUIRED: 'Please select at least one device to log out.',
-    SESSION_SELECTION_INVALID: 'One or more selected sessions are invalid or do not belong to you.',
-    LOGOUT_SUCCESS: 'Logged out successfully',
-    LOGOUT_FAILED: 'Failed to log out'
+    SESSION_SELECTION_INVALID: 'One or more selected sessions are invalid or do not belong to you.'
 }
 
 const S3_FILE_TYPE = {
@@ -188,6 +186,11 @@ const SUBSCRIPTION_MESSAGES = {
 const CONNECTION_REQUEST_LIMITS = {
     FREE: 3,
     PREMIUM: 50
+};
+
+// Number of free trial days granted by plan tier.
+const TRIAL_DAYS_LIMITS = {
+    FREE: 30
 };
 
 const CONNECTION_MESSAGES = {
@@ -326,13 +329,33 @@ const MEETING_MESSAGES = {
     FORBIDDEN: 'You are not authorized to perform this action'
 };
 
+// ─── User Limit Config ────────────────────────────────────────────────────────
+
+const USER_LIMIT_CONFIG_MESSAGES = {
+    FETCH_SUCCESS: 'User limit configuration fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching user limit configuration',
+    UPDATE_SUCCESS: 'User limit configuration updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating user limit configuration',
+    USER_NOT_FOUND: 'User not found',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    INVALID_USER_ID: 'Invalid user ID provided'
+};
+
+// Default limit values applied when no custom config exists for a user.
+// Update these values as required — they are the system-wide fallback shown in the admin UI.
+const USER_LIMIT_DEFAULTS = {
+    ALLOWED_CONNECTIONS: CONNECTION_REQUEST_LIMITS.FREE,  // Update when finalized
+    ALLOWED_FREE_TRIAL_DAYS: TRIAL_DAYS_LIMITS.FREE,      // Update when finalized
+    ALLOWED_PREMIUM_DAYS: 30                              // Update when finalized
+};
+
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
-    CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
+    CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS, TRIAL_DAYS_LIMITS,
     DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
-    SESSION_MESSAGES, MEETING_MESSAGES, DEAL_ROOM_STAGES,
+    SESSION_MESSAGES, MEETING_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, DEAL_ROOM_STAGES,
     DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES
 };

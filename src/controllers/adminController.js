@@ -1,5 +1,6 @@
 'use strict';
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES } = require('../utils/constant');
+const Joi = require('joi');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
@@ -7,6 +8,13 @@ const otpService = require('../services/otp.service');
 const userService = require('../services/userService');
 const kycService = require('../services/kycService');
 
+const updateLimitConfigSchema = Joi.object({
+    allowed_connections: Joi.number().integer().min(0).optional(),
+    allowed_free_trial_days: Joi.number().integer().min(0).optional(),
+    allowed_premium_days: Joi.number().integer().min(0).optional()
+}).min(1).messages({
+    'object.min': 'At least one limit configuration field must be provided'
+});
 
 const login = async (req, res, next) => {
     try {
@@ -206,4 +214,96 @@ const kycReviewAction = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction };
+const getUserLimitConfig = async (req, res, next) => {
+    try {
+        const { role: adminRole } = req;
+        const userId = parseInt(req.params.userId);
+
+        if (!userId || isNaN(userId)) {
+            return HttpResponse.error(res, {
+                message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
+                statusCode: 400
+            });
+        }
+
+        const serviceResponse = await adminService.getUserLimitConfig({ userId, adminRole });
+
+        if (!serviceResponse.success) {
+            return HttpResponse.error(res, {
+                message: serviceResponse.message,
+                data: serviceResponse.data,
+                statusCode: serviceResponse.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: serviceResponse.message,
+            data: serviceResponse.data,
+            statusCode: serviceResponse.statusCode
+        });
+
+    } catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: USER_LIMIT_CONFIG_MESSAGES.FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+const updateUserLimitConfig = async (req, res, next) => {
+    try {
+        const { role: adminRole, adminId } = req;
+        const userId = parseInt(req.params.userId);
+
+        if (!userId || isNaN(userId)) {
+            return HttpResponse.error(res, {
+                message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
+                statusCode: 400
+            });
+        }
+
+        const { error: validationError, value: payload } = updateLimitConfigSchema.validate(req.body, {
+            abortEarly: false
+        });
+
+        if (validationError) {
+            return HttpResponse.error(res, {
+                message: validationError.details.map(d => d.message).join(', '),
+                statusCode: 400
+            });
+        }
+
+        const serviceResponse = await adminService.updateUserLimitConfig({
+            userId,
+            adminId,
+            adminRole,
+            payload
+        });
+
+        if (!serviceResponse.success) {
+            return HttpResponse.error(res, {
+                message: serviceResponse.message,
+                data: serviceResponse.data,
+                statusCode: serviceResponse.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: serviceResponse.message,
+            data: serviceResponse.data,
+            statusCode: serviceResponse.statusCode
+        });
+
+    } catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: USER_LIMIT_CONFIG_MESSAGES.UPDATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig };

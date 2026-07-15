@@ -231,8 +231,35 @@ const DEAL_ROOM_MESSAGES = {
     FORBIDDEN: 'You are not authorized to perform this action'
 };
 
-const DEAL_ROOM_STAGES = ["Initial Connection", "Negotiation", "Due Diligence", "Closing"];
+const DEAL_ROOM_STAGES = {
+    INITIAL_CONNECTION: "Initial Connection",
+    NEGOTIATION: "Negotiation",
+    DUE_DILIGENCE: "Due Diligence",
+    CLOSED: "Closed"
+};
 
+const DEAL_ROOM_STAGE_REQUEST_STATUS = {
+    PENDING: 'Pending',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected'
+};
+
+const DEAL_ROOM_STAGE_MESSAGES = {
+    REQUEST_SUCCESS: 'Stage update requested successfully',
+    REQUEST_FAILED: 'Error encountered while requesting stage update',
+    REQUEST_PENDING_EXISTS: 'A stage update request is already pending for this deal room',
+    INVALID_STAGE: 'Invalid deal room stage',
+    SAME_STAGE: 'Deal room is already in the requested stage',
+    RESPOND_SUCCESS: 'Stage update request updated successfully',
+    RESPOND_FAILED: 'Error encountered while responding to stage update request',
+    INVALID_DECISION: 'decision must be Accepted or Rejected',
+    REQUEST_NOT_FOUND: 'Stage update request not found',
+    REQUEST_NOT_PENDING: 'This stage update request has already been responded to',
+    CANNOT_RESPOND_OWN_REQUEST: 'You cannot respond to your own stage update request',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; stage updates are not allowed'
+};
 
 const CHAT_MESSAGE_TYPE = {
     TEXT: 'TEXT',
@@ -272,6 +299,10 @@ const SOCKET_EVENTS = {
     TYPING: 'typing',
     STOP_TYPING: 'stop_typing',
     USER_TYPING: 'user_typing',
+    REQUEST_STAGE_UPDATE: 'request_stage_update',
+    RESPOND_STAGE_UPDATE: 'respond_stage_update',
+    STAGE_UPDATE_REQUESTED: 'stage_update_requested',
+    STAGE_UPDATE_RESPONDED: 'stage_update_responded',
     ERROR: 'error'
 };
 
@@ -299,5 +330,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
     CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
     DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
-    SESSION_MESSAGES, MEETING_MESSAGES
+    SESSION_MESSAGES, MEETING_MESSAGES, DEAL_ROOM_STAGES,
+    DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES
 };

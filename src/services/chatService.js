@@ -51,6 +51,7 @@ const sendMessage = async ({ dealRoomId, senderUserId, senderRoleId, message }) 
             recipient_user_id: recipientUserId,
             recipient_role_id: recipientRoleId,
             message,
+            stage: dealRoom.stage,
             created_by: senderUserId
         });
 
@@ -101,6 +102,7 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
             attachment_file_name: file.originalname,
             attachment_mime_type: file.mimetype,
             attachment_file_size: file.size,
+            stage: dealRoom.stage,
             created_by: senderUserId
         });
 

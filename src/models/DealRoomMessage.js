@@ -68,6 +68,11 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        stage: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

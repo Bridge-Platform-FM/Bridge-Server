@@ -21,7 +21,7 @@ const findMergedByDealRoomId = async (dealRoomId) => {
                 NULL::varchar AS attachment_s3_key, NULL::varchar AS attachment_file_name,
                 NULL::varchar AS attachment_mime_type, NULL::integer AS attachment_file_size,
                 NULL::boolean AS download_allowed, NULL::boolean AS view_only,
-                read_at, created_at
+                read_at, stage, created_at
             FROM deal_room_message
             WHERE deal_room_id = :dealRoomId AND is_deleted = false
 
@@ -32,7 +32,7 @@ const findMergedByDealRoomId = async (dealRoomId) => {
                 caption AS message, media_type AS message_type,
                 attachment_s3_key, attachment_file_name, attachment_mime_type, attachment_file_size,
                 download_allowed, view_only,
-                read_at, created_at
+                read_at, stage, created_at
             FROM deal_room_media
             WHERE deal_room_id = :dealRoomId AND is_deleted = false
         ) chat_timeline

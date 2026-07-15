@@ -2,9 +2,11 @@
 
 const { DataTypes } = require('sequelize');
 
+const { DEAL_ROOM_STAGE_REQUEST_STATUS } = require('../utils/constant');
+
 module.exports = (sequelize) => {
 
-    const DealRoomMedia = sequelize.define('DealRoomMedia', {
+    const DealRoomStageRequest = sequelize.define('DealRoomStageRequest', {
 
         id: {
             type: DataTypes.INTEGER,
@@ -22,7 +24,7 @@ module.exports = (sequelize) => {
             }
         },
 
-        sender_user_id: {
+        requested_by_user_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -31,7 +33,7 @@ module.exports = (sequelize) => {
             }
         },
 
-        sender_role_id: {
+        requested_by_role_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
@@ -40,73 +42,33 @@ module.exports = (sequelize) => {
             }
         },
 
-        recipient_user_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'user',
-                key: 'id'
-            }
-        },
-
-        recipient_role_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'company_role_master',
-                key: 'id'
-            }
-        },
-
-        caption: {
-            type: DataTypes.TEXT,
-            allowNull: true
-        },
-
-        media_type: {
-            type: DataTypes.STRING(20),
-            allowNull: false
-        },
-
-        attachment_s3_key: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-
-        attachment_file_name: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-
-        attachment_mime_type: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-
-        attachment_file_size: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
-
-        download_allowed: {
-            type: DataTypes.BOOLEAN,
-            allowNull: true,
-            defaultValue: false
-        },
-
-        view_only: {
-            type: DataTypes.BOOLEAN,
-            allowNull: true,
-            defaultValue: true
-        },
-
-        read_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-
-        stage: {
+        current_stage: {
             type: DataTypes.STRING(50),
+            allowNull: false
+        },
+
+        requested_stage: {
+            type: DataTypes.STRING(50),
+            allowNull: false
+        },
+
+        status: {
+            type: DataTypes.STRING(20),
+            allowNull: false,
+            defaultValue: DEAL_ROOM_STAGE_REQUEST_STATUS.PENDING
+        },
+
+        responded_by_user_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'user',
+                key: 'id'
+            }
+        },
+
+        responded_at: {
+            type: DataTypes.DATE,
             allowNull: true
         },
 
@@ -144,49 +106,46 @@ module.exports = (sequelize) => {
         }
 
     }, {
-        tableName: 'deal_room_media',
+        tableName: 'deal_room_stage_request',
         timestamps: true,
         initialAutoIncrement: 1,
         createdAt: 'created_at',
         updatedAt: 'updated_at',
         indexes: [
             {
-                fields: ['deal_room_id', 'created_at']
-            },
-            {
-                fields: ['recipient_user_id', 'read_at']
+                fields: ['deal_room_id', 'status']
             }
         ]
     });
 
-    DealRoomMedia.associate = (models) => {
+    DealRoomStageRequest.associate = (models) => {
 
-        DealRoomMedia.belongsTo(models.DealRoom, {
+        DealRoomStageRequest.belongsTo(models.DealRoom, {
             foreignKey: 'deal_room_id',
             as: 'dealRoom'
         });
 
-        DealRoomMedia.belongsTo(models.User, {
-            foreignKey: 'sender_user_id',
-            as: 'sender'
+        DealRoomStageRequest.belongsTo(models.User, {
+            foreignKey: 'requested_by_user_id',
+            as: 'requestedBy'
         });
 
-        DealRoomMedia.belongsTo(models.CompanyRoleMaster, {
-            foreignKey: 'sender_role_id',
-            as: 'senderRole'
+        DealRoomStageRequest.belongsTo(models.CompanyRoleMaster, {
+            foreignKey: 'requested_by_role_id',
+            as: 'requestedByRole'
         });
 
-        DealRoomMedia.belongsTo(models.User, {
-            foreignKey: 'recipient_user_id',
-            as: 'recipient'
+        DealRoomStageRequest.belongsTo(models.User, {
+            foreignKey: 'responded_by_user_id',
+            as: 'respondedBy'
         });
 
-        DealRoomMedia.belongsTo(models.CompanyRoleMaster, {
-            foreignKey: 'recipient_role_id',
-            as: 'recipientRole'
+        DealRoomStageRequest.hasMany(models.DealRoomStageRequestLog, {
+            foreignKey: 'deal_room_stage_request_id',
+            as: 'logs'
         });
 
     };
 
-    return DealRoomMedia;
+    return DealRoomStageRequest;
 };

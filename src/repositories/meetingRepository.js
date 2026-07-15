@@ -1,6 +1,6 @@
 'use strict';
 
-const { Meeting, DealRoom } = require('../models');
+const { Meeting, DealRoom, User } = require('../models');  // User added
 const { Op } = require('sequelize');
 
 // ─── Deal Room ────────────────────────────────────────────────────────────────
@@ -11,6 +11,31 @@ const getDealRoomById = async (dealRoomId) => {
     });
 };
 
+// ─── Requester include config ─────────────────────────────────────────────────
+// Used on every GET query that returns a meeting object.
+
+const requesterInclude = {
+    model: User,
+    as: 'requester',
+    attributes: ['first_name', 'last_name']
+};
+
+// ─── Helper — flatten nested requester into top-level fields ──────────────────
+// Converts Sequelize instance → plain object and promotes requester name fields
+// so the API response contains flat fields instead of a nested object:
+//   requester_user_first_name: "John"
+//   requester_user_last_name:  "Doe"
+
+const flattenRequester = (meetingInstance) => {
+    const plain = meetingInstance.toJSON();
+    if (plain.requester) {
+        plain.requester_user_first_name = plain.requester.first_name;
+        plain.requester_user_last_name  = plain.requester.last_name;
+        delete plain.requester;
+    }
+    return plain;
+};
+
 // ─── Meetings ─────────────────────────────────────────────────────────────────
 
 const createMeeting = async (meetingData, { transaction } = {}) => {
@@ -18,22 +43,27 @@ const createMeeting = async (meetingData, { transaction } = {}) => {
 };
 
 const getMeetingById = async (meetingId) => {
-    return await Meeting.findOne({
-        where: { id: meetingId, is_deleted: false }
+    const meeting = await Meeting.findOne({
+        where: { id: meetingId, is_deleted: false },
+        include: [requesterInclude]
     });
+    return meeting ? flattenRequester(meeting) : null;
 };
 
 /**
  * Returns ALL meetings (past + upcoming) for a deal room, sorted chronologically.
+ * Each meeting has requester_user_first_name and requester_user_last_name as flat fields.
  */
 const getMeetingsByDealRoom = async (dealRoomId) => {
-    return await Meeting.findAll({
+    const meetings = await Meeting.findAll({
         where: {
             deal_room_id: dealRoomId,
             is_deleted: false
         },
+        include: [requesterInclude],
         order: [['scheduled_at', 'ASC']]
     });
+    return meetings.map(flattenRequester);
 };
 
 /**
@@ -43,14 +73,16 @@ const getMeetingsByDealRoom = async (dealRoomId) => {
  */
 const getUpcomingMeetingByDealRoom = async (dealRoomId) => {
     const now = new Date();
-    return await Meeting.findOne({
+    const meeting = await Meeting.findOne({
         where: {
             deal_room_id: dealRoomId,
             is_deleted: false,
             scheduled_at: { [Op.gt]: now }
         },
+        include: [requesterInclude],
         order: [['scheduled_at', 'ASC']]  // nearest first → LIMIT 1 via findOne
     });
+    return meeting ? flattenRequester(meeting) : null;
 };
 
 const updateMeeting = async (updateData, meetingId, { transaction } = {}) => {

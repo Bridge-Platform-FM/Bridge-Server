@@ -17,7 +17,7 @@ const findSharedFilesByDealRoomId = async (dealRoomId) => {
         where: { deal_room_id: dealRoomId, is_deleted: false },
         attributes: [
             'id', ['media_type', 'message_type'], 'attachment_s3_key', 'attachment_file_name',
-            'attachment_mime_type', 'download_allowed', 'view_only', 'attachment_file_size', 'created_at'
+            'attachment_mime_type', 'download_allowed', 'view_only', 'attachment_file_size', 'stage', 'created_at'
         ],
         include: [{ model: User, as: 'sender', attributes: ['id', 'first_name', 'last_name'] }],
         order: [['created_at', 'DESC'], ['id', 'DESC']]

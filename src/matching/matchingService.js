@@ -4,8 +4,10 @@ const matchingRepository = require('./matchingRepository');
 const eligibilityService = require('./eligibilityService');
 const scoringService = require('./scoringService');
 const rationaleService = require('./rationaleService');
+const connectionService = require('../services/connectionService');
+const subscriptionService = require('../services/subscriptionService');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { MATCHING_MESSAGES } = require('../utils/constant');
+const { MATCHING_MESSAGES, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
 const { MATCHES_LIMIT } = require('./matchingConfig');
 const { errorLogger } = require('../configs/logger');
 
@@ -37,10 +39,32 @@ const getMatches = async (profileId) => {
 
         const sourceRole = sourceProfile.role_code;
 
-        // Step 2: Fetch all candidate profiles
+        // Step 2: Fetch number of connection requests sent by the user in the current billing window
+        const windowResult = await connectionService.getConnectionBillingWindow(userId);
+        if (!windowResult.success) {
+            return ServiceResponse.error({ message: windowResult.message, statusCode: windowResult.statusCode });
+        }
+        const { windowStart, windowEnd } = windowResult.data;
+
+        const requestCountResult = await connectionService.getConnectionRequestsInWindow(userId, windowStart, windowEnd);
+        if (!requestCountResult.success) {
+            return ServiceResponse.error({ message: requestCountResult.message, statusCode: requestCountResult.statusCode });
+        }
+        const requestsSentInWindow = requestCountResult.data.count;
+
+        // Step 3: Determine the request limit (premium vs free) and requests remaining
+        const subscriptionResult = await subscriptionService.findActivePrememiumSubscription(sourceProfile.company_id, userId);
+        if (!subscriptionResult.success) {
+            return ServiceResponse.error({ message: subscriptionResult.message, statusCode: subscriptionResult.statusCode });
+        }
+        const hasActiveSubscription = subscriptionResult.data ? true : false;
+        const requestLimit = hasActiveSubscription ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
+        const requestsRemaining = Math.max(requestLimit - requestsSentInWindow, 0);
+
+        // Step 4: Fetch all candidate profiles (excluding user+role combos already connected)
         const allCandidates = await matchingRepository.getCandidateProfiles(userId);
 
-        // Step 3: Apply eligibility filter
+        // Step 5: Apply eligibility filter
         const eligibleCandidates = eligibilityService.filterEligibleCandidates(
             sourceRole,
             allCandidates
@@ -49,12 +73,12 @@ const getMatches = async (profileId) => {
         if (eligibleCandidates.length === 0) {
             return ServiceResponse.success({
                 message: MATCHING_MESSAGES.NO_MATCHES_FOUND,
-                data: { profileId: userId, matches: [] },
+                data: { profileId: userId, matches: [], requestsSentInWindow, requestLimit, requestsRemaining },
                 statusCode: 200
             });
         }
 
-        // Step 4: Score each eligible candidate
+        // Step 6: Score each eligible candidate
         const scored = eligibleCandidates.map(candidate => {
             const candidateRole = candidate.role_code;
 
@@ -143,7 +167,7 @@ const getMatches = async (profileId) => {
             return matchResponse;
         });
 
-        // Step 5: Rank by compatibility score (descending)
+        // Step 7: Rank by compatibility score (descending)
         scored.sort((a, b) => b.compatibility - a.compatibility);
 
         // Limit matches to configuration limit if set
@@ -151,7 +175,7 @@ const getMatches = async (profileId) => {
 
         return ServiceResponse.success({
             message: MATCHING_MESSAGES.MATCH_SUCCESS,
-            data: { profileId: userId, matches: limitedMatches },
+            data: { profileId: userId, matches: limitedMatches, requestsSentInWindow, requestLimit, requestsRemaining },
             statusCode: 200
         });
 

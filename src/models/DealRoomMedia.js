@@ -156,7 +156,12 @@ module.exports = (sequelize) => {
             {
                 fields: ['recipient_user_id', 'read_at']
             }
-        ]
+        ],
+        hooks: {
+            beforeCreate: (record) => {
+                record.updated_at = null;
+            }
+        }
     });
 
     DealRoomMedia.associate = (models) => {

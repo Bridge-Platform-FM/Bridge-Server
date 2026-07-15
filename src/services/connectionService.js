@@ -12,9 +12,11 @@ const { CONNECTION_STATUS, CONNECTION_MESSAGES, CONNECTION_VALID_TRANSITIONS, CO
 
 const getConnectionBillingWindow_internal = (registrationDate) => {
     const today = new Date();
-    const monthsElapsed = Math.floor(
-        (today - registrationDate) / (1000 * 60 * 60 * 24 * 30)
-    );
+    let monthsElapsed = (today.getFullYear() - registrationDate.getFullYear()) * 12
+        + (today.getMonth() - registrationDate.getMonth());
+    if (today.getDate() < registrationDate.getDate()) {
+        monthsElapsed -= 1;
+    }
     const windowStart = new Date(registrationDate);
     windowStart.setMonth(windowStart.getMonth() + monthsElapsed);
     const windowEnd = new Date(windowStart);

@@ -2,9 +2,10 @@
 const { sequelize } = require('../models');
 const userRepository = require('../repositories/userRepository');
 const companyRepository = require('../repositories/companyRepository');
+const roleFieldMetadataRepository = require('../repositories/roleFieldMetadataRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { USER_MESSAGES, KYC_MESSAGES } = require('../utils/constant');
+const { USER_MESSAGES, KYC_MESSAGES, USER_ROLES_CODE } = require('../utils/constant');
 const { decrypt } = require('../utils/encryption');
 
 const createUserProfile = async ({ userData, companyId, userId, roleId }) => {
@@ -35,6 +36,26 @@ const getUserList = async () => {
         return ServiceResponse.error({ message: USER_MESSAGES.USER_LISTING_FAILURE, data: [], statusCode: 500 });
     }
 }
+
+const searchUsers = async (searchQuery, roleCode) => {
+    try {
+        let searchableRoles = [];
+        if (roleCode === USER_ROLES_CODE.STARTUP) {
+            searchableRoles = [USER_ROLES_CODE.INVESTOR, USER_ROLES_CODE.B2B];
+        }
+        else if (roleCode === USER_ROLES_CODE.INVESTOR) {
+            searchableRoles = [USER_ROLES_CODE.STARTUP];
+        }
+        else if (roleCode === USER_ROLES_CODE.B2B) {
+            searchableRoles = [USER_ROLES_CODE.STARTUP, USER_ROLES_CODE.B2B];
+        }
+        const users = await userRepository.searchUsers(searchQuery, searchableRoles);
+        return ServiceResponse.success({ message: USER_MESSAGES.SEARCH_SUCCESS, data: users, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.SEARCH_FAILED, data: [], statusCode: 500 });
+    }
+};
 
 const getUserKycDocs = async () => {
     try {
@@ -161,4 +182,64 @@ const updateUserProfile = async (userData, user_id) => {
     }
 }
 
-module.exports = { createUserProfile, getUserList, getUserKycDocs, getUserProfile, updateUserProfile };
+const getUserRoleDetails = async (targetUserId, companyId, roleId) => {
+    try {
+        const user = await userRepository.getUserById(targetUserId);
+        if (!user) {
+            return ServiceResponse.error({ message: USER_MESSAGES.USER_NOT_FOUND, statusCode: 404 });
+        }
+
+        const roleInfo = await userRepository.getUserCompanyRole(targetUserId, companyId, roleId);
+        if (!roleInfo) {
+            return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 404 });
+        }
+
+        const company = await companyRepository.getCompanyById(roleInfo.company_id);
+        if (!company) {
+            return ServiceResponse.error({ message: 'Company not found.', statusCode: 404 });
+        }
+
+        const fieldsConfig = await roleFieldMetadataRepository.getFieldsForRole(roleInfo.role_id);
+
+        const fields = fieldsConfig
+            .filter(config => config.is_active && !config.is_kyc_field && ['user', 'company'].includes(config.source_table))
+            .map(config => {
+                let value = null;
+                if (config.source_table === 'user') {
+                    value = user[config.field_name];
+                } else if (config.source_table === 'company') {
+                    value = company[config.field_name];
+                }
+
+                if (value === null || value === undefined) {
+                    value = '';
+                }
+
+                return {
+                    fieldName: config.field_name,
+                    label: config.display_name,
+                    value,
+                    datatype: config.datatype,
+                    unit: config.unit,
+                    displayOrder: config.display_order
+                };
+            });
+
+        return ServiceResponse.success({
+            message: USER_MESSAGES.ROLE_DETAILS_SUCCESS,
+            data: {
+                userId: user.id,
+                roleId: roleInfo.role_id,
+                roleName: roleInfo.role_name,
+                roleCode: roleInfo.role_code,
+                fields
+            },
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.ROLE_DETAILS_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { createUserProfile, getUserList, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails };

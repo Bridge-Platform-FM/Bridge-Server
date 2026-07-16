@@ -54,7 +54,15 @@ const USER_MESSAGES = {
     VALIDATION_FAILED: 'Validation failed for the submitted fields',
     USER_LISTING_FAILURE: 'Error encountered while fetching user list',
     USER_LISTING_SUCCESS: 'User list fetched successfully',
-    USER_NOT_FOUND: 'User not found'
+    USER_NOT_FOUND: 'User not found',
+    SEARCH_QUERY_REQUIRED: 'q query parameter is required and must be a non-empty string',
+    SEARCH_SUCCESS: 'User search results fetched successfully',
+    SEARCH_FAILED: 'Error encountered while searching users',
+    USER_ID_REQUIRED: 'userId query parameter is required and must be a positive integer',
+    COMPANY_ID_REQUIRED: 'companyId query parameter is required and must be a positive integer',
+    ROLE_ID_REQUIRED: 'roleId query parameter is required and must be a positive integer',
+    ROLE_DETAILS_SUCCESS: 'User role details fetched successfully',
+    ROLE_DETAILS_FAILED: 'Error encountered while fetching user role details'
 };
 
 const LOGIN_MESSAGES = {
@@ -151,6 +159,12 @@ const REDIRECT_ROUTES = {
 const ROLES = {
     USER: ['STARTUP', 'INVESTOR', 'B2B'],
     ADMIN: ['SYS_ADMIN']
+};
+
+const USER_ROLES_CODE = {
+    STARTUP: 'STARTUP',
+    INVESTOR: 'INVESTOR',
+    B2B: 'B2B'
 };
 
 const TOKEN_TYPES = {
@@ -334,5 +348,5 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
     DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
     SESSION_MESSAGES, MEETING_MESSAGES, DEAL_ROOM_STAGES,
-    DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES
+    DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE
 };

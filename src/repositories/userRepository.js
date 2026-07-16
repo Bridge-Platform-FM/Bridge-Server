@@ -111,10 +111,73 @@ const getUserKycDocs = async () => {
     );
 };
 
+const searchUsers = async (searchQuery, searchableRoles = []) => {
+    const words = [...new Set(searchQuery.trim().split(/\s+/).filter(Boolean))];
+
+    const replacements = {};
+    const wordConditions = words.map((word, index) => {
+        const key = `word${index}`;
+        replacements[key] = `%${word.replace(/[%_\\]/g, '\\$&')}%`;
+        return `(c.company_email ILIKE :${key} ESCAPE '\\' OR u.first_name ILIKE :${key} ESCAPE '\\' OR u.last_name ILIKE :${key} ESCAPE '\\' OR c.company_name ILIKE :${key} ESCAPE '\\')`;
+    }).join(' OR ');
+
+    let roleFilter = '';
+    if (Array.isArray(searchableRoles) && searchableRoles.length > 0) {
+        replacements.searchableRoles = searchableRoles;
+        roleFilter = 'AND crm.role_code IN (:searchableRoles)';
+    }
+
+    return await sequelize.query(
+        `SELECT
+            u.id AS user_id,
+            cur.role_id,
+            c.id AS company_id,
+            u.first_name,
+            u.last_name,
+            c.company_name,
+            c.company_email AS email,
+            c.mobile_number,
+            u.country,
+            u.continent
+        FROM "user" u
+        JOIN company c ON u.company_email = c.company_email
+        JOIN company_user_role cur ON cur.company_id = c.id AND cur.user_id = u.id AND cur.is_default_role IS TRUE
+        JOIN company_role_master crm ON crm.id = cur.role_id
+        WHERE u.is_deleted IS NOT TRUE
+            AND c.is_deleted IS NOT TRUE
+            AND cur.is_deleted IS NOT TRUE
+            AND (${wordConditions})
+            ${roleFilter}
+        ORDER BY u.first_name ASC`,
+        {
+            replacements,
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
 const getUserById = async (userId) => {
     return await User.findOne({
         where: { id: userId, is_deleted: false }
     });
+};
+
+const getUserCompanyRole = async (userId, companyId, roleId) => {
+    const rows = await sequelize.query(
+        `SELECT cur.role_id, cur.company_id, crm.role_name, crm.role_code
+        FROM company_user_role cur
+        JOIN company_role_master crm ON crm.id = cur.role_id
+        WHERE cur.user_id = :userId
+            AND cur.company_id = :companyId
+            AND cur.role_id = :roleId
+            AND cur.is_deleted IS NOT TRUE
+        LIMIT 1`,
+        {
+            replacements: { userId, companyId, roleId },
+            type: QueryTypes.SELECT
+        }
+    );
+    return rows[0] || null;
 };
 
 const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}) => {
@@ -139,7 +202,9 @@ module.exports = {
     getCompanyUser_role,
     getUserList,
     getUserKycDocs,
+    searchUsers,
     getUserById,
+    getUserCompanyRole,
     getUserProfileFieldsConfig,
     updatePasswordByEmail
 };

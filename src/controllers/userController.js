@@ -103,4 +103,85 @@ const updateUserProfile = async (req, res, next) => {
     }
 };
 
-module.exports = { createUserProfile, getUserProfile, updateUserProfile };
+const searchUsers = async (req, res, next) => {
+    try {
+        const searchQuery = req.query.q;
+        const roleCode = req.role;
+
+        if (!searchQuery || typeof searchQuery !== 'string' || !searchQuery.trim()) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.SEARCH_QUERY_REQUIRED,
+                statusCode: 400
+            });
+        }
+
+        const searchResponse = await userService.searchUsers(searchQuery.trim(), roleCode);
+        if (!searchResponse.success) {
+            return HttpResponse.error(res, {
+                message: searchResponse.message,
+                data: searchResponse.data,
+                statusCode: searchResponse.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: searchResponse.message,
+            data: searchResponse.data,
+            statusCode: searchResponse.statusCode
+        });
+    } catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: USER_MESSAGES.SEARCH_FAILED, statusCode: 500 });
+    }
+};
+
+const getUserRoleDetails = async (req, res, next) => {
+    try {
+        const userId = parseInt(req.query.userId, 10);
+        const companyId = parseInt(req.query.companyId, 10);
+        const roleId = parseInt(req.query.roleId, 10);
+
+        if (!req.query.userId || isNaN(userId) || userId <= 0) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.USER_ID_REQUIRED,
+                statusCode: 400
+            });
+        }
+
+        if (!req.query.companyId || isNaN(companyId) || companyId <= 0) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.COMPANY_ID_REQUIRED,
+                statusCode: 400
+            });
+        }
+
+        if (!req.query.roleId || isNaN(roleId) || roleId <= 0) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.ROLE_ID_REQUIRED,
+                statusCode: 400
+            });
+        }
+
+        const roleDetailsResponse = await userService.getUserProfile({companyId, userId, roleId});
+        if (!roleDetailsResponse.success) {
+            return HttpResponse.error(res, {
+                message: roleDetailsResponse.message,
+                data: roleDetailsResponse.data,
+                statusCode: roleDetailsResponse.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: roleDetailsResponse.message,
+            data: roleDetailsResponse.data,
+            statusCode: roleDetailsResponse.statusCode
+        });
+    } catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: USER_MESSAGES.ROLE_DETAILS_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { createUserProfile, getUserProfile, updateUserProfile, searchUsers, getUserRoleDetails };

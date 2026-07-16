@@ -53,6 +53,7 @@ const getCompanyUser_role = async (companyId, userId) => {
 const getUserList = async () => {
     return await sequelize.query(
         `select 
+            u.id as user_id,
             u.first_name, 
             u.last_name, 
             c.company_email, 

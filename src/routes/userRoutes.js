@@ -12,4 +12,10 @@ router.get('/profile', authMiddleware, userController.getUserProfile);
 
 router.put('/profile', authMiddleware, userController.updateUserProfile);
 
+// GET /api/v1/users/search?q=<query> — search user profiles by email, first name, last name
+router.get('/search', authMiddleware, userController.searchUsers);
+
+// GET /api/v1/users/role-details?userId=<id> — get role-specific field details for a given user
+router.get('/role-details', authMiddleware, userController.getUserRoleDetails);
+
 module.exports = router;

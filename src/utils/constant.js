@@ -434,6 +434,18 @@ const USER_LIMIT_DEFAULTS = {
     ALLOWED_PREMIUM_DAYS: 30                              // Update when finalized
 };
 
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+
+const FAQ_MESSAGES = {
+    FETCH_SUCCESS: 'FAQs fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching FAQs',
+    CREATE_SUCCESS: 'FAQ created successfully',
+    CREATE_FAILED: 'Error encountered while creating FAQ',
+    UPDATE_SUCCESS: 'FAQ updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating FAQ',
+    NOT_FOUND: 'FAQ not found'
+};
+
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
@@ -445,6 +457,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
 
     DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE,
     DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
-    DEAL_ROOM_TERM_SHEET_MESSAGES
+    DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES
 
 };

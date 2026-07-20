@@ -77,9 +77,22 @@ async function getFileBuffer(key) {
     return Buffer.concat(chunks);
 }
 
+async function getFileStream(key) {
+
+    const response = await s3.send(
+        new GetObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: key,
+        })
+    );
+
+    return response.Body;
+}
+
 module.exports = {
     uploadToS3,
     getFileCollection,
     getFileUrl,
-    getFileBuffer
+    getFileBuffer,
+    getFileStream
 };

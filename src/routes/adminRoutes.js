@@ -4,6 +4,7 @@ const router = express.Router();
 
 const adminMiddleware = require('../middleware/adminMiddleware');
 const adminController = require('../controllers/adminController');
+const faqController = require('../controllers/faqController');
 
 // File scan for Img and Pdf
 router.post('/auth/login', adminController.login);
@@ -26,5 +27,12 @@ router.put('/kyc/review-action', adminMiddleware, adminController.kycReviewActio
 router.get('/users/:userId/limit-config', adminMiddleware, adminController.getUserLimitConfig);
 
 router.put('/users/:userId/limit-config', adminMiddleware, adminController.updateUserLimitConfig);
+
+// FAQ management
+router.get('/faqs', adminMiddleware, faqController.getAllFaqsForAdmin);
+
+router.post('/faqs', adminMiddleware, faqController.createFaq);
+
+router.put('/faqs/:id', adminMiddleware, faqController.updateFaq);
 
 module.exports = router;

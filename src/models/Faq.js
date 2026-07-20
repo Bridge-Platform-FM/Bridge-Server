@@ -50,22 +50,6 @@ module.exports = (sequelize) => {
         updated_by: {
             type: DataTypes.INTEGER,
             allowNull: true
-        },
-
-        is_deleted: {
-            type: DataTypes.BOOLEAN,
-            allowNull: true,
-            defaultValue: false
-        },
-
-        deleted_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-
-        deleted_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
         }
 
     }, {

@@ -202,7 +202,6 @@ const CONNECTION_REQUEST_LIMITS = {
     PREMIUM: 50
 };
 
-// Number of free trial days granted by plan tier.
 const TRIAL_DAYS_LIMITS = {
     FREE: 30
 };
@@ -397,8 +396,6 @@ const SOCKET_EVENTS = {
 
 };
 
-// ─── Meeting ──────────────────────────────────────────────────────────────────
-
 const MEETING_MESSAGES = {
     CREATE_SUCCESS: 'Meeting created successfully',
     CREATE_FAILED: 'Error encountered while creating meeting',
@@ -414,8 +411,6 @@ const MEETING_MESSAGES = {
     FORBIDDEN: 'You are not authorized to perform this action'
 };
 
-// ─── User Limit Config ────────────────────────────────────────────────────────
-
 const USER_LIMIT_CONFIG_MESSAGES = {
     FETCH_SUCCESS: 'User limit configuration fetched successfully',
     FETCH_FAILED: 'Error encountered while fetching user limit configuration',
@@ -426,15 +421,13 @@ const USER_LIMIT_CONFIG_MESSAGES = {
     INVALID_USER_ID: 'Invalid user ID provided'
 };
 
-// Default limit values applied when no custom config exists for a user.
-// Update these values as required — they are the system-wide fallback shown in the admin UI.
 const USER_LIMIT_DEFAULTS = {
-    ALLOWED_CONNECTIONS: CONNECTION_REQUEST_LIMITS.FREE,  // Update when finalized
-    ALLOWED_FREE_TRIAL_DAYS: TRIAL_DAYS_LIMITS.FREE,      // Update when finalized
-    ALLOWED_PREMIUM_DAYS: 30                              // Update when finalized
+    ALLOWED_CONNECTIONS: CONNECTION_REQUEST_LIMITS.FREE,
+    ALLOWED_FREE_TRIAL_DAYS: TRIAL_DAYS_LIMITS.FREE,
+    ALLOWED_PREMIUM_DAYS: 30
 };
 
-// ─── FAQ ──────────────────────────────────────────────────────────────────────
+// ── FAQ ───────────────────────────────────────────────────────────────────────
 
 const FAQ_MESSAGES = {
     FETCH_SUCCESS: 'FAQs fetched successfully',

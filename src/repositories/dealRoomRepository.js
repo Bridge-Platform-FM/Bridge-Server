@@ -1,7 +1,7 @@
 'use strict';
 
 const { QueryTypes } = require('sequelize');
-const { DealRoom, sequelize } = require('../models');
+const { DealRoom, CompanyRoleMaster, sequelize } = require('../models');
 const { DEAL_ROOM_STATUS } = require('../utils/constant');
 
 const create = async (data, { transaction } = {}) => {
@@ -11,6 +11,18 @@ const create = async (data, { transaction } = {}) => {
 const findById = async (dealRoomId) => {
     return await DealRoom.findOne({
         where: { id: dealRoomId, is_deleted: false }
+    });
+};
+
+// Deal room with both participants' role rows eager-loaded — used by the offer and
+// term-sheet services to validate the Investor/Startup or B2B/B2B role pair.
+const findByIdWithRoles = async (dealRoomId) => {
+    return await DealRoom.findOne({
+        where: { id: dealRoomId, is_deleted: false },
+        include: [
+            { model: CompanyRoleMaster, as: 'requesterRole' },
+            { model: CompanyRoleMaster, as: 'recipientRole' }
+        ]
     });
 };
 
@@ -99,4 +111,4 @@ const findAllByUserId = async (userId, roleId) => {
     );
 };
 
-module.exports = { create, findById, closeById, updateStage, findAllByUserId };
+module.exports = { create, findById, findByIdWithRoles, closeById, updateStage, findAllByUserId };

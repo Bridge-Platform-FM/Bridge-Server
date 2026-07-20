@@ -4,11 +4,8 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const dealRoomController = require('../controllers/dealRoomController');
-<<<<<<< Updated upstream
-=======
 const dealRoomOfferController = require('../controllers/dealRoomOfferController');
 const dealRoomTermSheetController = require('../controllers/dealRoomTermSheetController');
->>>>>>> Stashed changes
 const { validate, closeDealRoomSchema } = require('../validations/dealRoomValidation');
 
 // GET /api/v1/deal-rooms — list all deal rooms for the logged in user
@@ -20,8 +17,7 @@ router.put('/:dealRoomId/close', authMiddleware, validate(closeDealRoomSchema), 
 // GET /api/v1/deal-rooms/:dealRoomId/stage-request/pending — the room's currently pending stage request (if any)
 router.get('/:dealRoomId/stage-request/pending', authMiddleware, dealRoomController.getPendingStageUpdate);
 
-<<<<<<< Updated upstream
-=======
+
 // GET /api/v1/deal-rooms/:dealRoomId/term-sheet/current — the room's latest B2B term sheet version
 router.get('/:dealRoomId/term-sheet/current', authMiddleware, dealRoomTermSheetController.getCurrentTermSheet);
 
@@ -40,5 +36,4 @@ router.get('/:dealRoomId/offers/current', authMiddleware, dealRoomOfferControlle
 // GET /api/v1/deal-rooms/:dealRoomId/offers/draft — caller's own unsent draft, if any
 router.get('/:dealRoomId/offers/draft', authMiddleware, dealRoomOfferController.getDraft);
 
->>>>>>> Stashed changes
 module.exports = router;

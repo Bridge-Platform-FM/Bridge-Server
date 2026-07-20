@@ -5,11 +5,10 @@ const { verifyAccessToken } = require('../utils/token');
 const { ROLES } = require('../utils/constant');
 const registerChatHandlers = require('./chatSocketHandler');
 const registerDealRoomStageHandlers = require('./dealRoomStageSocketHandler');
-<<<<<<< Updated upstream
-=======
+
 const registerOfferHandlers = require('./offerSocketHandler');
 const registerTermSheetHandlers = require('./termSheetSocketHandler');
->>>>>>> Stashed changes
+
 const { dealRoomChannel } = require('./dealRoomChannel');
 
 let ioInstance = null;
@@ -44,11 +43,8 @@ const initSockets = (io) => {
     io.on('connection', (socket) => {
         registerChatHandlers(io, socket);
         registerDealRoomStageHandlers(io, socket);
-<<<<<<< Updated upstream
-=======
         registerOfferHandlers(io, socket);
         registerTermSheetHandlers(io, socket);
->>>>>>> Stashed changes
     });
 };
 

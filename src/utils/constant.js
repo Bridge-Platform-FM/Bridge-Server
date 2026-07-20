@@ -278,8 +278,7 @@ const DEAL_ROOM_STAGE_MESSAGES = {
     DEAL_ROOM_CLOSED: 'This deal room is closed; stage updates are not allowed'
 };
 
-<<<<<<< Updated upstream
-=======
+
 const DEAL_ROOM_OFFER_STATUS = {
     DRAFT: 'Draft',
     PENDING: 'Pending',
@@ -336,7 +335,7 @@ const DEAL_ROOM_TERM_SHEET_MESSAGES = {
     NOT_NEGOTIATION_STAGE: 'Term sheet edits are only allowed during the Negotiation stage'
 };
 
->>>>>>> Stashed changes
+
 const CHAT_MESSAGE_TYPE = {
     TEXT: 'TEXT',
     IMAGE: 'IMAGE',
@@ -383,8 +382,7 @@ const SOCKET_EVENTS = {
     USER_PRESENCE: 'user_presence',
     MEETING_SCHEDULED: 'meeting_scheduled',
 
-<<<<<<< Updated upstream
-=======
+
     SAVE_OFFER_DRAFT: 'save_offer_draft',
     OFFER_DRAFT_SAVED: 'offer_draft_saved',
     SEND_OFFER: 'send_offer',
@@ -396,7 +394,7 @@ const SOCKET_EVENTS = {
 
     UPDATE_TERM_SHEET: 'update_term_sheet',
     TERM_SHEET_UPDATED: 'term_sheet_updated'
->>>>>>> Stashed changes
+
 };
 
 // ─── Meeting ──────────────────────────────────────────────────────────────────
@@ -444,11 +442,9 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS, TRIAL_DAYS_LIMITS,
     DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
     SESSION_MESSAGES, MEETING_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, DEAL_ROOM_STAGES,
-<<<<<<< Updated upstream
-    DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE
-=======
+
     DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE,
     DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
     DEAL_ROOM_TERM_SHEET_MESSAGES
->>>>>>> Stashed changes
+
 };

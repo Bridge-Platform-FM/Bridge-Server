@@ -8,6 +8,7 @@ const dealRoomStageRequestRepository = require('../repositories/dealRoomStageReq
 const dealRoomStageRequestLogRepository = require('../repositories/dealRoomStageRequestLogRepository');
 const dealRoomTermSheetRepository = require('../repositories/dealRoomTermSheetRepository');
 const dealRoomB2BConfirmationRepository = require('../repositories/dealRoomB2BConfirmationRepository');
+const dealRoomOfferRepository = require('../repositories/dealRoomOfferRepository');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, DEAL_ROOM_STAGES, DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES } = require('../utils/constant');
 
@@ -153,6 +154,17 @@ const requestStageUpdate = async ({ dealRoomId, requestedStage, requestedByUserI
             return ServiceResponse.error({ message: DEAL_ROOM_STAGE_MESSAGES.SAME_STAGE, statusCode: 400 });
         }
 
+        // Don't let the room LEAVE Negotiation while a funding offer is still Pending —
+        // offers lock once past Negotiation, so an unresolved one would be stranded with
+        // no way to accept/reject/counter it. (No-op for B2B rooms — they have no offers.)
+        if (dealRoom.stage === DEAL_ROOM_STAGES.NEGOTIATION && requestedStage !== DEAL_ROOM_STAGES.NEGOTIATION) {
+            const pendingOffer = await dealRoomOfferRepository.findPendingByDealRoomId(dealRoomId);
+            if (pendingOffer) {
+                await transaction.rollback();
+                return ServiceResponse.error({ message: DEAL_ROOM_STAGE_MESSAGES.PENDING_OFFER_BLOCKS_TRANSITION, statusCode: 409 });
+            }
+        }
+
         const pending = await dealRoomStageRequestRepository.findPendingByDealRoomId(dealRoomId);
         if (pending) {
             await transaction.rollback();
@@ -237,6 +249,20 @@ const respondStageUpdate = async ({ dealRoomId, requestId, decision, respondedBy
         if (stageRequest.requested_by_user_id === respondedByUserId) {
             await transaction.rollback();
             return ServiceResponse.error({ message: DEAL_ROOM_STAGE_MESSAGES.CANNOT_RESPOND_OWN_REQUEST, statusCode: 403 });
+        }
+
+        // Authoritative check: even if none was pending when the request was created, an
+        // offer may have been sent since (the room is still in Negotiation). Block the
+        // accept so the room never advances past Negotiation with a live Pending offer —
+        // the stage request stays Pending and can be accepted once the offer is resolved.
+        if (decision === DEAL_ROOM_STAGE_REQUEST_STATUS.ACCEPTED
+            && dealRoom.stage === DEAL_ROOM_STAGES.NEGOTIATION
+            && stageRequest.requested_stage !== DEAL_ROOM_STAGES.NEGOTIATION) {
+            const pendingOffer = await dealRoomOfferRepository.findPendingByDealRoomId(dealRoomId);
+            if (pendingOffer) {
+                await transaction.rollback();
+                return ServiceResponse.error({ message: DEAL_ROOM_STAGE_MESSAGES.PENDING_OFFER_BLOCKS_TRANSITION, statusCode: 409 });
+            }
         }
 
         const updatedRequest = await dealRoomStageRequestRepository.respond(requestId, {

@@ -319,7 +319,8 @@ const DEAL_ROOM_OFFER_MESSAGES = {
     PENDING_OFFER_EXISTS: 'A pending offer already exists for this deal room',
     INVALID_DECISION: 'decision must be Accepted or Rejected',
     OFFER_NOT_PENDING: 'This offer has already been responded to',
-    CANNOT_RESPOND_OWN_OFFER: 'You cannot respond to your own offer'
+    CANNOT_RESPOND_OWN_OFFER: 'You cannot respond to your own offer',
+    NOT_NEGOTIATION_STAGE: 'Funding offer actions are only allowed during the Negotiation stage'
 };
 
 const DEAL_ROOM_TERM_SHEET_MESSAGES = {

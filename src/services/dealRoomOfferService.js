@@ -30,6 +30,7 @@ const dealRoomService = require('./dealRoomService');
 const ServiceResponse = require('../utils/ServiceResponse');
 const {
     DEAL_ROOM_STATUS,
+    DEAL_ROOM_STAGES,
     DEAL_ROOM_OFFER_STATUS,
     DEAL_ROOM_OFFER_MESSAGES,
     USER_ROLES_CODE
@@ -84,6 +85,11 @@ const loadEligibleDealRoom = async (dealRoomId, userId) => {
     const participants = getOfferParticipants(dealRoom);
     if (!participants) {
         return { error: ServiceResponse.error({ message: DEAL_ROOM_OFFER_MESSAGES.INVALID_ROLE_PAIR, statusCode: 400 }) };
+    }
+    // Offers are a Negotiation-stage activity only — once the deal advances to Due
+    // Diligence (or beyond) the negotiation is frozen for both parties.
+    if (dealRoom.stage !== DEAL_ROOM_STAGES.NEGOTIATION) {
+        return { error: ServiceResponse.error({ message: DEAL_ROOM_OFFER_MESSAGES.NOT_NEGOTIATION_STAGE, statusCode: 400 }) };
     }
     return { dealRoom, participants };
 };

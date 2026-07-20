@@ -278,6 +278,65 @@ const DEAL_ROOM_STAGE_MESSAGES = {
     DEAL_ROOM_CLOSED: 'This deal room is closed; stage updates are not allowed'
 };
 
+<<<<<<< Updated upstream
+=======
+const DEAL_ROOM_OFFER_STATUS = {
+    DRAFT: 'Draft',
+    PENDING: 'Pending',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected',
+    COUNTERED: 'Countered'
+};
+
+const VALUATION_TYPE = {
+    PRE_MONEY: 'Pre-money',
+    POST_MONEY: 'Post-money'
+};
+
+const OFFER_CURRENCY = {
+    INR: 'INR',
+    USD: 'USD',
+    EUR: 'EUR',
+    GBP: 'GBP',
+    SGD: 'SGD',
+    AED: 'AED'
+};
+
+const DEAL_ROOM_OFFER_MESSAGES = {
+    DRAFT_SAVE_SUCCESS: 'Offer draft saved successfully',
+    DRAFT_SAVE_FAILED: 'Error encountered while saving offer draft',
+    SEND_SUCCESS: 'Offer sent successfully',
+    SEND_FAILED: 'Error encountered while sending offer',
+    RESPOND_SUCCESS: 'Offer updated successfully',
+    RESPOND_FAILED: 'Error encountered while responding to offer',
+    COUNTER_SUCCESS: 'Counter offer sent successfully',
+    COUNTER_FAILED: 'Error encountered while sending counter offer',
+    FETCH_SUCCESS: 'Offers fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching offers',
+    NOT_FOUND: 'Offer not found',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; offers are not allowed',
+    INVALID_ROLE_PAIR: 'Funding offers are only allowed between an Investor and a Startup',
+    PENDING_OFFER_EXISTS: 'A pending offer already exists for this deal room',
+    INVALID_DECISION: 'decision must be Accepted or Rejected',
+    OFFER_NOT_PENDING: 'This offer has already been responded to',
+    CANNOT_RESPOND_OWN_OFFER: 'You cannot respond to your own offer'
+};
+
+const DEAL_ROOM_TERM_SHEET_MESSAGES = {
+    SAVE_SUCCESS: 'Term sheet saved successfully',
+    SAVE_FAILED: 'Error encountered while saving term sheet',
+    FETCH_SUCCESS: 'Term sheet fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching term sheet',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; term sheet edits are not allowed',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    INVALID_ROLE_PAIR: 'The B2B term sheet is only allowed between two B2B enterprises',
+    NOT_NEGOTIATION_STAGE: 'Term sheet edits are only allowed during the Negotiation stage'
+};
+
+>>>>>>> Stashed changes
 const CHAT_MESSAGE_TYPE = {
     TEXT: 'TEXT',
     IMAGE: 'IMAGE',
@@ -324,6 +383,20 @@ const SOCKET_EVENTS = {
     USER_PRESENCE: 'user_presence',
     MEETING_SCHEDULED: 'meeting_scheduled',
 
+<<<<<<< Updated upstream
+=======
+    SAVE_OFFER_DRAFT: 'save_offer_draft',
+    OFFER_DRAFT_SAVED: 'offer_draft_saved',
+    SEND_OFFER: 'send_offer',
+    OFFER_RECEIVED: 'offer_received',
+    RESPOND_OFFER: 'respond_offer',
+    OFFER_RESPONDED: 'offer_responded',
+    COUNTER_OFFER: 'counter_offer',
+    OFFER_COUNTERED: 'offer_countered',
+
+    UPDATE_TERM_SHEET: 'update_term_sheet',
+    TERM_SHEET_UPDATED: 'term_sheet_updated'
+>>>>>>> Stashed changes
 };
 
 // ─── Meeting ──────────────────────────────────────────────────────────────────
@@ -371,5 +444,11 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS, TRIAL_DAYS_LIMITS,
     DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
     SESSION_MESSAGES, MEETING_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, DEAL_ROOM_STAGES,
+<<<<<<< Updated upstream
     DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE
+=======
+    DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE,
+    DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
+    DEAL_ROOM_TERM_SHEET_MESSAGES
+>>>>>>> Stashed changes
 };

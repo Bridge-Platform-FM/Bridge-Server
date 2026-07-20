@@ -6,6 +6,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const dealRoomController = require('../controllers/dealRoomController');
 const dealRoomOfferController = require('../controllers/dealRoomOfferController');
 const dealRoomTermSheetController = require('../controllers/dealRoomTermSheetController');
+const dealRoomExportController = require('../controllers/dealRoomExportController');
 const { validate, closeDealRoomSchema } = require('../validations/dealRoomValidation');
 
 // GET /api/v1/deal-rooms — list all deal rooms for the logged in user
@@ -35,5 +36,8 @@ router.get('/:dealRoomId/offers/current', authMiddleware, dealRoomOfferControlle
 
 // GET /api/v1/deal-rooms/:dealRoomId/offers/draft — caller's own unsent draft, if any
 router.get('/:dealRoomId/offers/draft', authMiddleware, dealRoomOfferController.getDraft);
+
+// GET /api/v1/deal-rooms/:dealRoomId/export — download chats + media as a stage-organized zip
+router.get('/:dealRoomId/export', authMiddleware, dealRoomExportController.exportDealRoom);
 
 module.exports = router;

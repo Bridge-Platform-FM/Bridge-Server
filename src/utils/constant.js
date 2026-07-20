@@ -360,7 +360,8 @@ const CHAT_MESSAGES = {
     MEDIA_NOT_FOUND: 'Media not found',
     DEAL_ROOM_NOT_FOUND: 'Deal room not found',
     DEAL_ROOM_CLOSED: 'This deal room is closed; new messages are not allowed',
-    FORBIDDEN: 'You are not authorized to access this deal room chat'
+    FORBIDDEN: 'You are not authorized to access this deal room chat',
+    EXPORT_FAILED: 'Error encountered while exporting deal room data'
 };
 
 const SOCKET_EVENTS = {

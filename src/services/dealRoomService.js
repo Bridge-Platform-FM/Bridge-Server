@@ -3,6 +3,7 @@
 const { sequelize } = require('../models');
 const { errorLogger } = require('../configs/logger');
 const dealRoomRepository = require('../repositories/dealRoomRepository');
+const dealRoomArchiveRepository = require('../repositories/dealRoomArchiveRepository');
 const dealRoomStageRequestRepository = require('../repositories/dealRoomStageRequestRepository');
 const dealRoomStageRequestLogRepository = require('../repositories/dealRoomStageRequestLogRepository');
 const dealRoomTermSheetRepository = require('../repositories/dealRoomTermSheetRepository');
@@ -10,13 +11,59 @@ const dealRoomB2BConfirmationRepository = require('../repositories/dealRoomB2BCo
 const ServiceResponse = require('../utils/ServiceResponse');
 const { DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, DEAL_ROOM_STAGES, DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES } = require('../utils/constant');
 
-const getDealRooms = async (userId, roleId) => {
+const getDealRooms = async (userId, roleId, { archived = false } = {}) => {
     try {
-        const dealRooms = await dealRoomRepository.findAllByUserId(userId, roleId);
+        const dealRooms = await dealRoomRepository.findAllByUserId(userId, roleId, { archived });
         return ServiceResponse.success({ data: dealRooms, message: DEAL_ROOM_MESSAGES.FETCH_SUCCESS, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.FETCH_FAILED, statusCode: 500 });
+    }
+};
+
+const archiveDealRoom = async (dealRoomId, userId) => {
+    try {
+        const dealRoom = await dealRoomRepository.findById(dealRoomId);
+        if (!dealRoom) {
+            return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.NOT_FOUND, statusCode: 404 });
+        }
+        if (!isParticipant(dealRoom, userId)) {
+            return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.FORBIDDEN, statusCode: 403 });
+        }
+
+        const existing = await dealRoomArchiveRepository.findByDealRoomAndUser(dealRoomId, userId);
+        if (existing) {
+            return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.ALREADY_ARCHIVED, statusCode: 400 });
+        }
+
+        const created = await dealRoomArchiveRepository.archive(dealRoomId, userId);
+        return ServiceResponse.success({ data: created, message: DEAL_ROOM_MESSAGES.ARCHIVE_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.ARCHIVE_FAILED, statusCode: 500 });
+    }
+};
+
+const unarchiveDealRoom = async (dealRoomId, userId) => {
+    try {
+        const dealRoom = await dealRoomRepository.findById(dealRoomId);
+        if (!dealRoom) {
+            return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.NOT_FOUND, statusCode: 404 });
+        }
+        if (!isParticipant(dealRoom, userId)) {
+            return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.FORBIDDEN, statusCode: 403 });
+        }
+
+        const existing = await dealRoomArchiveRepository.findByDealRoomAndUser(dealRoomId, userId);
+        if (!existing) {
+            return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.NOT_ARCHIVED, statusCode: 400 });
+        }
+
+        await dealRoomArchiveRepository.unarchive(dealRoomId, userId);
+        return ServiceResponse.success({ data: null, message: DEAL_ROOM_MESSAGES.UNARCHIVE_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: DEAL_ROOM_MESSAGES.UNARCHIVE_FAILED, statusCode: 500 });
     }
 };
 
@@ -246,5 +293,7 @@ module.exports = {
     isParticipant,
     requestStageUpdate,
     respondStageUpdate,
-    getPendingStageUpdate
+    getPendingStageUpdate,
+    archiveDealRoom,
+    unarchiveDealRoom
 };

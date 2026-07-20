@@ -5,9 +5,10 @@ const { errorLogger } = require('../configs/logger');
 const dealRoomRepository = require('../repositories/dealRoomRepository');
 const dealRoomStageRequestRepository = require('../repositories/dealRoomStageRequestRepository');
 const dealRoomStageRequestLogRepository = require('../repositories/dealRoomStageRequestLogRepository');
+const dealRoomTermSheetRepository = require('../repositories/dealRoomTermSheetRepository');
+const dealRoomB2BConfirmationRepository = require('../repositories/dealRoomB2BConfirmationRepository');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, DEAL_ROOM_STAGES, DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES } = require('../utils/constant');
-
 
 const getDealRooms = async (userId, roleId) => {
     try {
@@ -208,6 +209,21 @@ const respondStageUpdate = async ({ dealRoomId, requestId, decision, respondedBy
                 updatedBy: respondedByUserId,
                 transaction
             });
+
+            // B2B term-sheet confirmation: accepting a Negotiation -> Due Diligence move
+            // locks in the current term sheet as the agreed/final version (one party
+            // requested, the other accepted — that mutual consent IS the confirmation).
+            // Scopes naturally to B2B rooms since only they have a term sheet.
+            if (stageRequest.current_stage === DEAL_ROOM_STAGES.NEGOTIATION
+                && stageRequest.requested_stage === DEAL_ROOM_STAGES.DUE_DILIGENCE) {
+                const termSheet = await dealRoomTermSheetRepository.findLatestByDealRoomId(dealRoomId);
+                await dealRoomB2BConfirmationRepository.recordConfirmation(dealRoomId, {
+                    confirmedTermSheetId: termSheet ? termSheet.id : null,
+                    requestedByUserId: stageRequest.requested_by_user_id,
+                    acceptedByUserId: respondedByUserId,
+                    confirmedAt: new Date()
+                }, { transaction });
+            }
         }
 
         await transaction.commit();
@@ -223,4 +239,12 @@ const respondStageUpdate = async ({ dealRoomId, requestId, decision, respondedBy
     }
 };
 
-module.exports = { getDealRooms, createDealRoom, closeDealRoom, isParticipant, requestStageUpdate, respondStageUpdate, getPendingStageUpdate };
+module.exports = {
+    getDealRooms,
+    createDealRoom,
+    closeDealRoom,
+    isParticipant,
+    requestStageUpdate,
+    respondStageUpdate,
+    getPendingStageUpdate
+};

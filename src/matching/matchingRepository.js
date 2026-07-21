@@ -36,8 +36,9 @@ const getProfileWithRole = async (userId) => {
 /**
  * Fetches all active, non-deleted user profiles with their roles,
  * excluding the given userId (the source profile) and any candidate
- * user+role combination the source user is already connected (Accepted) to,
- * regardless of which of the source user's own roles that connection was made under.
+ * user+role combination the source user already has an Accepted or
+ * Deferred connection with, regardless of which of the source user's
+ * own roles that connection was made under.
  */
 const getCandidateProfiles = async (excludeUserId) => {
     return await sequelize.query(
@@ -60,7 +61,7 @@ const getCandidateProfiles = async (excludeUserId) => {
           AND NOT EXISTS (
               SELECT 1 FROM user_connection uc
               WHERE uc.is_deleted IS NOT TRUE
-                AND uc.status = :acceptedStatus
+                AND uc.status IN (:excludedStatuses)
                 AND (
                     (uc.requester_user_id = :excludeUserId AND uc.recipient_user_id = u.id AND uc.recipient_role_id = cur.role_id)
                     OR (uc.recipient_user_id = :excludeUserId AND uc.requester_user_id = u.id AND uc.requester_role_id = cur.role_id)
@@ -69,7 +70,7 @@ const getCandidateProfiles = async (excludeUserId) => {
         {
             replacements: {
                 excludeUserId,
-                acceptedStatus: CONNECTION_STATUS.ACCEPTED
+                excludedStatuses: [CONNECTION_STATUS.ACCEPTED, CONNECTION_STATUS.DEFERRED, CONNECTION_STATUS.PENDING, CONNECTION_STATUS.VIEWED]
             },
             type: QueryTypes.SELECT
         }

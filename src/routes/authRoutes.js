@@ -12,17 +12,19 @@ const {
     resetPasswordSchema
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
+const authorize = require('../middleware/authorize');
 const resetPasswordMiddleware = require('../middleware/resetPasswordMiddleware');
+const { PERMISSIONS } = require('../utils/constant');
 
 
 // Route for starting Company registration and generating OTPs
 router.post('/company-registration', validate(companyRegistrationSchema), authController.companyRegistration);
 
 // Route for verifying a single channel OTP
-router.post('/verify-otp', authMiddleware, validate(verifyOtpSchema), authController.verifyOtp);
+router.post('/verify-otp', authMiddleware, authorize(PERMISSIONS.AUTH.VERIFY_OTP), validate(verifyOtpSchema), authController.verifyOtp);
 
 // Route for resending an OTP for a channel
-router.post('/resend-otp', authMiddleware, validate(resendOtpSchema), authController.resendOtp);
+router.post('/resend-otp', authMiddleware, authorize(PERMISSIONS.AUTH.RESEND_OTP), validate(resendOtpSchema), authController.resendOtp);
 
 // Route for updating access tokens via refresh tokens
 router.post('/refresh', validate(refreshTokenSchema), authController.updateAccessToken);
@@ -31,11 +33,11 @@ router.post('/refresh', validate(refreshTokenSchema), authController.updateAcces
 router.post('/login', validate(loginSchema), authController.login);
 
 // Route for triggering OTP (MFA)
-router.post('/mfa/trigger-otp', authMiddleware, authController.triggerOtp);
+router.post('/mfa/trigger-otp', authMiddleware, authorize(PERMISSIONS.AUTH.MFA_TRIGGER_OTP), authController.triggerOtp);
 
-router.post('/mfa/verify-otp', authMiddleware, authController.verifyMfaOtp);
+router.post('/mfa/verify-otp', authMiddleware, authorize(PERMISSIONS.AUTH.MFA_VERIFY_OTP), authController.verifyMfaOtp);
 
-router.post('/mfa/resend-otp', authMiddleware, authController.resendMfaOtp);
+router.post('/mfa/resend-otp', authMiddleware, authorize(PERMISSIONS.AUTH.MFA_RESEND_OTP), authController.resendMfaOtp);
 
 router.post('/reset-password/trigger-otp', authController.resetPasswordTriggerOtp);
 

@@ -60,8 +60,6 @@ const findByEmail = async (email) => {
 
 const getUserLimitConfig = async ({ userId, adminRole }) => {
     try {
-        // Role check: currently only SYS_ADMIN is permitted.
-        // When SUPER_ADMIN is introduced, add it to ROLES.ADMIN in constant.js.
         if (!ROLES.ADMIN.includes(adminRole)) {
             return ServiceResponse.error({
                 message: USER_LIMIT_CONFIG_MESSAGES.FORBIDDEN,
@@ -105,8 +103,6 @@ const getUserLimitConfig = async ({ userId, adminRole }) => {
 const updateUserLimitConfig = async ({ userId, adminId, adminRole, payload }) => {
     const transaction = await sequelize.transaction();
     try {
-        // Role check: currently only SYS_ADMIN is permitted.
-        // When SUPER_ADMIN is introduced, add it to ROLES.ADMIN in constant.js.
         if (!ROLES.ADMIN.includes(adminRole)) {
             await transaction.rollback();
             return ServiceResponse.error({

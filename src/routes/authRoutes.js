@@ -22,10 +22,10 @@ const { PERMISSIONS } = require('../utils/constant');
 router.post('/company-registration', validate(companyRegistrationSchema), authController.companyRegistration);
 
 // Route for verifying a single channel OTP
-router.post('/verify-otp', authMiddleware, authorize(PERMISSIONS.AUTH.VERIFY_OTP), validate(verifyOtpSchema), authController.verifyOtp);
+router.post('/verify-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.VERIFY_OTP), validate(verifyOtpSchema), authController.verifyOtp);
 
 // Route for resending an OTP for a channel
-router.post('/resend-otp', authMiddleware, authorize(PERMISSIONS.AUTH.RESEND_OTP), validate(resendOtpSchema), authController.resendOtp);
+router.post('/resend-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.RESEND_OTP), validate(resendOtpSchema), authController.resendOtp);
 
 // Route for updating access tokens via refresh tokens
 router.post('/refresh', validate(refreshTokenSchema), authController.updateAccessToken);

@@ -2,7 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const authenticate = require('../middleware/authMiddleware');
+const authorize = require('../middleware/authorize');
 const userSessionController = require('../controllers/userSessionController');
+const { PERMISSIONS } = require('../utils/constant');
 
 /*
  * ROUTE ORDERING MATTERS — all named routes (/logout, /logout-all,
@@ -12,22 +14,22 @@ const userSessionController = require('../controllers/userSessionController');
  */
 
 // GET  /api/v1/sessions
-router.get('/', authenticate, userSessionController.getActiveSessions);
+router.get('/', authenticate, authorize(PERMISSIONS.SESSION.VIEW_ACTIVE), userSessionController.getActiveSessions);
 
 // GET  /api/v1/sessions/limit-status
-router.get('/limit-status', authenticate, userSessionController.getSessionLimitStatus);
+router.get('/limit-status', authenticate, authorize(PERMISSIONS.SESSION.VIEW_LIMIT_STATUS), userSessionController.getSessionLimitStatus);
 
 // POST /api/v1/sessions/logout  — sidebar Logout button (current device only)
-router.post('/logout', authenticate, userSessionController.logoutCurrentSession);
+router.post('/logout', authenticate, authorize(PERMISSIONS.SESSION.LOGOUT), userSessionController.logoutCurrentSession);
 
 // POST /api/v1/sessions/logout-all  — revoke every session for this user
-router.post('/logout-all', authenticate, userSessionController.logoutAllSessions);
+router.post('/logout-all', authenticate, authorize(PERMISSIONS.SESSION.LOGOUT_ALL), userSessionController.logoutAllSessions);
 
 // POST /api/v1/sessions/revoke-selected  — device-chooser modal selection
-router.post('/revoke-selected', authenticate, userSessionController.revokeSelectedSessions);
+router.post('/revoke-selected', authenticate, authorize(PERMISSIONS.SESSION.REVOKE_SELECTED), userSessionController.revokeSelectedSessions);
 
 // DELETE /api/v1/sessions/:sessionId  — revoke one specific session by id
-router.delete('/:sessionId', authenticate, userSessionController.revokeSession);
+router.delete('/:sessionId', authenticate, authorize(PERMISSIONS.SESSION.REVOKE), userSessionController.revokeSession);
 
 module.exports = router;
 

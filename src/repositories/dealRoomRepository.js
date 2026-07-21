@@ -53,7 +53,7 @@ const updateStage = async (dealRoomId, stage, { updatedBy, transaction } = {}) =
     return updated;
 };
 
-const findAllByUserId = async (userId, roleId) => {
+const findAllByUserId = async (userId, roleId, { archived = false } = {}) => {
     return await sequelize.query(
         `SELECT
             dr.id AS deal_room_id,
@@ -64,6 +64,8 @@ const findAllByUserId = async (userId, roleId) => {
             dr.closed_at,
             dr.closed_reason,
             dr.created_at AS deal_room_created_at,
+
+            dra.archived_at,
 
             uc.status AS connection_status,
             uc.message AS connection_message,
@@ -91,6 +93,8 @@ const findAllByUserId = async (userId, roleId) => {
             rec_c.company_name AS recipient_company_name
 
         FROM deal_room dr
+        LEFT JOIN deal_room_archive dra
+            ON dra.deal_room_id = dr.id AND dra.user_id = :userId AND dra.is_deleted = false
         JOIN user_connection     uc      ON uc.id      = dr.connection_id
         JOIN "user"              ru      ON ru.id      = dr.requester_user_id
         JOIN company_role_master r_crm  ON r_crm.id   = dr.requester_role_id
@@ -103,6 +107,7 @@ const findAllByUserId = async (userId, roleId) => {
               (dr.requester_user_id = :userId AND dr.requester_role_id = :roleId)
               OR (dr.recipient_user_id = :userId AND dr.recipient_role_id = :roleId)
           )
+          AND dra.archived_at IS ${archived ? 'NOT NULL' : 'NULL'}
         ORDER BY dr.created_at DESC`,
         {
             replacements: { userId, roleId },

@@ -9,11 +9,17 @@ const dealRoomTermSheetController = require('../controllers/dealRoomTermSheetCon
 const dealRoomExportController = require('../controllers/dealRoomExportController');
 const { validate, closeDealRoomSchema } = require('../validations/dealRoomValidation');
 
-// GET /api/v1/deal-rooms — list all deal rooms for the logged in user
+// GET /api/v1/deal-rooms?archived=true — list deal rooms for the logged in user (active by default, archived if ?archived=true)
 router.get('/', authMiddleware, dealRoomController.getDealRooms);
 
 // PUT /api/v1/deal-rooms/:dealRoomId/close — close a deal room
 router.put('/:dealRoomId/close', authMiddleware, validate(closeDealRoomSchema), dealRoomController.closeDealRoom);
+
+// PUT /api/v1/deal-rooms/:dealRoomId/archive — archive a deal room (caller's own view only)
+router.put('/:dealRoomId/archive', authMiddleware, dealRoomController.archiveDealRoom);
+
+// PUT /api/v1/deal-rooms/:dealRoomId/unarchive — unarchive a deal room (caller's own view only)
+router.put('/:dealRoomId/unarchive', authMiddleware, dealRoomController.unarchiveDealRoom);
 
 // GET /api/v1/deal-rooms/:dealRoomId/stage-request/pending — the room's currently pending stage request (if any)
 router.get('/:dealRoomId/stage-request/pending', authMiddleware, dealRoomController.getPendingStageUpdate);

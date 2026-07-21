@@ -207,6 +207,11 @@ module.exports = (sequelize) => {
             as: 'stageRequests'
         });
 
+        DealRoom.hasMany(models.DealRoomArchive, {
+            foreignKey: 'deal_room_id',
+            as: 'archives'
+        });
+
     };
 
     return DealRoom;

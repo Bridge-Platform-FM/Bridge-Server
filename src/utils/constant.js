@@ -244,7 +244,13 @@ const DEAL_ROOM_MESSAGES = {
     CLOSE_FAILED: 'Error encountered while closing deal room',
     ALREADY_CLOSED: 'Deal room is already closed',
     NOT_FOUND: 'Deal room not found',
-    FORBIDDEN: 'You are not authorized to perform this action'
+    FORBIDDEN: 'You are not authorized to perform this action',
+    ARCHIVE_SUCCESS: 'Deal room archived successfully',
+    ARCHIVE_FAILED: 'Error encountered while archiving deal room',
+    ALREADY_ARCHIVED: 'Deal room is already archived',
+    UNARCHIVE_SUCCESS: 'Deal room unarchived successfully',
+    UNARCHIVE_FAILED: 'Error encountered while unarchiving deal room',
+    NOT_ARCHIVED: 'Deal room is not archived'
 };
 
 const DEAL_ROOM_STAGES = {
@@ -274,7 +280,8 @@ const DEAL_ROOM_STAGE_MESSAGES = {
     CANNOT_RESPOND_OWN_REQUEST: 'You cannot respond to your own stage update request',
     FORBIDDEN: 'You are not authorized to perform this action',
     DEAL_ROOM_NOT_FOUND: 'Deal room not found',
-    DEAL_ROOM_CLOSED: 'This deal room is closed; stage updates are not allowed'
+    DEAL_ROOM_CLOSED: 'This deal room is closed; stage updates are not allowed',
+    PENDING_OFFER_BLOCKS_TRANSITION: 'Resolve the pending funding offer (accept, reject or counter it) before moving past the Negotiation stage'
 };
 
 

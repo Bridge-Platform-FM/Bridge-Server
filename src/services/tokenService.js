@@ -277,10 +277,41 @@ const refreshToken = async (
         });
     }
 };
+const generateMfaAccessToken = async (company, role, user) => {
+    try {
+        const payload = {
+            companyId: company.id,
+            email: company.company_email,
+            companyName: company.company_name,
+
+            mobileNumber: company.mobile_number,
+            countryCode: company.country_code,
+
+            role: role.role_code,
+            roleId: role.id,
+
+            userId: user.id,
+            userName: user?.first_name
+        };
+
+        const accessToken = await generateAccessToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);
+
+        return ServiceResponse.success({
+            data: { accessToken }
+        });
+    } catch (err) {
+        errorLogger.error(err);
+        return ServiceResponse.error({
+            message: err.message || 'Error encountered while generating token.',
+            data: []
+        });
+    }
+};
 
 
 module.exports = {
     generateTokens,
     refreshToken,
-    generateResetPasswordAcessToken
+    generateResetPasswordAcessToken,
+    generateMfaAccessToken
 };

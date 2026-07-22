@@ -18,7 +18,9 @@ const env = {
         ACCESS_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY || '55m',
         REFRESH_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY || '7d',
         RESET_PASSWORD_SECRET: process.env.RESET_PASSWORD_SECRET || 'reset_password_secret_key_12345',
-        RESET_PASSWORD_EXPIRY: process.env.RESET_PASSWORD_EXPIRY || '10m'
+        RESET_PASSWORD_EXPIRY: process.env.RESET_PASSWORD_EXPIRY || '10m',
+        MFA_SECRET: process.env.MFA_SECRET || 'mfa_secret_key_12345',
+        MFA_EXPIRY: process.env.MFA_EXPIRY || '15m'
     },
     OTP: {
         EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '5', 10),

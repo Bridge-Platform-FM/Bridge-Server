@@ -275,13 +275,10 @@ const login = async (req, res, next) => {
         const maskedMobile = maskPhone(existingCompany.country_code + existingCompany.mobile_number);
         const maskedEmail = maskEmail(existingCompany.company_email);
 
-        const tokens = await tokenService.generateTokens(existingCompany, role, existingUser, {
-            ipAddress: req.ip,
-            headers: req.headers          // full headers — parseDeviceInfo reads sec-ch-ua* from these
-        });
-        const { accessToken, refreshToken } = tokens.data;
+        const tokens = await tokenService.generateMfaAccessToken(existingCompany, role, existingUser);
+        const { accessToken } = tokens.data;
 
-        return HttpResponse.success( res, {data: { accessToken, refreshToken, role: role.role_code, maskedMobile, maskedEmail }, message: LOGIN_MESSAGES.VALID_CREDENTIALS })
+        return HttpResponse.success( res, {data: { accessToken, role: role.role_code, maskedMobile, maskedEmail }, message: LOGIN_MESSAGES.VALID_CREDENTIALS })
     } catch (error) {
         console.error(error)
         errorLogger.error(error);
@@ -357,8 +354,15 @@ const verifyMfaOtp = async (req, res, next) => {
             redirectRoute = REDIRECT_ROUTES.DASHBOARD.DASHBOARD;
         }
 
+        
+        const role = { role_code: req.role, id: req.roleId };
+        const tokens = await tokenService.generateTokens(company, role, user, {
+            ipAddress: req.ip,
+            headers: req.headers          // full headers — parseDeviceInfo reads sec-ch-ua* from these
+        });
+        const { accessToken, refreshToken } = tokens.data;
 
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name }, statusCode: 200 });
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { accessToken, refreshToken, redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });

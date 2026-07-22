@@ -187,6 +187,13 @@ const updateMeeting = async (req, res, next) => {
             });
         }
 
+        // Broadcast the edit so both parties' "Upcoming Meetings" lists refresh live —
+        // mirrors the create path's MEETING_SCHEDULED broadcast. (Without this, only the
+        // editor's drawer updated and the card/counterparty went stale.)
+        if (response.data && response.data.deal_room_id) {
+            emitToDealRoom(response.data.deal_room_id, SOCKET_EVENTS.MEETING_UPDATED, response.data);
+        }
+
         return HttpResponse.success(res, {
             message: response.message,
             data: response.data,

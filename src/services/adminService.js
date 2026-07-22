@@ -7,7 +7,7 @@ const userLimitConfigRepository = require('../repositories/userLimitConfigReposi
 const { generateAccessToken, generateRefreshToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, ROLES } = require('../utils/constant');
+const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, ROLES, TOKEN_TYPES } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 
 
@@ -23,28 +23,48 @@ const login = async (email, password) => {
             return ServiceResponse.error({ message: ADMIN_MESSAGES.INVALID_CREDENTIALS, statusCode: 401 });
         }
 
-        const payload = {
+        /*
+         * MFA gate: admin login issues ONLY a short-lived MFA-pending token.
+         * The real access/refresh tokens are minted after OTP verification
+         * (adminController.verifyMfaOtp). This token authorizes nothing except
+         * the admin /auth/mfa/* OTP endpoints.
+         */
+        const mfaToken = generateAccessToken({
             adminId: admin.id,
             email: admin.email,
             mobileNumber: admin.mobile_number,
             role: admin.role
-        };
-
-        const accessToken = generateAccessToken(payload);
-        const refreshToken = generateRefreshToken(payload);
+        }, TOKEN_TYPES.MFA_PENDING_TOKEN);
 
         const maskedMobile = maskPhone(admin.country_code + admin.mobile_number);
         const maskedEmail = maskEmail(admin.email);
 
         return ServiceResponse.success({
             message: ADMIN_MESSAGES.LOGIN_SUCCESS,
-            data: { accessToken, refreshToken, maskedMobile, maskedEmail },
+            data: { mfaToken, maskedMobile, maskedEmail },
             statusCode: 200
         });
     } catch (error) {
         errorLogger.error(error);
         return ServiceResponse.error({ message: ADMIN_MESSAGES.LOGIN_FAILED, statusCode: 500 });
     }
+};
+
+/**
+ * Mint the real admin access/refresh tokens. Called ONLY after MFA OTP has been
+ * verified — the tokens carry mfaVerified:true so they satisfy adminMiddleware.
+ */
+const issueAuthTokens = (admin) => {
+    const payload = {
+        adminId: admin.id,
+        email: admin.email,
+        mobileNumber: admin.mobile_number,
+        role: admin.role,
+        mfaVerified: true
+    };
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+    return { accessToken, refreshToken };
 };
 
 const findByEmail = async (email) => {
@@ -150,4 +170,4 @@ const updateUserLimitConfig = async ({ userId, adminId, adminRole, payload }) =>
 };
 
 
-module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig };
+module.exports = { login, issueAuthTokens, findByEmail, getUserLimitConfig, updateUserLimitConfig };

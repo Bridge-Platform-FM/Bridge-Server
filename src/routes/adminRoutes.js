@@ -3,17 +3,19 @@ const express = require('express');
 const router = express.Router();
 
 const adminMiddleware = require('../middleware/adminMiddleware');
+const mfaMiddleware = require('../middleware/mfaMiddleware');
 const adminController = require('../controllers/adminController');
 const faqController = require('../controllers/faqController');
 
 // File scan for Img and Pdf
 router.post('/auth/login', adminController.login);
 
-router.post('/auth/mfa/trigger-otp', adminMiddleware, adminController.triggerOtp);
+// MFA routes accept ONLY the short-lived MFA-pending token from admin login.
+router.post('/auth/mfa/trigger-otp', mfaMiddleware, adminController.triggerOtp);
 
-router.post('/auth/mfa/verify-otp', adminMiddleware, adminController.verifyMfaOtp);
+router.post('/auth/mfa/verify-otp', mfaMiddleware, adminController.verifyMfaOtp);
 
-router.post('auth/mfa/resend-otp', adminMiddleware, adminController.resendMfaOtp);
+router.post('auth/mfa/resend-otp', mfaMiddleware, adminController.resendMfaOtp);
 
 router.get('/get-user-list', adminMiddleware, adminController.getUserList);
 

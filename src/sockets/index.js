@@ -3,6 +3,7 @@
 const { errorLogger } = require('../configs/logger');
 const { verifyAccessToken } = require('../utils/token');
 const { ROLES } = require('../utils/constant');
+const { parseCookieHeader, COOKIE_NAMES } = require('../utils/cookies');
 const registerChatHandlers = require('./chatSocketHandler');
 const registerDealRoomStageHandlers = require('./dealRoomStageSocketHandler');
 
@@ -15,7 +16,11 @@ let ioInstance = null;
 
 const authenticateSocket = (socket, next) => {
     try {
-        const token = socket.handshake.auth && socket.handshake.auth.token;
+        // Prefer the httpOnly cookie sent with the handshake (withCredentials);
+        // fall back to an explicit auth.token for un-migrated clients.
+        const cookies = parseCookieHeader(socket.handshake.headers && socket.handshake.headers.cookie);
+        const token = cookies[COOKIE_NAMES.ACCESS]
+            || (socket.handshake.auth && socket.handshake.auth.token);
         if (!token) {
             return next(new Error('Unauthorized'));
         }

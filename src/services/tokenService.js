@@ -83,7 +83,10 @@ const generateTokens = async (
             roleId: role.id,
 
             userId: user.id,
-            userName: user?.first_name
+            userName: user?.first_name,
+
+            // These tokens are only minted after OTP verification succeeds.
+            mfaVerified: true
         };
 
         const accessToken =
@@ -200,6 +203,28 @@ const refreshToken = async (
         const decoded =
             verifyRefreshToken(plainRefreshToken);
 
+        /*
+         * Admin refresh — admin tokens carry `adminId` (not `companyId`) and have no
+         * company/session context. Re-mint an admin access token so admins get the same
+         * silent-refresh behavior as regular users instead of being logged out.
+         */
+        if (decoded.adminId) {
+
+            const adminAccessToken = await generateAccessToken({
+                adminId: decoded.adminId,
+                email: decoded.email,
+                mobileNumber: decoded.mobileNumber,
+                role: decoded.role,
+                // Refreshing only happens from an already MFA-verified session.
+                mfaVerified: true
+            });
+
+            return ServiceResponse.success({
+                message: AUTH_MESSAGES.TOKEN_REFRESH_SUCCESS,
+                data: { accessToken: adminAccessToken }
+            });
+        }
+
         const companyId =
             decoded.companyId;
 
@@ -226,7 +251,10 @@ const refreshToken = async (
             roleId: decoded.roleId,
 
             userId: decoded.userId,
-            userName: decoded.userName
+            userName: decoded.userName,
+
+            // Refreshing only happens from an already MFA-verified session.
+            mfaVerified: true
         };
 
         /*

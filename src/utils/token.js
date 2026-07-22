@@ -13,6 +13,12 @@ const generateAccessToken = (payload, type=TOKEN_TYPES.AUTH_ACCESS_TOKEN) => {
         ACCESS_SECRET = env.JWT.RESET_PASSWORD_SECRET;
         ACCESS_EXPIRY = env.JWT.RESET_PASSWORD_EXPIRY;
     }
+    else if (type === TOKEN_TYPES.MFA_PENDING_TOKEN) {
+        payload.type = TOKEN_TYPES.MFA_PENDING_TOKEN;
+        payload.mfaVerified = false;
+        ACCESS_SECRET = env.JWT.MFA_PENDING_SECRET;
+        ACCESS_EXPIRY = env.JWT.MFA_PENDING_EXPIRY;
+    }
     else {
         payload.type = TOKEN_TYPES.AUTH_ACCESS_TOKEN;
         ACCESS_SECRET = env.JWT.ACCESS_SECRET;
@@ -42,6 +48,9 @@ const verifyAccessToken = (token, type=TOKEN_TYPES.AUTH_ACCESS_TOKEN) => {
     }
     else if (type === TOKEN_TYPES.AUTH_REFRESH_ACCESS_TOKEN) {
         secret = env.JWT.REFRESH_SECRET;
+    }
+    else if (type === TOKEN_TYPES.MFA_PENDING_TOKEN) {
+        secret = env.JWT.MFA_PENDING_SECRET;
     }
     else {
         secret = env.JWT.ACCESS_SECRET;

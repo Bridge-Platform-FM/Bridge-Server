@@ -4,6 +4,7 @@ const userSessionService = require('../services/userSessionService');
 const { SESSION_MESSAGES } = require('../utils/constant');
 const { MAX_ACTIVE_SESSIONS } = require('../configs/sessionConfig');
 const HttpResponse = require('../utils/HttpResponse');
+const { clearAuthCookies } = require('../utils/cookies');
 
 /**
  * GET /api/v1/sessions
@@ -82,6 +83,9 @@ const logoutAllSessions = async (req, res, next) => {
             });
         }
 
+        // Remove the httpOnly auth cookies from this browser.
+        clearAuthCookies(res);
+
         return HttpResponse.success(res, {
             message: logoutResponse.message,
             data: logoutResponse.data,
@@ -120,6 +124,9 @@ const logoutCurrentSession = async (req, res, next) => {
                 statusCode: logoutResponse.statusCode
             });
         }
+
+        // Remove the httpOnly auth cookies from the browser.
+        clearAuthCookies(res);
 
         return HttpResponse.success(res, {
             message: logoutResponse.message,

@@ -5,6 +5,7 @@ const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
+const { setAuthCookies, setMfaCookie, clearMfaCookie } = require('../utils/cookies');
 const userService = require('../services/userService');
 const kycService = require('../services/kycService');
 
@@ -23,6 +24,11 @@ const login = async (req, res, next) => {
         const result = await adminService.login(email, password);
         if (!result.success) {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        // Deliver the MFA-pending token as an httpOnly cookie (mfaMiddleware reads it).
+        if (result.data && result.data.mfaToken) {
+            setMfaCookie(res, result.data.mfaToken);
         }
 
         return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
@@ -79,8 +85,15 @@ const verifyMfaOtp = async (req, res, next) => {
         }
 
         const admin = adminRes.data;
-        
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
+
+        // OTP passed — mint the real access/refresh tokens (mfaVerified:true).
+        const { accessToken, refreshToken } = adminService.issueAuthTokens(admin);
+
+        // Real tokens now live in httpOnly cookies; drop the spent MFA cookie.
+        setAuthCookies(res, { accessToken, refreshToken });
+        clearMfaCookie(res);
+
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { accessToken, refreshToken, userId: admin.id, first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });

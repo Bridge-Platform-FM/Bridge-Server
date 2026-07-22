@@ -4,6 +4,7 @@ const { errorLogger } = require('../configs/logger');
 const { AUTH_MESSAGES, TOKEN_TYPES, ROLES } = require('../utils/constant'); // TOKEN_TYPES and ROLES kept from develop branch
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken } = require('../utils/token');
+const { readToken, COOKIE_NAMES } = require('../utils/cookies');
 
 const userSessionRepository = require('../repositories/userSessionRepository');
 const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
@@ -13,20 +14,20 @@ const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
  */
 const authMiddleware = async (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization || req.headers.Authorization;
+        // Prefer the httpOnly cookie; fall back to the Authorization header so
+        // un-migrated clients keep working during the cookie rollout.
+        const token = readToken(req, COOKIE_NAMES.ACCESS);
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!token) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.ACCESS_TOKEN_UNAUTHORIZED,
                 statusCode: 401
             });
         }
 
-        const token = authHeader.split(' ')[1];
-
         const decoded = verifyAccessToken(token);
 
-        if (!decoded.type === TOKEN_TYPES.AUTH_ACCESS_TOKEN) {
+        if (decoded.type !== TOKEN_TYPES.AUTH_ACCESS_TOKEN || decoded.mfaVerified !== true) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 401

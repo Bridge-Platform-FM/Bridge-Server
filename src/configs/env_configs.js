@@ -18,7 +18,9 @@ const env = {
         ACCESS_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY || '55m',
         REFRESH_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY || '7d',
         RESET_PASSWORD_SECRET: process.env.RESET_PASSWORD_SECRET || 'reset_password_secret_key_12345',
-        RESET_PASSWORD_EXPIRY: process.env.RESET_PASSWORD_EXPIRY || '10m'
+        RESET_PASSWORD_EXPIRY: process.env.RESET_PASSWORD_EXPIRY || '10m',
+        MFA_PENDING_SECRET: process.env.MFA_PENDING_SECRET || 'mfa_pending_secret_key_12345',
+        MFA_PENDING_EXPIRY: process.env.MFA_PENDING_EXPIRY || '10m'
     },
     OTP: {
         EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '5', 10),
@@ -26,6 +28,22 @@ const env = {
         MAX_RESEND_PER_HOUR: parseInt(process.env.OTP_MAX_RESEND_PER_HOUR || '10', 10),
         MAX_VERIFY_ATTEMPTS: parseInt(process.env.OTP_MAX_VERIFY_ATTEMPTS || '5', 10),
         BLOCK_DURATION_MINUTES: parseInt(process.env.OTP_BLOCK_DURATION_MINUTES || '15', 10)
+    },
+    /*
+     * Comma-separated allowlist of browser origins permitted to send credentialed
+     * (cookie) requests. Leave EMPTY to reflect the request origin (dev-friendly —
+     * keeps every local port working). In production set the exact web origin(s).
+     */
+    FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || '',
+    /*
+     * httpOnly auth-cookie attributes. Defaults are safe for same-site / localhost.
+     * Cross-site deployments (web and API on different registrable domains) MUST set
+     * COOKIE_SAMESITE=none and COOKIE_SECURE=true (HTTPS only).
+     */
+    COOKIE: {
+        SECURE: process.env.COOKIE_SECURE === 'true',
+        SAMESITE: process.env.COOKIE_SAMESITE || 'lax',
+        DOMAIN: process.env.COOKIE_DOMAIN || undefined
     }
 };
 

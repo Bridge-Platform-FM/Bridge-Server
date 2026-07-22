@@ -86,9 +86,9 @@ const resendOtpSchema = Joi.object({
 });
 
 const refreshTokenSchema = Joi.object({
-    refreshToken: Joi.string().required().messages({
-        'any.required': 'refreshToken is required'
-    })
+    // Optional: the refresh token normally arrives in the httpOnly cookie (empty body).
+    // The body field remains supported as a fallback for un-migrated clients.
+    refreshToken: Joi.string().optional()
 });
 
 const loginSchema = Joi.object({

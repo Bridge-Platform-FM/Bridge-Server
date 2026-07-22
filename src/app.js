@@ -28,7 +28,22 @@ const userSessionRoutes = require('./routes/userSessionRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 
 const app = express();
-app.use(cors());
+/*
+ * CORS with credentials (cookies). The browser forbids `*` when credentials are
+ * sent, so we echo back the exact request origin. FRONTEND_ORIGIN (comma-separated)
+ * restricts which origins are allowed; when it's empty we reflect any origin so
+ * every local port keeps working in development.
+ */
+const allowedOrigins = env_config.FRONTEND_ORIGIN
+    ? env_config.FRONTEND_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+    : null;
+const isAllowedOrigin = (origin) =>
+    !origin || !allowedOrigins || allowedOrigins.includes(origin);
+const corsOptions = {
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+    credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Application request response logger
@@ -58,7 +73,14 @@ app.use(scanErrorMiddleware);
 const SERVER_PORT = env_config.SERVER_PORT || 3001;
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+    cors: {
+        // Reflect the request origin (or restrict to the allowlist) so the socket
+        // handshake can send the auth cookie with credentials.
+        origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+        credentials: true
+    }
+});
 initSockets(io);
 
 server.listen(SERVER_PORT, () => {

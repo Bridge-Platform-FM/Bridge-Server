@@ -13,51 +13,29 @@ module.exports = (sequelize) => {
             allowNull: false
         },
 
-        name: {
+        plan_name: {
             type: DataTypes.STRING(100),
             allowNull: false
         },
 
+        // Short unique code for programmatic reference, e.g. 'MONTHLY', 'YEARLY'
         plan_code: {
             type: DataTypes.STRING(50),
             allowNull: false,
             unique: true
         },
 
-        description: {
-            type: DataTypes.TEXT,
-            allowNull: true
-        },
-
-        price_monthly: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
-
-        price_yearly: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: true
-        },
-
-        currency: {
-            type: DataTypes.STRING(10),
+        // Each element is one benefit shown as a separate row in the UI
+        plan_benefits: {
+            type: DataTypes.ARRAY(DataTypes.TEXT),
             allowNull: false,
-            defaultValue: 'INR'
+            defaultValue: []
         },
 
-        duration_days: {
+        // 30 for Monthly, 365 for Yearly
+        validity_days: {
             type: DataTypes.INTEGER,
             allowNull: false
-        },
-
-        applicable_roles: {
-            type: DataTypes.JSONB,
-            allowNull: true
-        },
-
-        features: {
-            type: DataTypes.JSONB,
-            allowNull: true
         },
 
         is_active: {
@@ -109,20 +87,13 @@ module.exports = (sequelize) => {
 
     SubscriptionPlan.associate = (models) => {
 
-        SubscriptionPlan.hasMany(models.SubscriptionPlanPriceHistory, {
-            foreignKey: 'plan_id',
-            as: 'price_history'
-        });
-
         SubscriptionPlan.hasMany(models.UserSubscription, {
             foreignKey: 'plan_id',
             as: 'subscriptions'
         });
 
-        SubscriptionPlan.hasMany(models.SubscriptionPaymentTransaction, {
-            foreignKey: 'plan_id',
-            as: 'payment_transactions'
-        });
+        // Note: SubscriptionPlanPriceHistory and SubscriptionPaymentTransaction
+        // associations will be added here when payment gateway is integrated.
 
     };
 

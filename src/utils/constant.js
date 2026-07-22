@@ -448,6 +448,18 @@ const FAQ_MESSAGES = {
     NOT_FOUND: 'FAQ not found'
 };
 
+const SUBSCRIPTION_PLAN_MESSAGES = {
+    PLANS_FETCH_SUCCESS: 'Subscription plans fetched successfully',
+    PLANS_FETCH_FAILED: 'Error encountered while fetching subscription plans',
+    PLAN_NOT_FOUND: 'Subscription plan not found or is no longer available',
+    PLAN_ID_REQUIRED: 'plan_id is required and must be a positive integer',
+    PLAN_SELECT_SUCCESS: 'Subscription plan selected successfully',
+    PLAN_SELECT_FAILED: 'Error encountered while selecting subscription plan',
+    SUBSCRIPTION_NOT_FOUND: 'No active subscription found',
+    SUBSCRIPTION_FETCH_SUCCESS: 'Subscription details fetched successfully',
+    SUBSCRIPTION_FETCH_FAILED: 'Error encountered while fetching subscription details'
+};
+
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
@@ -459,6 +471,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
 
     DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE,
     DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
-    DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES
+    DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES, SUBSCRIPTION_PLAN_MESSAGES
 
 };

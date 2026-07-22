@@ -4,14 +4,17 @@ const { addDays, format } = require('date-fns');
 const { sequelize } = require('../models');
 const subscriptionPlanRepository = require('../repositories/subscriptionPlanRepository');
 const subscriptionRepository = require('../repositories/subscriptionRepository');
+// Preserved to keep findActivePrememiumSubscription working for connectionController
+// and matchingService — the typo in the filename is intentional (matches existing file).
+const subscriptoinRepository = require('../repositories/subscriptoinRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { SUBSCRIPTION_PLAN_MESSAGES } = require('../utils/constant');
+const { SUBSCRIPTION_PLAN_MESSAGES, SUBSCRIPTION_MESSAGES } = require('../utils/constant');
 
 /**
  * Fetch all active subscription plans.
  * The "valid till" preview date is calculated server-side so the UI just renders
- * what it receives.  We return it as an ISO date string (YYYY-MM-DD).
+ * what it receives. We return it as an ISO date string (YYYY-MM-DD).
  */
 const getPlans = async () => {
     try {
@@ -139,4 +142,33 @@ const getUserSubscription = async ({ userId, companyId }) => {
     }
 };
 
-module.exports = { getPlans, selectPlan, getUserSubscription };
+/**
+ * Preserved from the original subscriptionService — called by:
+ *   - src/controllers/connectionController.js (send-connection-request flow)
+ *   - src/matching/matchingService.js (getMatches orchestrator)
+ *
+ * Uses the pre-existing subscriptoinRepository (filename typo retained intentionally).
+ */
+const findActivePrememiumSubscription = async (companyId, userId) => {
+    try {
+        const userPremiumSubscription = await subscriptoinRepository.findActivePrememiumSubscription(companyId, userId);
+        return ServiceResponse.success({
+            data: userPremiumSubscription,
+            message: SUBSCRIPTION_MESSAGES.SUBSCRIPTION_FETCH_SUCCESS,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: SUBSCRIPTION_MESSAGES.SUBSCRIPTION_FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+module.exports = {
+    getPlans,
+    selectPlan,
+    getUserSubscription,
+    findActivePrememiumSubscription
+};

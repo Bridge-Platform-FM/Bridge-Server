@@ -3,7 +3,7 @@
 const { errorLogger } = require('../configs/logger');
 const { AUTH_MESSAGES, TOKEN_TYPES, ROLES } = require('../utils/constant'); // TOKEN_TYPES and ROLES kept from develop branch
 const HttpResponse = require('../utils/HttpResponse');
-const { verifyAccessToken } = require('../utils/token');
+const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
 const userSessionRepository = require('../repositories/userSessionRepository');
 const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
@@ -13,16 +13,14 @@ const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
  */
 const authMiddleware = async (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization || req.headers.Authorization;
+        const token = req.cookies?.[COOKIE_NAMES.ACCESS_TOKEN];
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!token) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.ACCESS_TOKEN_UNAUTHORIZED,
                 statusCode: 401
             });
         }
-
-        const token = authHeader.split(' ')[1];
 
         const decoded = verifyAccessToken(token);
 

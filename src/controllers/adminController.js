@@ -7,6 +7,8 @@ const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
 const userService = require('../services/userService');
 const kycService = require('../services/kycService');
+const { COOKIE_NAMES, cookieOptions } = require('../utils/token');
+const env = require('../configs/env_configs');
 
 const updateLimitConfigSchema = Joi.object({
     allowed_connections: Joi.number().integer().min(0).optional(),
@@ -25,7 +27,10 @@ const login = async (req, res, next) => {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
         }
 
-        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+        const { accessToken, refreshToken, ...body } = result.data;
+        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        return HttpResponse.success(res, { message: result.message, data: body, statusCode: result.statusCode });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: ADMIN_MESSAGES.LOGIN_FAILED, statusCode: 500 });

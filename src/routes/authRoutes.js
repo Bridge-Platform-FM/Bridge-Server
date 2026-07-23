@@ -12,6 +12,7 @@ const {
     resetPasswordSchema
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
+const mfaMiddleware = require('../middleware/mfaMiddleware');
 const resetPasswordMiddleware = require('../middleware/resetPasswordMiddleware');
 
 
@@ -30,12 +31,12 @@ router.post('/refresh', validate(refreshTokenSchema), authController.updateAcces
 // Route for company login
 router.post('/login', validate(loginSchema), authController.login);
 
-// Route for triggering OTP (MFA)
-router.post('/mfa/trigger-otp', authMiddleware, authController.triggerOtp);
+// Route for triggering OTP (MFA) — guarded by the pre-MFA token, not the app token
+router.post('/mfa/trigger-otp', mfaMiddleware, authController.triggerOtp);
 
-router.post('/mfa/verify-otp', authMiddleware, authController.verifyMfaOtp);
+router.post('/mfa/verify-otp', mfaMiddleware, authController.verifyMfaOtp);
 
-router.post('/mfa/resend-otp', authMiddleware, authController.resendMfaOtp);
+router.post('/mfa/resend-otp', mfaMiddleware, authController.resendMfaOtp);
 
 router.post('/reset-password/trigger-otp', authController.resetPasswordTriggerOtp);
 

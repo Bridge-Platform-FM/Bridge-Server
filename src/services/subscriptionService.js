@@ -27,7 +27,7 @@ const getPlans = async () => {
             plan_benefits: plan.plan_benefits,
             validity_days: plan.validity_days,
             // Preview: "if the user subscribes today, valid until …"
-            valid_till_preview: format(addDays(today, plan.validity_days), 'yyyy-MM-dd')
+            valid_till_preview: format(addDays(today, plan.validity_days), 'dd MMM yyyy')
         }));
 
         return ServiceResponse.success({
@@ -74,8 +74,8 @@ const selectPlan = async ({ planId, userId, companyId }) => {
                 user_id: userId,
                 company_id: companyId,
                 plan_id: plan.id,
-                start_date: format(startDate, 'yyyy-MM-dd'),
-                end_date: format(endDate, 'yyyy-MM-dd'),
+                start_date: format(startDate, 'dd MMM yyyy'),
+                end_date: format(endDate, 'dd MMM yyyy'),
                 status: 'active',
                 created_by: userId,
                 created_at: new Date()
@@ -127,8 +127,8 @@ const getUserSubscription = async ({ userId, companyId }) => {
                 plan_id: subscription.plan_id,
                 plan_name: subscription.plan?.plan_name ?? null,
                 plan_benefits: subscription.plan?.plan_benefits ?? [],
-                start_date: subscription.start_date,
-                end_date: subscription.end_date,
+                start_date: format(subscription.start_date, 'dd MMM yyyy'),
+                end_date: format(subscription.end_date, 'dd MMM yyyy'),
                 status: subscription.status
             },
             statusCode: 200

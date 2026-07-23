@@ -1,6 +1,7 @@
 'use strict';
 const { sequelize } = require('../models');
 const userSessionRepository = require('../repositories/userSessionRepository');
+const sessionCacheRepository = require('../repositories/sessionCacheRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { SESSION_MESSAGES } = require('../utils/constant');
@@ -53,6 +54,8 @@ const revokeSession = async (userId, sessionId) => {
             });
         }
 
+        await sessionCacheRepository.removeJti(userId, session.token_jti);
+
         return ServiceResponse.success({
             message: SESSION_MESSAGES.SESSION_REVOKE_SUCCESS,
             data: { id: session.id },
@@ -73,6 +76,7 @@ const revokeSession = async (userId, sessionId) => {
 const logoutAllSessions = async (userId) => {
     try {
         await userSessionRepository.revokeAllSessionsByUser(userId);
+        await sessionCacheRepository.invalidateUser(userId);
         return ServiceResponse.success({
             message: SESSION_MESSAGES.LOGOUT_ALL_SUCCESS,
             statusCode: 200
@@ -122,6 +126,8 @@ const logoutCurrentSession = async (userId, jti) => {
             session.is_revoked = true;
             await session.save();
         }
+
+        await sessionCacheRepository.removeJti(userId, jti);
 
         return ServiceResponse.success({
             message: SESSION_MESSAGES.LOGOUT_SUCCESS,
@@ -217,6 +223,14 @@ const revokeSelectedSessions = async (userId, sessionIds, maxSessions) => {
         }
 
         await userSessionRepository.revokeSessionsByIds(userId, validSelectedIds);
+
+        const revokedJtis = activeSessions
+            .filter((session) => validSelectedIds.includes(session.id))
+            .map((session) => session.token_jti);
+
+        await Promise.all(
+            revokedJtis.map((jti) => sessionCacheRepository.removeJti(userId, jti))
+        );
 
         return ServiceResponse.success({
             message: SESSION_MESSAGES.SESSION_REVOKE_SUCCESS,

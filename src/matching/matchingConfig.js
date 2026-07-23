@@ -19,15 +19,13 @@ const MATCHING_WEIGHTS = {
 };
 
 // Limit of profiles to return in the API response (based on score)
-const MATCHES_LIMIT = 5;
+const MATCHES_LIMIT = 10;
 
 
 // Valid role-pair combinations for matching eligibility
 const ELIGIBLE_ROLE_PAIRS = [
     { source: 'STARTUP', target: 'INVESTOR' },
-    { source: 'STARTUP', target: 'B2B' },
     { source: 'INVESTOR', target: 'STARTUP' },
-    { source: 'B2B', target: 'STARTUP' },
     { source: 'B2B', target: 'B2B' },
 ];
 

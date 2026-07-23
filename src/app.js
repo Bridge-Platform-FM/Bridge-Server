@@ -26,6 +26,7 @@ const scanErrorMiddleware = require('./middleware/scanError');
 const { initSockets } = require('./sockets');
 const userSessionRoutes = require('./routes/userSessionRoutes');
 const faqRoutes = require('./routes/faqRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
 app.use(cors());
@@ -44,6 +45,7 @@ app.use('/api/v1/deal-rooms/:dealRoomId/messages', chatRoutes);
 app.use('/api/v1/sessions', userSessionRoutes);
 app.use('/api/v1/meetings', meetingRoutes);
 app.use('/api/v1/faqs', faqRoutes);
+app.use('/api/v1/subscriptions', subscriptionRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {

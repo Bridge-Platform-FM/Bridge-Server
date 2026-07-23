@@ -1,7 +1,47 @@
 'use strict';
 const jwt = require('jsonwebtoken');
+const ms = require('ms');
 const env = require('../configs/env_configs');
 const { TOKEN_TYPES } = require('../utils/constant');
+
+// Cookie names for each token — one shared shape so every controller sets/clears them
+// identically instead of repeating the options object.
+const COOKIE_NAMES = {
+    ACCESS_TOKEN: 'access_token',
+    REFRESH_TOKEN: 'refresh_token',
+    MFA_TOKEN: 'mfa_token',
+    RESET_TOKEN: 'reset_token'
+};
+
+/**
+ * SameSite/Secure flip based on COOKIE_CROSS_SITE (env_configs.js):
+ *   - Same-site (default: plain localhost, or any two ports on the same domain):
+ *     SameSite=Lax, Secure only in production. Works over plain HTTP.
+ *   - Cross-site (COOKIE_CROSS_SITE=true: a devtunnel/forwarded-port URL, a genuinely
+ *     different domain from the frontend): SameSite=None + Secure=true — required
+ *     together, or the browser drops the cookie. Needs the connection to actually be
+ *     HTTPS (true for devtunnels; NOT true for plain http://localhost, so don't set
+ *     this flag unless you're actually tunneling).
+ */
+const crossSiteCookieFlags = () =>
+    env.COOKIE_CROSS_SITE
+        ? { sameSite: 'none', secure: true }
+        : { sameSite: 'lax', secure: process.env.NODE_ENV === 'production' };
+
+const cookieOptions = (maxAgeExpiry) => ({
+    httpOnly: true,
+    ...crossSiteCookieFlags(),
+    path: '/',
+    maxAge: ms(maxAgeExpiry)
+});
+
+// res.clearCookie must be called with the same httpOnly/secure/sameSite/path flags the
+// cookie was set with (maxAge is irrelevant for clearing).
+const clearCookieOptions = () => ({
+    httpOnly: true,
+    ...crossSiteCookieFlags(),
+    path: '/'
+});
 
 
 const generateAccessToken = (payload, type=TOKEN_TYPES.AUTH_ACCESS_TOKEN) => {
@@ -65,5 +105,8 @@ module.exports = {
     generateAccessToken,
     generateRefreshToken,
     verifyAccessToken,
-    verifyRefreshToken
+    verifyRefreshToken,
+    COOKIE_NAMES,
+    cookieOptions,
+    clearCookieOptions
 };

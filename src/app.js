@@ -8,6 +8,7 @@ require('dotenv').config()
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const env_config = require('./configs/env_configs');
 const requestResponseLogger = require('./middleware/requestResponseLogger');
 const errorMiddleware = require('./middleware/errorLogger');
@@ -29,7 +30,26 @@ const faqRoutes = require('./routes/faqRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
-app.use(cors());
+
+// credentials: true + an explicit origin (never '*') is required for the browser to
+// send/accept the httpOnly auth cookies cross-origin (dev frontend :3000 vs backend
+// :3001/4000). A single fixed origin can't fit everyone's local dev port though, so
+// this validates the request's Origin against the allow-list in FRONTEND_ORIGINS and
+// reflects back only that one matched value — still never a wildcard, so credentials
+// stays valid. Shared identically by Socket.io's CORS config below.
+const corsOriginCheck = (origin, callback) => {
+    // No Origin header (same-origin request, curl, server-to-server) — allow.
+    if (!origin) return callback(null, true);
+    // Trailing-slash-tolerant match — 'http://localhost:3000/' vs 'http://localhost:3000'
+    // is an easy, otherwise-silent mismatch against a strict equality check.
+    const normalized = origin.replace(/\/$/, '');
+    if (env_config.FRONTEND_ORIGINS.some((o) => o.replace(/\/$/, '') === normalized)) {
+        return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+};
+app.use(cors({ origin: corsOriginCheck, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 
 // Application request response logger
@@ -60,7 +80,7 @@ app.use(scanErrorMiddleware);
 const SERVER_PORT = env_config.SERVER_PORT || 3001;
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, { cors: { origin: corsOriginCheck, credentials: true } });
 initSockets(io);
 
 server.listen(SERVER_PORT, () => {

@@ -2,7 +2,7 @@
 const { errorLogger } = require('../configs/logger');
 const { AUTH_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
-const { verifyAccessToken } = require('../utils/token');
+const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
 
 /**
@@ -10,15 +10,14 @@ const { verifyAccessToken } = require('../utils/token');
  */
 const resetPasswordMiddleware = (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization || req.headers.Authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const token = req.cookies?.[COOKIE_NAMES.RESET_TOKEN];
+        if (!token) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.ACCESS_TOKEN_UNAUTHORIZED,
                 statusCode: 401
             });
         }
 
-        const token = authHeader.split(' ')[1];
         const decoded = verifyAccessToken(token, TOKEN_TYPES.RESET_PASSWORD_ACCESS_TOKEN);
 
         if (!decoded.type === TOKEN_TYPES.RESET_PASSWORD_ACCESS_TOKEN) {

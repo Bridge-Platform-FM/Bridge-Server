@@ -4,6 +4,7 @@ const userSessionService = require('../services/userSessionService');
 const { SESSION_MESSAGES } = require('../utils/constant');
 const { MAX_ACTIVE_SESSIONS } = require('../configs/sessionConfig');
 const HttpResponse = require('../utils/HttpResponse');
+const { COOKIE_NAMES, clearCookieOptions } = require('../utils/token');
 
 /**
  * GET /api/v1/sessions
@@ -81,6 +82,8 @@ const logoutAllSessions = async (req, res, next) => {
                 statusCode: logoutResponse.statusCode
             });
         }
+        res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, clearCookieOptions());
+        res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, clearCookieOptions());
 
         return HttpResponse.success(res, {
             message: logoutResponse.message,
@@ -120,6 +123,8 @@ const logoutCurrentSession = async (req, res, next) => {
                 statusCode: logoutResponse.statusCode
             });
         }
+        res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, clearCookieOptions());
+        res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, clearCookieOptions());
 
         return HttpResponse.success(res, {
             message: logoutResponse.message,

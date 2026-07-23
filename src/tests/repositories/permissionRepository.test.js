@@ -37,3 +37,28 @@ describe('permissionRepository.getPermissionKeysForRole', () => {
         expect(result).toEqual([]);
     });
 });
+
+describe('permissionRepository.getAllRolePermissions', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    test('returns role_code paired with permission_key for every active grant', async () => {
+        RolePermissionMap.findAll.mockResolvedValue([
+            { role_code: 'STARTUP', permission: { permission_key: 'DEAL_ROOM.CLOSE' } },
+            { role_code: 'ADMIN', permission: { permission_key: 'ADMIN_USER.LIST' } }
+        ]);
+
+        const result = await permissionRepository.getAllRolePermissions();
+
+        expect(result).toEqual([
+            { role_code: 'STARTUP', permission_key: 'DEAL_ROOM.CLOSE' },
+            { role_code: 'ADMIN', permission_key: 'ADMIN_USER.LIST' }
+        ]);
+        expect(RolePermissionMap.findAll).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { is_deleted: false }
+            })
+        );
+    });
+});

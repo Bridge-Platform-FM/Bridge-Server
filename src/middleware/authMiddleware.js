@@ -6,7 +6,45 @@ const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
 const userSessionRepository = require('../repositories/userSessionRepository');
+const sessionCacheRepository = require('../repositories/sessionCacheRepository');
 const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
+
+/**
+ * Redis-cached JTI check. Reads session:jti:{userId} first; on a cache miss
+ * rebuilds it from Postgres (source of truth) and re-checks. If Redis itself
+ * errors, falls back to the direct Postgres check that existed before this
+ * cache was added, so a Redis outage never blocks authenticated traffic.
+ */
+const isSessionJtiValid = async (userId, jti) => {
+    try {
+        const status = await sessionCacheRepository.checkJti(userId, jti);
+
+        if (status !== 'MISS') {
+            return status === 'VALID';
+        }
+
+        const activeSessions = await userSessionRepository.getActiveSessionsByUser(userId);
+        const activeJtis = activeSessions.map((session) => session.token_jti);
+
+        await sessionCacheRepository.cacheActiveJtis(userId, activeJtis);
+
+        return activeJtis.includes(jti);
+    } catch (error) {
+        errorLogger.error('[authMiddleware] Redis session check failed, falling back to DB:', error.message);
+
+        const session = await userSessionRepository.findSessionByJti(jti, userId);
+
+        if (!session || session.is_revoked) {
+            return false;
+        }
+
+        if (session.expires_at && new Date(session.expires_at) < new Date()) {
+            return false;
+        }
+
+        return true;
+    }
+};
 
 /**
  * Middleware to authenticate requests via JWT access token.
@@ -63,29 +101,14 @@ const authMiddleware = async (req, res, next) => {
                 });
             }
 
-            const session = await userSessionRepository.findSessionByJti(
-                jti,
-                userId
-            );
+            const isValid = await isSessionJtiValid(userId, jti);
 
-            if (!session || session.is_revoked) {
+            if (!isValid) {
                 return HttpResponse.error(res, {
                     message: AUTH_MESSAGES.UNAUTHORIZED,
                     statusCode: 401
                 });
             }
-
-            if (
-                session.expires_at &&
-                new Date(session.expires_at) < new Date()
-            ) {
-                return HttpResponse.error(res, {
-                    message: AUTH_MESSAGES.UNAUTHORIZED,
-                    statusCode: 401
-                });
-            }
-
-            req.session = session;
 
             await userSessionRepository.updateLastActivity(
                 userId,

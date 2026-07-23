@@ -21,6 +21,7 @@ const { v4: uuidv4 } = require('uuid');
  * The service layer's enforceMaxSessionsAndCreate is no longer called here.
  */
 const userSessionRepository = require('../repositories/userSessionRepository');
+const sessionCacheRepository = require('../repositories/sessionCacheRepository');
 
 const { parseDeviceInfo } = require('../utils/deviceInfo');
 
@@ -139,6 +140,20 @@ const generateTokens = async (
                  * it and still return the tokens below.
                  */
                 errorLogger.error('Failed to create session during login:', sessionErr);
+            }
+
+            /*
+             * Warm the Redis session:jti:{userId} cache with every currently
+             * active session (Flow A — see docs/plans/redis-session-jti-cache.md)
+             * so the user's first post-login request is already a cache hit
+             * instead of a miss. Best-effort — never blocks login.
+             */
+            try {
+                const activeSessions = await userSessionRepository.getActiveSessionsByUser(user.id);
+                const activeJtis = activeSessions.map((session) => session.token_jti);
+                await sessionCacheRepository.cacheActiveJtis(user.id, activeJtis);
+            } catch (cacheErr) {
+                errorLogger.error('Failed to warm session cache during login:', cacheErr);
             }
         }
 

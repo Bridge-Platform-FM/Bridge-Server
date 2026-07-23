@@ -12,8 +12,6 @@ const {
     resetPasswordSchema
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
-const mfaMiddleware = require('../middleware/mfaMiddleware');
-const authorize = require('../middleware/authorize');
 const resetPasswordMiddleware = require('../middleware/resetPasswordMiddleware');
 const { PERMISSIONS } = require('../utils/constant');
 
@@ -34,11 +32,11 @@ router.post('/refresh', validate(refreshTokenSchema), authController.updateAcces
 router.post('/login', validate(loginSchema), authController.login);
 
 // Route for triggering OTP (MFA) — guarded by the pre-MFA token, not the app token
-router.post('/mfa/trigger-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.MFA_TRIGGER_OTP), authController.triggerOtp);
+router.post('/mfa/trigger-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.MFA_TRIGGER_OTP), authorize(PERMISSIONS.AUTH.MFA_TRIGGER_OTP), authController.triggerOtp);
 
-router.post('/mfa/verify-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.MFA_VERIFY_OTP), authController.verifyMfaOtp);
+router.post('/mfa/verify-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.MFA_VERIFY_OTP), authorize(PERMISSIONS.AUTH.MFA_VERIFY_OTP), authController.verifyMfaOtp);
 
-router.post('/mfa/resend-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.MFA_RESEND_OTP), authController.resendMfaOtp);
+router.post('/mfa/resend-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.MFA_RESEND_OTP), authorize(PERMISSIONS.AUTH.MFA_RESEND_OTP), authController.resendMfaOtp);
 
 router.post('/reset-password/trigger-otp', authController.resetPasswordTriggerOtp);
 

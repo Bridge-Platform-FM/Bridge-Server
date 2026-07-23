@@ -14,6 +14,8 @@ const requestResponseLogger = require('./middleware/requestResponseLogger');
 const errorMiddleware = require('./middleware/errorLogger');
 const HttpResponse = require('./utils/HttpResponse');
 const db = require('./models');
+const redis = require('./configs/redis');
+const permissionService = require('./services/permissionService');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
@@ -82,6 +84,11 @@ const SERVER_PORT = env_config.SERVER_PORT || 3001;
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: corsOriginCheck, credentials: true } });
 initSockets(io);
+
+redis.on('connect', () => {
+    permissionService.loadAllRolePermissionsIntoCache()
+        .catch(err => console.error('Failed to load role permissions into Redis:', err));
+});
 
 server.listen(SERVER_PORT, () => {
     db.sequelize.authenticate()

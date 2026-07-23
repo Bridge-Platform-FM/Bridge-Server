@@ -5,29 +5,37 @@ const permissionRepository = require('../repositories/permissionRepository');
 const { errorLogger } = require('../configs/logger');
 
 const CACHE_PREFIX = 'role_permissions:';
-const CACHE_TTL_SECONDS = 60;
 
 const cacheKeyFor = (roleCode) => `${CACHE_PREFIX}${roleCode}`;
 
-const getPermissionKeysForRole = async (roleCode) => {
-    try {
-        const cached = await redis.get(cacheKeyFor(roleCode));
-        if (cached) {
-            return JSON.parse(cached);
+/**
+ * Loads the full role -> permission mapping from the database into Redis,
+ * grouped by role_code. Run once Redis connects so hasPermission() serves
+ * every request from Redis, never the database.
+ */
+const loadAllRolePermissionsIntoCache = async () => {
+    const grants = await permissionRepository.getAllRolePermissions();
+
+    const permissionsByRole = {};
+    grants.forEach((grant) => {
+        if (!permissionsByRole[grant.role_code]) {
+            permissionsByRole[grant.role_code] = [];
         }
-    } catch (error) {
-        errorLogger.error(error);
-    }
+        permissionsByRole[grant.role_code].push(grant.permission_key);
+    });
 
-    const permissionKeys = await permissionRepository.getPermissionKeysForRole(roleCode);
+    const pipeline = redis.pipeline();
+    Object.keys(permissionsByRole).forEach((roleCode) => {
+        pipeline.set(cacheKeyFor(roleCode), JSON.stringify(permissionsByRole[roleCode]));
+    });
+    await pipeline.exec();
 
-    try {
-        await redis.set(cacheKeyFor(roleCode), JSON.stringify(permissionKeys), 'EX', CACHE_TTL_SECONDS);
-    } catch (error) {
-        errorLogger.error(error);
-    }
+    console.info(`Loaded permissions for ${Object.keys(permissionsByRole).length} roles into Redis.`);
+};
 
-    return permissionKeys;
+const getPermissionKeysForRole = async (roleCode) => {
+    const cached = await redis.get(cacheKeyFor(roleCode));
+    return cached ? JSON.parse(cached) : [];
 };
 
 const hasPermission = async (roleCode, permissionKey) => {
@@ -48,6 +56,7 @@ const invalidateRoleCache = async (roleCode) => {
 };
 
 module.exports = {
+    loadAllRolePermissionsIntoCache,
     hasPermission,
     invalidateRoleCache
 };

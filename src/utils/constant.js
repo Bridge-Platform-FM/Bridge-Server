@@ -171,9 +171,10 @@ const ADMIN_ROLES_CODE = {
 };
 
 // ── Permissions ──────────────────────────────────────────────────────────────
-// Keys are namespaced MODULE.ACTION. Modules prefixed with ADMIN_ are granted
-// to ROLES.ADMIN codes; every other module is granted to ROLES.USER codes
-// (see src/seed_data/RolePermissionMap.sql, which relies on this convention).
+// Keys are namespaced MODULE.ACTION and must match permission_master.permission_key
+// (see src/seed_data/PermissionMaster.sql, the source of truth for the catalog).
+// This object only gives routes a typo-safe reference to those same key strings —
+// which roles get which permission still comes entirely from role_permission_map via Redis.
 const PERMISSIONS = {
     AUTH: {
         VERIFY_OTP: 'AUTH.VERIFY_OTP',

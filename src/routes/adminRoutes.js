@@ -3,17 +3,19 @@ const express = require('express');
 const router = express.Router();
 
 const adminMiddleware = require('../middleware/adminMiddleware');
+const adminMfaMiddleware = require('../middleware/adminMfaMiddleware');
 const adminController = require('../controllers/adminController');
 const faqController = require('../controllers/faqController');
 
 // File scan for Img and Pdf
 router.post('/auth/login', adminController.login);
 
-router.post('/auth/mfa/trigger-otp', adminMiddleware, adminController.triggerOtp);
+// MFA steps are gated by the short-lived mfa_token, not the full access token.
+router.post('/auth/mfa/trigger-otp', adminMfaMiddleware, adminController.triggerOtp);
 
-router.post('/auth/mfa/verify-otp', adminMiddleware, adminController.verifyMfaOtp);
+router.post('/auth/mfa/verify-otp', adminMfaMiddleware, adminController.verifyMfaOtp);
 
-router.post('auth/mfa/resend-otp', adminMiddleware, adminController.resendMfaOtp);
+router.post('/auth/mfa/resend-otp', adminMfaMiddleware, adminController.resendMfaOtp);
 
 router.get('/get-user-list', adminMiddleware, adminController.getUserList);
 

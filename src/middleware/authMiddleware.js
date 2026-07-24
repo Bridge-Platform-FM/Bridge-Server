@@ -69,12 +69,12 @@ const authMiddleware = async (req, res, next) => {
             });
         }
 
-        if (!ROLES.USER.includes(decoded.role)) {
-            return HttpResponse.error(res, {
-                message: AUTH_MESSAGES.FORBIDDEN,
-                statusCode: 403
-            });
-        }
+        // if (!ROLES.USER.includes(decoded.role)) {
+        //     return HttpResponse.error(res, {
+        //         message: AUTH_MESSAGES.FORBIDDEN,
+        //         statusCode: 403
+        //     });
+        // }
 
         // Attach decoded payload to request object
         req.companyId = decoded.companyId;
@@ -101,19 +101,21 @@ const authMiddleware = async (req, res, next) => {
                 });
             }
 
-            const isValid = await isSessionJtiValid(userId, jti);
+            if (decoded.role.includes(ROLES.USER)) {
+                const isValid = await isSessionJtiValid(userId, jti);
 
-            if (!isValid) {
-                return HttpResponse.error(res, {
-                    message: AUTH_MESSAGES.UNAUTHORIZED,
-                    statusCode: 401
-                });
-            }
+                if (!isValid) {
+                    return HttpResponse.error(res, {
+                        message: AUTH_MESSAGES.UNAUTHORIZED,
+                        statusCode: 401
+                    });
+                }
 
-            await userSessionRepository.updateLastActivity(
-                userId,
-                jti
-            );
+                await userSessionRepository.updateLastActivity(
+                    userId,
+                    jti
+                );
+            };
         }
 
         next();

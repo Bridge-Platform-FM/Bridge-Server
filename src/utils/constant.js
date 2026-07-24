@@ -156,7 +156,7 @@ const REDIRECT_ROUTES = {
 
 const ROLES = {
     USER: ['STARTUP', 'INVESTOR', 'B2B'],
-    ADMIN: ['SYS_ADMIN']
+    ADMIN: ['ADMIN']
 };
 
 const USER_ROLES_CODE = {

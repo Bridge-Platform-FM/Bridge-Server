@@ -4,12 +4,12 @@ const { sequelize } = require('../models');
 const adminRepository = require('../repositories/adminRepository');
 const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
-const { generateAccessToken, generateRefreshToken } = require('../utils/token');
+const { generateAccessToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, ROLES } = require('../utils/constant');
+const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, ROLES, TOKEN_TYPES } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
-
+const { v4: uuidv4 } = require('uuid');
 
 const login = async (email, password) => {
     try {
@@ -24,21 +24,23 @@ const login = async (email, password) => {
         }
 
         const payload = {
+            jti: uuidv4(),
             adminId: admin.id,
             email: admin.email,
             mobileNumber: admin.mobile_number,
             role: admin.role
         };
 
-        const accessToken = generateAccessToken(payload);
-        const refreshToken = generateRefreshToken(payload);
+        // Mirror the user flow: the password step only issues a short-lived MFA
+        // token. The full access/refresh pair is minted after OTP verification.
+        const mfaToken = generateAccessToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);
 
         const maskedMobile = maskPhone(admin.country_code + admin.mobile_number);
         const maskedEmail = maskEmail(admin.email);
 
         return ServiceResponse.success({
             message: ADMIN_MESSAGES.LOGIN_SUCCESS,
-            data: { accessToken, refreshToken, maskedMobile, maskedEmail },
+            data: { mfaToken, role: admin.role, maskedMobile, maskedEmail },
             statusCode: 200
         });
     } catch (error) {

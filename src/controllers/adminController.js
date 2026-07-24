@@ -1,13 +1,14 @@
 'use strict';
 const Joi = require('joi');
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES } = require('../utils/constant');
+const { v4: uuidv4 } = require('uuid');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
 const userService = require('../services/userService');
 const kycService = require('../services/kycService');
-const { COOKIE_NAMES, cookieOptions } = require('../utils/token');
+const { COOKIE_NAMES, cookieOptions, clearCookieOptions, generateAccessToken, generateRefreshToken } = require('../utils/token');
 const env = require('../configs/env_configs');
 
 const updateLimitConfigSchema = Joi.object({
@@ -27,9 +28,8 @@ const login = async (req, res, next) => {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
         }
 
-        const { accessToken, refreshToken, ...body } = result.data;
-        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
-        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        const { mfaToken, ...body } = result.data;
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaToken, cookieOptions(env.JWT.MFA_EXPIRY));
         return HttpResponse.success(res, { message: result.message, data: body, statusCode: result.statusCode });
     } catch (error) {
         errorLogger.error(error);
@@ -84,8 +84,26 @@ const verifyMfaOtp = async (req, res, next) => {
         }
 
         const admin = adminRes.data;
-        
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
+
+        // OTP passed: exchange the MFA token for the full access/refresh pair and
+        // clear the MFA cookie — mirrors the user verify-otp flow.
+        // Admins aren't tracked in user_sessions, but the token still carries a
+        // jti so it passes authMiddleware's `if (!jti)` guard.
+        const payload = {
+            jti: uuidv4(),
+            adminId: admin.id,
+            email: admin.email,
+            mobileNumber: admin.mobile_number,
+            role: admin.role
+        };
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+
+        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
+
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { userId: admin.id, tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN, first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });

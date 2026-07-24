@@ -1,7 +1,7 @@
 'use strict';
 const { errorLogger } = require('../configs/logger');
 const userSessionService = require('../services/userSessionService');
-const { SESSION_MESSAGES } = require('../utils/constant');
+const { SESSION_MESSAGES, USER_ROLES_CODE } = require('../utils/constant');
 const { MAX_ACTIVE_SESSIONS } = require('../configs/sessionConfig');
 const HttpResponse = require('../utils/HttpResponse');
 const { COOKIE_NAMES, clearCookieOptions } = require('../utils/token');
@@ -144,25 +144,32 @@ const getSessionLimitStatus = async (req, res, next) => {
     try {
         const userId = req.userId;
         const currentJti = req.jti;
+        
+        if (Object.keys(USER_ROLES_CODE).includes(req.role)) {
+            const limitStatusResponse = await userSessionService.getSessionLimitStatus(
+                userId,
+                currentJti,
+                MAX_ACTIVE_SESSIONS
+            );
 
-        const limitStatusResponse = await userSessionService.getSessionLimitStatus(
-            userId,
-            currentJti,
-            MAX_ACTIVE_SESSIONS
-        );
+            if (!limitStatusResponse.success) {
+                return HttpResponse.error(res, {
+                    message: limitStatusResponse.message,
+                    statusCode: limitStatusResponse.statusCode
+                });
+            }
 
-        if (!limitStatusResponse.success) {
-            return HttpResponse.error(res, {
+            return HttpResponse.success(res, {
                 message: limitStatusResponse.message,
+                data: limitStatusResponse.data,
                 statusCode: limitStatusResponse.statusCode
             });
-        }
 
-        return HttpResponse.success(res, {
-            message: limitStatusResponse.message,
-            data: limitStatusResponse.data,
-            statusCode: limitStatusResponse.statusCode
-        });
+        }
+        else {
+            return HttpResponse.success(res)
+        }
+        
     } catch (error) {
         console.error(error);
         errorLogger.error(error);

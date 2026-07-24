@@ -7,7 +7,7 @@ const userLimitConfigRepository = require('../repositories/userLimitConfigReposi
 const { generateAccessToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, ROLES, TOKEN_TYPES } = require('../utils/constant');
+const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES, ADMIN_USER_TYPES, TOKEN_TYPES } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
 
@@ -23,24 +23,27 @@ const login = async (email, password) => {
             return ServiceResponse.error({ message: ADMIN_MESSAGES.INVALID_CREDENTIALS, statusCode: 401 });
         }
 
+        const jti = uuidv4();
         const payload = {
-            jti: uuidv4(),
+            jti,
             adminId: admin.id,
             email: admin.email,
             mobileNumber: admin.mobile_number,
-            role: admin.role
+            role: admin.role,
+            userType: USER_TYPES[admin.role]
         };
 
-        // Mirror the user flow: the password step only issues a short-lived MFA
-        // token. The full access/refresh pair is minted after OTP verification.
         const mfaToken = generateAccessToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);
+        // const refreshToken = generateRefreshToken(payload, TOKEN_TYPES.AUTH_REFRESH_ACCESS_TOKEN);
 
         const maskedMobile = maskPhone(admin.country_code + admin.mobile_number);
         const maskedEmail = maskEmail(admin.email);
 
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaToken, cookieOptions(env.JWT.MFA_EXPIRY));
+
         return ServiceResponse.success({
             message: ADMIN_MESSAGES.LOGIN_SUCCESS,
-            data: { mfaToken, role: admin.role, maskedMobile, maskedEmail },
+            data: { role: admin.role, maskedMobile, maskedEmail },
             statusCode: 200
         });
     } catch (error) {
@@ -58,9 +61,9 @@ const findByEmail = async (email) => {
     }
 };
 
-const getUserLimitConfig = async ({ userId, adminRole }) => {
+const getUserLimitConfig = async ({ userId, userType }) => {
     try {
-        if (!ROLES.ADMIN.includes(adminRole)) {
+        if (!ADMIN_USER_TYPES.includes(userType)) {
             return ServiceResponse.error({
                 message: USER_LIMIT_CONFIG_MESSAGES.FORBIDDEN,
                 statusCode: 403
@@ -100,10 +103,10 @@ const getUserLimitConfig = async ({ userId, adminRole }) => {
     }
 };
 
-const updateUserLimitConfig = async ({ userId, adminId, adminRole, payload }) => {
+const updateUserLimitConfig = async ({ userId, adminId, userType, payload }) => {
     const transaction = await sequelize.transaction();
     try {
-        if (!ROLES.ADMIN.includes(adminRole)) {
+        if (!ADMIN_USER_TYPES.includes(userType)) {
             await transaction.rollback();
             return ServiceResponse.error({
                 message: USER_LIMIT_CONFIG_MESSAGES.FORBIDDEN,

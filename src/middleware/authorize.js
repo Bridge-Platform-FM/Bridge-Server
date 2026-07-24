@@ -6,12 +6,12 @@ const { AUTH_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 /**
- * Route-level permission gate. Must run after authMiddleware/adminMiddleware
- * so req.role is already set.
+ * Route-level permission gate. Must run after authMiddleware/adminMiddleware/
+ * mfaMiddleware so req.userType is already set.
  */
 const authorize = (permissionKey) => async (req, res, next) => {
     try {
-        const allowed = await permissionService.hasPermission(req.role, permissionKey);
+        const allowed = await permissionService.hasPermission(req.userType, permissionKey);
 
         if (!allowed) {
             return HttpResponse.error(res, {

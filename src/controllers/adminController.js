@@ -239,7 +239,7 @@ const kycReviewAction = async (req, res, next) => {
 
 const getUserLimitConfig = async (req, res, next) => {
     try {
-        const { role: adminRole } = req;
+        const { userType } = req;
         const userId = parseInt(req.params.userId);
 
         if (!userId || isNaN(userId)) {
@@ -249,7 +249,7 @@ const getUserLimitConfig = async (req, res, next) => {
             });
         }
 
-        const serviceResponse = await adminService.getUserLimitConfig({ userId, adminRole });
+        const serviceResponse = await adminService.getUserLimitConfig({ userId, userType });
 
         if (!serviceResponse.success) {
             return HttpResponse.error(res, {
@@ -277,7 +277,7 @@ const getUserLimitConfig = async (req, res, next) => {
 
 const updateUserLimitConfig = async (req, res, next) => {
     try {
-        const { role: adminRole, adminId } = req;
+        const { userType, adminId } = req;
         const userId = parseInt(req.params.userId);
 
         if (!userId || isNaN(userId)) {
@@ -301,7 +301,7 @@ const updateUserLimitConfig = async (req, res, next) => {
         const serviceResponse = await adminService.updateUserLimitConfig({
             userId,
             adminId,
-            adminRole,
+            userType,
             payload
         });
 

@@ -41,6 +41,7 @@ const mfaMiddleware = (req, res, next) => {
         req.userId = decoded.userId;
         req.roleId = decoded.roleId;
         req.role = decoded.role;
+        req.userType = decoded.userType;
         next();
     } catch (error) {
         errorLogger.error(error);

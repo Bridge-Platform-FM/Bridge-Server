@@ -11,11 +11,7 @@ module.exports = (sequelize) => {
             allowNull: false,
             field: 'id'
         },
-        role_code: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        role_scope: {
+        user_type: {
             type: DataTypes.STRING,
             allowNull: false
         },
@@ -66,9 +62,9 @@ module.exports = (sequelize) => {
         updatedAt: 'updated_at',
         indexes: [
             {
-                name: 'role_permission_map_role_code_permission_id_active',
+                name: 'role_permission_map_user_type_permission_id_active',
                 unique: true,
-                fields: ['role_code', 'permission_id'],
+                fields: ['user_type', 'permission_id'],
                 where: { is_deleted: false }
             }
         ]

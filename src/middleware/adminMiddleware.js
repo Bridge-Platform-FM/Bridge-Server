@@ -1,6 +1,6 @@
 'use strict';
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, ROLES, TOKEN_TYPES } = require('../utils/constant');
+const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
@@ -27,7 +27,7 @@ const adminMiddleware = (req, res, next) => {
             });
         }
 
-        if (!ROLES.ADMIN.includes(decoded.role)) {
+        if (!ADMIN_USER_TYPES.includes(decoded.userType)) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.FORBIDDEN,
                 statusCode: 403
@@ -38,6 +38,7 @@ const adminMiddleware = (req, res, next) => {
         req.email = decoded.email;
         req.mobileNumber = decoded.mobileNumber;
         req.role = decoded.role;
+        req.userType = decoded.userType;
         req.adminId = decoded.adminId;
         next();
     } catch (error) {

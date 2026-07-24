@@ -52,6 +52,7 @@ const generateTokens = async (
     company,
     role,
     user,
+    userType,
     requestMeta = {}
 ) => {
 
@@ -84,7 +85,9 @@ const generateTokens = async (
             roleId: role.id,
 
             userId: user.id,
-            userName: user?.first_name
+            userName: user?.first_name,
+
+            userType: userType
         };
 
         const accessToken =
@@ -212,11 +215,11 @@ const refreshToken = async (
         /*
          * Verify token signature and expiry
          */
-        const decoded =
+        const userDecodedData =
             verifyRefreshToken(plainRefreshToken);
 
         const companyId =
-            decoded.companyId;
+            userDecodedData.companyId;
 
         if (!companyId) {
 
@@ -227,29 +230,29 @@ const refreshToken = async (
             });
         }
 
-        const userData = {
-            jti: decoded.jti,
+        // const decod = {
+        //     jti: decoded.jti,
 
-            companyId: decoded.companyId,
-            email: decoded.email,
-            companyName: decoded.companyName,
+        //     companyId: decoded.companyId,
+        //     email: decoded.email,
+        //     companyName: decoded.companyName,
 
-            mobileNumber: decoded.mobileNumber,
-            countryCode: decoded.countryCode,
+        //     mobileNumber: decoded.mobileNumber,
+        //     countryCode: decoded.countryCode,
 
-            role: decoded.role,
-            roleId: decoded.roleId,
+        //     role: decoded.role,
+        //     roleId: decoded.roleId,
 
-            userId: decoded.userId,
-            userName: decoded.userName
-        };
+        //     userId: decoded.userId,
+        //     userName: decoded.userName
+        // };
 
         /*
          * Create a new access token
          */
         const newAccessToken =
             await generateAccessToken(
-                userData
+                userDecodedData
             );
 
         return ServiceResponse.success({
@@ -292,7 +295,7 @@ const refreshToken = async (
         });
     }
 };
-const generateMfaAccessToken = async (company, role, user) => {
+const generateMfaAccessToken = async (company, role, user, userType) => {
     try {
         const payload = {
             companyId: company.id,
@@ -306,7 +309,9 @@ const generateMfaAccessToken = async (company, role, user) => {
             roleId: role.id,
 
             userId: user.id,
-            userName: user?.first_name
+            userName: user?.first_name,
+
+            userType: userType
         };
 
         const accessToken = await generateAccessToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);

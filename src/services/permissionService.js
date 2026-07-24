@@ -6,50 +6,50 @@ const { errorLogger } = require('../configs/logger');
 
 const CACHE_PREFIX = 'role_permissions:';
 
-const cacheKeyFor = (roleCode) => `${CACHE_PREFIX}${roleCode}`;
+const cacheKeyFor = (userType) => `${CACHE_PREFIX}${userType}`;
 
 /**
- * Loads the full role -> permission mapping from the database into Redis,
- * grouped by role_code. Run once Redis connects so hasPermission() serves
+ * Loads the full userType -> permission mapping from the database into Redis,
+ * grouped by user_type. Run once Redis connects so hasPermission() serves
  * every request from Redis, never the database.
  */
 const loadAllRolePermissionsIntoCache = async () => {
     const grants = await permissionRepository.getAllRolePermissions();
 
-    const permissionsByRole = {};
+    const permissionsByUserType = {};
     grants.forEach((grant) => {
-        if (!permissionsByRole[grant.role_code]) {
-            permissionsByRole[grant.role_code] = [];
+        if (!permissionsByUserType[grant.user_type]) {
+            permissionsByUserType[grant.user_type] = [];
         }
-        permissionsByRole[grant.role_code].push(grant.permission_key);
+        permissionsByUserType[grant.user_type].push(grant.permission_key);
     });
 
     const pipeline = redis.pipeline();
-    Object.keys(permissionsByRole).forEach((roleCode) => {
-        pipeline.set(cacheKeyFor(roleCode), JSON.stringify(permissionsByRole[roleCode]));
+    Object.keys(permissionsByUserType).forEach((userType) => {
+        pipeline.set(cacheKeyFor(userType), JSON.stringify(permissionsByUserType[userType]));
     });
     await pipeline.exec();
 
-    console.info(`Loaded permissions for ${Object.keys(permissionsByRole).length} roles into Redis.`);
+    console.info(`Loaded permissions for ${Object.keys(permissionsByUserType).length} roles into Redis.`);
 };
 
-const getPermissionKeysForRole = async (roleCode) => {
-    const cached = await redis.get(cacheKeyFor(roleCode));
+const getPermissionKeysForUserType = async (userType) => {
+    const cached = await redis.get(cacheKeyFor(userType));
     return cached ? JSON.parse(cached) : [];
 };
 
-const hasPermission = async (roleCode, permissionKey) => {
-    if (!roleCode || !permissionKey) {
+const hasPermission = async (userType, permissionKey) => {
+    if (!userType || !permissionKey) {
         return false;
     }
 
-    const permissionKeys = await getPermissionKeysForRole(roleCode);
+    const permissionKeys = await getPermissionKeysForUserType(userType);
     return permissionKeys.includes(permissionKey);
 };
 
-const invalidateRoleCache = async (roleCode) => {
+const invalidateUserTypeCache = async (userType) => {
     try {
-        await redis.del(cacheKeyFor(roleCode));
+        await redis.del(cacheKeyFor(userType));
     } catch (error) {
         errorLogger.error(error);
     }
@@ -58,5 +58,5 @@ const invalidateRoleCache = async (roleCode) => {
 module.exports = {
     loadAllRolePermissionsIntoCache,
     hasPermission,
-    invalidateRoleCache
+    invalidateUserTypeCache
 };

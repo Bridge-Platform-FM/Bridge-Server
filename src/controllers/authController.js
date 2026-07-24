@@ -4,7 +4,7 @@ const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
 const userRepository = require('../repositories/userRepository');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
@@ -61,8 +61,8 @@ const companyRegistration = async (req, res, next) => {
         const roleObj = createCompanyRes.data.role
         const userObj = createCompanyRes.data.user
 
-
-        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj,
+        const userType = USER_TYPES[roleObj.role_code];
+        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj, userType, 
             {
                 ipAddress: req.ip,
                 userAgent: req.headers['user-agent']
@@ -278,7 +278,8 @@ const login = async (req, res, next) => {
         const maskedMobile = maskPhone(existingCompany.country_code + existingCompany.mobile_number);
         const maskedEmail = maskEmail(existingCompany.company_email);
 
-        const tokens = await tokenService.generateMfaAccessToken(existingCompany, role, existingUser);
+        const userType = USER_TYPES[role.role_code];
+        const tokens = await tokenService.generateMfaAccessToken(existingCompany, role, existingUser, userType);
         const { accessToken } = tokens.data;
 
         res.cookie(COOKIE_NAMES.MFA_TOKEN, accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
@@ -360,7 +361,7 @@ const verifyMfaOtp = async (req, res, next) => {
 
         
         const role = { role_code: req.role, id: req.roleId };
-        const tokens = await tokenService.generateTokens(company, role, user, {
+        const tokens = await tokenService.generateTokens(company, role, user, req.userType, {
             ipAddress: req.ip,
             headers: req.headers          // full headers — parseDeviceInfo reads sec-ch-ua* from these
         });

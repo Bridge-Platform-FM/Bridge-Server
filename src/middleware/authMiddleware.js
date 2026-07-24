@@ -1,7 +1,7 @@
 'use strict';
 
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, TOKEN_TYPES, ROLES } = require('../utils/constant'); // TOKEN_TYPES and ROLES kept from develop branch
+const { AUTH_MESSAGES, TOKEN_TYPES, ROLES, USER_TYPES } = require('../utils/constant'); // TOKEN_TYPES and ROLES kept from develop branch
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
@@ -85,7 +85,8 @@ const authMiddleware = async (req, res, next) => {
         req.userId = decoded.userId;
         req.roleId = decoded.roleId;
         req.role = decoded.role;
-        req.jti = decoded.jti; // lets controllers flag the current session
+        req.userType = decoded.userType;
+        req.jti = decoded?.jti; // lets controllers flag the current session
 
         /*
          * New Session Validation
@@ -101,7 +102,10 @@ const authMiddleware = async (req, res, next) => {
                 });
             }
 
-            if (decoded.role.includes(ROLES.USER)) {
+            // if (decoded.role === ROLES.ADMIN[0] || decoded.role === ROLES.SUPER_ADMIN[0]) {
+            //     return HttpResponse.success(res)
+            // }
+            if (!decoded.userType === USER_TYPES.SUPER_ADMIN || decoded.userType === USER_TYPES.ADMIN) {
                 const isValid = await isSessionJtiValid(userId, jti);
 
                 if (!isValid) {
@@ -115,7 +119,7 @@ const authMiddleware = async (req, res, next) => {
                     userId,
                     jti
                 );
-            };
+            }
         }
 
         next();

@@ -1,25 +1,21 @@
--- Grants every seeded permission to the roles that already have de facto
--- access today. Role codes are pulled from company_role_master (not
--- hardcoded) so this stays correct as roles are added/removed there;
--- ADMIN_ prefixed permission modules go to the ADMIN/SUPER_ADMIN roles,
--- every other module goes to the remaining (non-admin) roles.
+-- Grants every seeded permission to the userType that has de facto access
+-- today. userType (USER / ADMIN / SUPER_ADMIN — see USER_TYPES in
+-- src/utils/constant.js) is a fixed, small app-level enum, not stored in
+-- any roles table, so this uses literal VALUES rather than a join.
+-- ADMIN_ prefixed permission modules go to ADMIN + SUPER_ADMIN (identical
+-- grants for both); every other module goes to USER.
 
--- USER-scoped permissions -> every non-admin role in company_role_master (STARTUP, INVESTOR, B2B)
-INSERT INTO public.role_permission_map (role_code, role_scope, permission_id, created_by, created_at)
-SELECT crm.role_code, 'USER', pm.id, (select id from "admin" a where a.email = 'admin@test.com'), now()
+-- USER-scoped permissions -> the USER userType
+INSERT INTO public.role_permission_map (user_type, permission_id, created_by, created_at)
+SELECT 'USER', pm.id, (select id from "admin" a where a.email = 'admin@test.com'), now()
 FROM public.permission_master pm
-CROSS JOIN public.company_role_master crm
 WHERE pm.permission_key NOT LIKE 'ADMIN\_%' ESCAPE '\'
-  AND pm.is_deleted = false
-  AND crm.is_deleted = false
-  AND crm.role_code NOT IN ('ADMIN', 'SUPER_ADMIN');
+  AND pm.is_deleted = false;
 
--- ADMIN-scoped permissions -> the ADMIN/SUPER_ADMIN roles in company_role_master
-INSERT INTO public.role_permission_map (role_code, role_scope, permission_id, created_by, created_at)
-SELECT crm.role_code, 'ADMIN', pm.id, (select id from "admin" a where a.email = 'admin@test.com'), now()
+-- ADMIN-scoped permissions -> the ADMIN and SUPER_ADMIN userTypes
+INSERT INTO public.role_permission_map (user_type, permission_id, created_by, created_at)
+SELECT ut.user_type, pm.id, (select id from "admin" a where a.email = 'admin@test.com'), now()
 FROM public.permission_master pm
-CROSS JOIN public.company_role_master crm
+CROSS JOIN (VALUES ('ADMIN'), ('SUPER_ADMIN')) AS ut(user_type)
 WHERE pm.permission_key LIKE 'ADMIN\_%' ESCAPE '\'
-  AND pm.is_deleted = false
-  AND crm.is_deleted = false
-  AND crm.role_code IN ('ADMIN', 'SUPER_ADMIN');
+  AND pm.is_deleted = false;

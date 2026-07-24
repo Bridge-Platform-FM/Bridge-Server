@@ -2,9 +2,9 @@
 
 const { RolePermissionMap, PermissionMaster } = require('../models');
 
-const getPermissionKeysForRole = async (roleCode) => {
+const getPermissionKeysForUserType = async (userType) => {
     const grants = await RolePermissionMap.findAll({
-        where: { role_code: roleCode, is_deleted: false },
+        where: { user_type: userType, is_deleted: false },
         include: [{
             model: PermissionMaster,
             as: 'permission',
@@ -18,7 +18,7 @@ const getPermissionKeysForRole = async (roleCode) => {
 };
 
 /**
- * Fetches every active role -> permission grant, for bulk-loading the
+ * Fetches every active user_type -> permission grant, for bulk-loading the
  * full mapping (e.g. into Redis at startup).
  */
 const getAllRolePermissions = async () => {
@@ -30,16 +30,16 @@ const getAllRolePermissions = async () => {
             attributes: ['permission_key'],
             where: { is_deleted: false }
         }],
-        attributes: ['role_code']
+        attributes: ['user_type']
     });
 
     return grants.map((grant) => ({
-        role_code: grant.role_code,
+        user_type: grant.user_type,
         permission_key: grant.permission.permission_key
     }));
 };
 
 module.exports = {
-    getPermissionKeysForRole,
+    getPermissionKeysForUserType,
     getAllRolePermissions
 };

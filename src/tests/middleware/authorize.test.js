@@ -23,22 +23,22 @@ describe('authorize middleware', () => {
         jest.clearAllMocks();
     });
 
-    test('calls next() when the role has the permission', async () => {
+    test('calls next() when the userType has the permission', async () => {
         permissionService.hasPermission.mockResolvedValue(true);
-        const req = { role: 'STARTUP' };
+        const req = { role: 'STARTUP', userType: 'USER' };
         const res = createRes();
         const next = jest.fn();
 
         await authorize('DEAL_ROOM.CLOSE')(req, res, next);
 
-        expect(permissionService.hasPermission).toHaveBeenCalledWith('STARTUP', 'DEAL_ROOM.CLOSE');
+        expect(permissionService.hasPermission).toHaveBeenCalledWith('USER', 'DEAL_ROOM.CLOSE');
         expect(next).toHaveBeenCalled();
         expect(res.status).not.toHaveBeenCalled();
     });
 
-    test('returns 403 without calling next() when the role lacks the permission', async () => {
+    test('returns 403 without calling next() when the userType lacks the permission', async () => {
         permissionService.hasPermission.mockResolvedValue(false);
-        const req = { role: 'STARTUP' };
+        const req = { role: 'STARTUP', userType: 'USER' };
         const res = createRes();
         const next = jest.fn();
 
@@ -50,7 +50,7 @@ describe('authorize middleware', () => {
 
     test('returns 500 without calling next() when the permission check throws', async () => {
         permissionService.hasPermission.mockRejectedValue(new Error('db down'));
-        const req = { role: 'STARTUP' };
+        const req = { role: 'STARTUP', userType: 'USER' };
         const res = createRes();
         const next = jest.fn();
 

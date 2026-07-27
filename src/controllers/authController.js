@@ -4,7 +4,7 @@ const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
 const userRepository = require('../repositories/userRepository');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
@@ -61,16 +61,13 @@ const companyRegistration = async (req, res, next) => {
         const roleObj = createCompanyRes.data.role
         const userObj = createCompanyRes.data.user
 
+        const userType = USER_TYPES[roleObj.role_code];
+        const mfaTokenRes = await tokenService.generateMfaAccessToken(companyObj, roleObj, userObj, userType);
+        if (!mfaTokenRes.success) {
+            return HttpResponse.error(res, { message: mfaTokenRes.message, statusCode: 500 });
+        }
 
-        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj,
-            {
-                ipAddress: req.ip,
-                userAgent: req.headers['user-agent']
-            }
-        );
-        const { accessToken, refreshToken } = tokens.data;
-        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
-        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,
@@ -127,17 +124,30 @@ const verifyOtp = async (req, res, next) => {
         const last_name = user?.last_name ?? null;
         const role = req.role ?? null;
 
-        // If both channels verified, send status to client to enable continue button
-        if (statusResult.success) {
-            const companyData = statusResult.data;
-            if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
-                return HttpResponse.success(res, {
-                    message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
-                    data: { bothChannelsVerified: true, first_name, last_name, role },
-                    statusCode: 200
-                });
-            }
+        const companyData = statusResult.data;
+        const roleObj = { role_code: req.role, id: req.roleId };
+
+        // If both channels verified, set the full access token; otherwise keep the mfa token
+        if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
+            const tokens = await tokenService.generateTokens(companyData, roleObj, user, req.userType, {
+                ipAddress: req.ip,
+                headers: req.headers
+            });
+            const { accessToken, refreshToken } = tokens.data;
+
+            res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+            res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+            res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
+
+            return HttpResponse.success(res, {
+                message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
+                data: { bothChannelsVerified: true, first_name, last_name, role },
+                statusCode: 200
+            });
         }
+
+        const mfaTokenRes = await tokenService.generateMfaAccessToken(companyData, roleObj, user, req.userType);
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
@@ -278,7 +288,8 @@ const login = async (req, res, next) => {
         const maskedMobile = maskPhone(existingCompany.country_code + existingCompany.mobile_number);
         const maskedEmail = maskEmail(existingCompany.company_email);
 
-        const tokens = await tokenService.generateMfaAccessToken(existingCompany, role, existingUser);
+        const userType = USER_TYPES[role.role_code];
+        const tokens = await tokenService.generateMfaAccessToken(existingCompany, role, existingUser, userType);
         const { accessToken } = tokens.data;
 
         res.cookie(COOKIE_NAMES.MFA_TOKEN, accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
@@ -360,7 +371,7 @@ const verifyMfaOtp = async (req, res, next) => {
 
         
         const role = { role_code: req.role, id: req.roleId };
-        const tokens = await tokenService.generateTokens(company, role, user, {
+        const tokens = await tokenService.generateTokens(company, role, user, req.userType, {
             ipAddress: req.ip,
             headers: req.headers          // full headers — parseDeviceInfo reads sec-ch-ua* from these
         });

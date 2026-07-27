@@ -1,7 +1,7 @@
 'use strict';
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid');
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
@@ -85,6 +85,12 @@ const verifyMfaOtp = async (req, res, next) => {
 
         const admin = adminRes.data;
 
+        const userType = USER_TYPES[admin.role];
+        if (!userType) {
+            errorLogger.error(`Admin OTP verification blocked: unmapped role "${admin.role}" for admin id ${admin.id}`);
+            return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
+        }
+
         // OTP passed: exchange the MFA token for the full access/refresh pair and
         // clear the MFA cookie — mirrors the user verify-otp flow.
         // Admins aren't tracked in user_sessions, but the token still carries a
@@ -94,7 +100,8 @@ const verifyMfaOtp = async (req, res, next) => {
             adminId: admin.id,
             email: admin.email,
             mobileNumber: admin.mobile_number,
-            role: admin.role
+            role: admin.role,
+            userType
         };
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
@@ -239,7 +246,7 @@ const kycReviewAction = async (req, res, next) => {
 
 const getUserLimitConfig = async (req, res, next) => {
     try {
-        const { role: adminRole } = req;
+        const { userType } = req;
         const userId = parseInt(req.params.userId);
 
         if (!userId || isNaN(userId)) {
@@ -249,7 +256,7 @@ const getUserLimitConfig = async (req, res, next) => {
             });
         }
 
-        const serviceResponse = await adminService.getUserLimitConfig({ userId, adminRole });
+        const serviceResponse = await adminService.getUserLimitConfig({ userId, userType });
 
         if (!serviceResponse.success) {
             return HttpResponse.error(res, {
@@ -277,7 +284,7 @@ const getUserLimitConfig = async (req, res, next) => {
 
 const updateUserLimitConfig = async (req, res, next) => {
     try {
-        const { role: adminRole, adminId } = req;
+        const { userType, adminId } = req;
         const userId = parseInt(req.params.userId);
 
         if (!userId || isNaN(userId)) {
@@ -301,7 +308,7 @@ const updateUserLimitConfig = async (req, res, next) => {
         const serviceResponse = await adminService.updateUserLimitConfig({
             userId,
             adminId,
-            adminRole,
+            userType,
             payload
         });
 

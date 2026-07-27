@@ -1,6 +1,6 @@
 'use strict';
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, ROLES, TOKEN_TYPES } = require('../utils/constant');
+const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
@@ -20,14 +20,14 @@ const adminMiddleware = (req, res, next) => {
 
         const decoded = verifyAccessToken(token);
 
-        if (!decoded.type === TOKEN_TYPES.AUTH_ACCESS_TOKEN) {
+        if (decoded.type !== TOKEN_TYPES.AUTH_ACCESS_TOKEN) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 401
             });
         }
 
-        if (!ROLES.ADMIN.includes(decoded.role)) {
+        if (!ADMIN_USER_TYPES.includes(decoded.userType)) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.FORBIDDEN,
                 statusCode: 403
@@ -38,7 +38,9 @@ const adminMiddleware = (req, res, next) => {
         req.email = decoded.email;
         req.mobileNumber = decoded.mobileNumber;
         req.role = decoded.role;
+        req.userType = decoded.userType;
         req.adminId = decoded.adminId;
+        req.userType = decoded.userType;
         next();
     } catch (error) {
         errorLogger.error(error);

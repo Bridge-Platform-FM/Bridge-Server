@@ -1,7 +1,7 @@
 'use strict';
 
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES } = require('../utils/constant');
+const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES, ROLES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
@@ -66,6 +66,13 @@ const authMiddleware = async (req, res, next) => {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 401
+            });
+        }
+
+        if (!ROLES.USER.includes(decoded.role)) {
+            return HttpResponse.error(res, {
+                message: AUTH_MESSAGES.FORBIDDEN,
+                statusCode: 403
             });
         }
 

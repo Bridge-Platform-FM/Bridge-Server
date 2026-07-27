@@ -147,6 +147,9 @@ const verifyOtp = async (req, res, next) => {
         }
 
         const mfaTokenRes = await tokenService.generateMfaAccessToken(companyData, roleObj, user, req.userType);
+        if (!mfaTokenRes.success) {
+            return HttpResponse.error(res, { message: mfaTokenRes.message, statusCode: 500 });
+        }
         res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
         return HttpResponse.success(res, {

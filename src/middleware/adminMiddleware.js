@@ -10,15 +10,13 @@ const { verifyAccessToken } = require('../utils/token');
  */
 const adminMiddleware = (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization || req.headers.Authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const token = req.cookies?.access_token;
+        if (!token) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.ACCESS_TOKEN_UNAUTHORIZED,
                 statusCode: 401
             });
         }
-
-        const token = authHeader.split(' ')[1];
         const decoded = verifyAccessToken(token);
 
         if (!decoded.type === TOKEN_TYPES.AUTH_ACCESS_TOKEN) {

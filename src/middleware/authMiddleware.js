@@ -13,16 +13,14 @@ const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
  */
 const authMiddleware = async (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization || req.headers.Authorization;
+        const token = req.cookies?.access_token;
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!token) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.ACCESS_TOKEN_UNAUTHORIZED,
                 statusCode: 401
             });
         }
-
-        const token = authHeader.split(' ')[1];
 
         const decoded = verifyAccessToken(token);
 

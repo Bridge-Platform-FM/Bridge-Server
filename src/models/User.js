@@ -7,9 +7,9 @@ module.exports = (sequelize) => {
     const User = sequelize.define('User', {
 
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
-            autoIncrement: true,
+            defaultValue: DataTypes.UUIDV4,
             allowNull: false
         },
         // basic info
@@ -88,7 +88,7 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        
+
         // startup info
         startup_industry_sector: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
         funding_stage:  { type: DataTypes.STRING, allowNull: true },
@@ -164,7 +164,6 @@ module.exports = (sequelize) => {
 
         tableName: 'user',
         timestamps: true,
-        initialAutoIncrement: 1,
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });

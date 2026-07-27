@@ -28,8 +28,13 @@ const userSessionRoutes = require('./routes/userSessionRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
+const cookieParser = require('cookie-parser');
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: env_config.CLIENT_URL || 'http://localhost:3000',
+    credentials: true,
+}));
+app.use(cookieParser());
 app.use(express.json());
 
 // Application request response logger
@@ -60,7 +65,7 @@ app.use(scanErrorMiddleware);
 const SERVER_PORT = env_config.SERVER_PORT || 3001;
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, { cors: { origin: env_config.CLIENT_URL || 'http://localhost:3000', credentials: true } });
 initSockets(io);
 
 server.listen(SERVER_PORT, () => {

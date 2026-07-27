@@ -1,12 +1,29 @@
 'use strict';
 const Joi = require('joi');
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES } = require('../utils/constant');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
 const userService = require('../services/userService');
 const kycService = require('../services/kycService');
+
+const ACCESS_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+};
+const REFRESH_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+function setAuthCookies(res, accessToken, refreshToken) {
+    res.cookie('access_token', accessToken, ACCESS_COOKIE_OPTS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+}
 
 const updateLimitConfigSchema = Joi.object({
     allowed_connections: Joi.number().integer().min(0).optional(),
@@ -25,7 +42,9 @@ const login = async (req, res, next) => {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
         }
 
-        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+        const { accessToken, refreshToken, maskedMobile, maskedEmail } = result.data;
+        setAuthCookies(res, accessToken, refreshToken);
+        return HttpResponse.success(res, { message: result.message, data: { maskedMobile, maskedEmail }, statusCode: result.statusCode });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: ADMIN_MESSAGES.LOGIN_FAILED, statusCode: 500 });
@@ -80,7 +99,7 @@ const verifyMfaOtp = async (req, res, next) => {
 
         const admin = adminRes.data;
         
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { first_name: admin.name, role: admin.role, redirectRoute: redirectRoute, userId: req.adminId, tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
@@ -217,9 +236,9 @@ const kycReviewAction = async (req, res, next) => {
 const getUserLimitConfig = async (req, res, next) => {
     try {
         const { role: adminRole } = req;
-        const userId = parseInt(req.params.userId);
-
-        if (!userId || isNaN(userId)) {
+        const userId = req.params.userId;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!userId || !UUID_REGEX.test(userId)) {
             return HttpResponse.error(res, {
                 message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
                 statusCode: 400
@@ -255,9 +274,9 @@ const getUserLimitConfig = async (req, res, next) => {
 const updateUserLimitConfig = async (req, res, next) => {
     try {
         const { role: adminRole, adminId } = req;
-        const userId = parseInt(req.params.userId);
-
-        if (!userId || isNaN(userId)) {
+        const userId = req.params.userId;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!userId || !UUID_REGEX.test(userId)) {
             return HttpResponse.error(res, {
                 message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
                 statusCode: 400

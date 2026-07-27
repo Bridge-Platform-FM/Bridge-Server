@@ -14,7 +14,7 @@ module.exports = (sequelize) => {
         },
 
         requester_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
         },
 
         requester_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -41,7 +41,7 @@ module.exports = (sequelize) => {
         },
 
         recipient_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -59,7 +59,7 @@ module.exports = (sequelize) => {
         },
 
         recipient_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -146,7 +146,8 @@ module.exports = (sequelize) => {
         indexes: [
             {
                 unique: true,
-                fields: ['requester_user_id', 'requester_role_id', 'recipient_user_id', 'recipient_role_id']
+                fields: ['requester_user_id', 'requester_role_id', 'recipient_user_id', 'recipient_role_id'],
+                name: 'uc_unique_connection'
             }
         ]
     });

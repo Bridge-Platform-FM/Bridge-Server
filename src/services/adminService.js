@@ -23,6 +23,12 @@ const login = async (email, password) => {
             return ServiceResponse.error({ message: ADMIN_MESSAGES.INVALID_CREDENTIALS, statusCode: 401 });
         }
 
+        const userType = USER_TYPES[admin.role];
+        if (!userType) {
+            errorLogger.error(`Admin login blocked: unmapped role "${admin.role}" for admin id ${admin.id}`);
+            return ServiceResponse.error({ message: ADMIN_MESSAGES.LOGIN_FAILED, statusCode: 500 });
+        }
+
         const jti = uuidv4();
         const payload = {
             jti,
@@ -30,7 +36,7 @@ const login = async (email, password) => {
             email: admin.email,
             mobileNumber: admin.mobile_number,
             role: admin.role,
-            userType: USER_TYPES[admin.role]
+            userType
         };
 
         const mfaToken = generateAccessToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);

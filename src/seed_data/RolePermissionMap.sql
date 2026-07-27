@@ -247,3 +247,12 @@ VALUES(82, 'ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'US
 INSERT INTO role_permission_map
 (id, user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES(83, 'SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'USER.VIEW_ROLE_DETAILS'), '2026-07-27 14:10:40.426', 1, NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(id, user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES(84, 'USER', (SELECT id FROM permission_master WHERE permission_key = 'SUBSCRIPTION.VIEW_PLANS'), now(), 1, NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(id, user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES(85, 'USER', (SELECT id FROM permission_master WHERE permission_key = 'SUBSCRIPTION.SELECT_PLAN'), now(), 1, NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(id, user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES(86, 'USER', (SELECT id FROM permission_master WHERE permission_key = 'SUBSCRIPTION.VIEW_MY_SUBSCRIPTION'), now(), 1, NULL, NULL, false, NULL, NULL);

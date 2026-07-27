@@ -24,6 +24,10 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 
 ('MATCHING.VIEW_PROFILES', 'View ranked match profiles', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
+('SUBSCRIPTION.VIEW_PLANS', 'View all active subscription plans', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('SUBSCRIPTION.SELECT_PLAN', 'Select a subscription plan', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('SUBSCRIPTION.VIEW_MY_SUBSCRIPTION', 'View own active subscription', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+
 ('CONNECTION.SEND_REQUEST', 'Send a connection request', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('CONNECTION.CHANGE_STATUS', 'Change a connection request status', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('CONNECTION.VIEW_SENT', 'View sent connection requests', (select id from "admin" a where a.email = 'admin@test.com'), now()),

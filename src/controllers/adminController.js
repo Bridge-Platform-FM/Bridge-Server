@@ -85,6 +85,12 @@ const verifyMfaOtp = async (req, res, next) => {
 
         const admin = adminRes.data;
 
+        const userType = USER_TYPES[admin.role];
+        if (!userType) {
+            errorLogger.error(`Admin OTP verification blocked: unmapped role "${admin.role}" for admin id ${admin.id}`);
+            return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
+        }
+
         // OTP passed: exchange the MFA token for the full access/refresh pair and
         // clear the MFA cookie — mirrors the user verify-otp flow.
         // Admins aren't tracked in user_sessions, but the token still carries a
@@ -95,7 +101,7 @@ const verifyMfaOtp = async (req, res, next) => {
             email: admin.email,
             mobileNumber: admin.mobile_number,
             role: admin.role,
-            userType: USER_TYPES[admin.role]
+            userType
         };
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);

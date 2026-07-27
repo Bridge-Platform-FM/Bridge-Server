@@ -38,6 +38,7 @@ const adminMfaMiddleware = (req, res, next) => {
         req.email = decoded.email;
         req.mobileNumber = decoded.mobileNumber;
         req.role = decoded.role;
+        req.userType = decoded.userType;
         next();
     } catch (error) {
         errorLogger.error(error);

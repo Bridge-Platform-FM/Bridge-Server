@@ -39,11 +39,9 @@ const login = async (email, password) => {
         const maskedMobile = maskPhone(admin.country_code + admin.mobile_number);
         const maskedEmail = maskEmail(admin.email);
 
-        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaToken, cookieOptions(env.JWT.MFA_EXPIRY));
-
         return ServiceResponse.success({
             message: ADMIN_MESSAGES.LOGIN_SUCCESS,
-            data: { role: admin.role, maskedMobile, maskedEmail },
+            data: { mfaToken: mfaToken, role: admin.role, maskedMobile, maskedEmail },
             statusCode: 200
         });
     } catch (error) {

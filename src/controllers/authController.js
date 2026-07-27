@@ -69,8 +69,8 @@ const companyRegistration = async (req, res, next) => {
             }
         );
         const { accessToken, refreshToken } = tokens.data;
-        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
-        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
+        // res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,
@@ -127,17 +127,30 @@ const verifyOtp = async (req, res, next) => {
         const last_name = user?.last_name ?? null;
         const role = req.role ?? null;
 
-        // If both channels verified, send status to client to enable continue button
-        if (statusResult.success) {
-            const companyData = statusResult.data;
-            if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
-                return HttpResponse.success(res, {
-                    message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
-                    data: { bothChannelsVerified: true, first_name, last_name, role },
-                    statusCode: 200
-                });
-            }
+        const companyData = statusResult.data;
+        const roleObj = { role_code: req.role, id: req.roleId };
+
+        // If both channels verified, set the full access token; otherwise keep the mfa token
+        if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
+            const tokens = await tokenService.generateTokens(companyData, roleObj, user, req.userType, {
+                ipAddress: req.ip,
+                headers: req.headers
+            });
+            const { accessToken, refreshToken } = tokens.data;
+
+            res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+            res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+            res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
+
+            return HttpResponse.success(res, {
+                message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
+                data: { bothChannelsVerified: true, first_name, last_name, role },
+                statusCode: 200
+            });
         }
+
+        const mfaTokenRes = await tokenService.generateMfaAccessToken(companyData, roleObj, user, req.userType);
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,

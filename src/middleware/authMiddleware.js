@@ -105,7 +105,7 @@ const authMiddleware = async (req, res, next) => {
             // if (decoded.role === ROLES.ADMIN[0] || decoded.role === ROLES.SUPER_ADMIN[0]) {
             //     return HttpResponse.success(res)
             // }
-            if (!decoded.userType === USER_TYPES.SUPER_ADMIN || decoded.userType === USER_TYPES.ADMIN) {
+            if (!decoded.userType === USER_TYPES.SUPER_ADMIN || !decoded.userType === USER_TYPES.ADMIN) {
                 const isValid = await isSessionJtiValid(userId, jti);
 
                 if (!isValid) {

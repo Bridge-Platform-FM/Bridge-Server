@@ -91,10 +91,10 @@ const generateTokens = async (
         };
 
         const accessToken =
-            generateAccessToken(payload);
+            generateAccessToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);
 
         const refreshToken =
-            generateRefreshToken(payload);
+            generateRefreshToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);
 
         /*
          * Create session record — no auto-eviction.

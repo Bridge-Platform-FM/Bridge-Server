@@ -1,7 +1,7 @@
 'use strict';
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid');
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES } = require('../utils/constant');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
@@ -94,7 +94,8 @@ const verifyMfaOtp = async (req, res, next) => {
             adminId: admin.id,
             email: admin.email,
             mobileNumber: admin.mobile_number,
-            role: admin.role
+            role: admin.role,
+            userType: USER_TYPES[admin.role]
         };
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);

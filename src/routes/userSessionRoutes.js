@@ -17,7 +17,7 @@ const { PERMISSIONS } = require('../utils/constant');
 router.get('/', authenticate, authorize(PERMISSIONS.SESSION.VIEW_ACTIVE), userSessionController.getActiveSessions);
 
 // GET  /api/v1/sessions/limit-status
-router.get('/limit-status', authenticate, userSessionController.getSessionLimitStatus);
+router.get('/limit-status', authenticate, authorize(PERMISSIONS.SESSION.VIEW_LIMIT_STATUS), userSessionController.getSessionLimitStatus);
 
 // POST /api/v1/sessions/logout  — sidebar Logout button (current device only)
 router.post('/logout', authenticate, authorize(PERMISSIONS.SESSION.LOGOUT), userSessionController.logoutCurrentSession);

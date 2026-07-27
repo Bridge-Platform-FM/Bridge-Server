@@ -24,7 +24,7 @@ const mfaMiddleware = (req, res, next) => {
 
         const decoded = verifyAccessToken(token, TOKEN_TYPES.MFA_ACCESS_TOKEN);
 
-        if (!decoded.type === TOKEN_TYPES.MFA_ACCESS_TOKEN) {
+        if (decoded.type !== TOKEN_TYPES.MFA_ACCESS_TOKEN) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 401

@@ -1,7 +1,7 @@
 'use strict';
 
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, TOKEN_TYPES, ROLES, USER_TYPES } = require('../utils/constant'); // TOKEN_TYPES and ROLES kept from develop branch
+const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
@@ -62,19 +62,12 @@ const authMiddleware = async (req, res, next) => {
 
         const decoded = verifyAccessToken(token);
 
-        if (!decoded.type === TOKEN_TYPES.AUTH_ACCESS_TOKEN) {
+        if (decoded.type !== TOKEN_TYPES.AUTH_ACCESS_TOKEN) {
             return HttpResponse.error(res, {
                 message: AUTH_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 401
             });
         }
-
-        // if (!ROLES.USER.includes(decoded.role)) {
-        //     return HttpResponse.error(res, {
-        //         message: AUTH_MESSAGES.FORBIDDEN,
-        //         statusCode: 403
-        //     });
-        // }
 
         // Attach decoded payload to request object
         req.companyId = decoded.companyId;
@@ -89,9 +82,14 @@ const authMiddleware = async (req, res, next) => {
         req.jti = decoded?.jti; // lets controllers flag the current session
 
         /*
-         * New Session Validation
+         * Per-request session validation.
+         *
+         * Skipped for ADMIN / SUPER_ADMIN: their tokens are issued by
+         * adminService, which carries `adminId` (not `userId`) and never
+         * creates a user_sessions row, so there is nothing to validate
+         * against. Admin routes are guarded by adminMiddleware instead.
          */
-        if (SESSION_LIMIT_ENABLED) {
+        if (SESSION_LIMIT_ENABLED && !ADMIN_USER_TYPES.includes(decoded.userType)) {
 
             const { jti, userId } = decoded;
 
@@ -102,24 +100,19 @@ const authMiddleware = async (req, res, next) => {
                 });
             }
 
-            // if (decoded.role === ROLES.ADMIN[0] || decoded.role === ROLES.SUPER_ADMIN[0]) {
-            //     return HttpResponse.success(res)
-            // }
-            if (!decoded.userType === USER_TYPES.SUPER_ADMIN || !decoded.userType === USER_TYPES.ADMIN) {
-                const isValid = await isSessionJtiValid(userId, jti);
+            const isValid = await isSessionJtiValid(userId, jti);
 
-                if (!isValid) {
-                    return HttpResponse.error(res, {
-                        message: AUTH_MESSAGES.UNAUTHORIZED,
-                        statusCode: 401
-                    });
-                }
-
-                await userSessionRepository.updateLastActivity(
-                    userId,
-                    jti
-                );
+            if (!isValid) {
+                return HttpResponse.error(res, {
+                    message: AUTH_MESSAGES.UNAUTHORIZED,
+                    statusCode: 401
+                });
             }
+
+            await userSessionRepository.updateLastActivity(
+                userId,
+                jti
+            );
         }
 
         next();

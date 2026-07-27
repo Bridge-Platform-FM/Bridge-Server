@@ -8,12 +8,11 @@ const authorize = require('../middleware/authorize');
 const adminController = require('../controllers/adminController');
 const faqController = require('../controllers/faqController');
 const { PERMISSIONS } = require('../utils/constant');
-const { PERMISSIONS } = require('../utils/constant');
 
 // File scan for Img and Pdf
 router.post('/auth/login', adminController.login);
 
-router.post('/auth/mfa/trigger-otp', adminMiddleware, adminController.triggerOtp);
+router.post('/auth/mfa/trigger-otp', adminMfaMiddleware, authorize(PERMISSIONS.ADMIN_AUTH.MFA_TRIGGER_OTP), adminController.triggerOtp);
 
 router.post('/auth/mfa/verify-otp', adminMfaMiddleware, authorize(PERMISSIONS.ADMIN_AUTH.MFA_VERIFY_OTP), adminController.verifyMfaOtp);
 

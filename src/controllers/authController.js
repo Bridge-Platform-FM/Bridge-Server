@@ -62,15 +62,12 @@ const companyRegistration = async (req, res, next) => {
         const userObj = createCompanyRes.data.user
 
         const userType = USER_TYPES[roleObj.role_code];
-        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj, userType, 
-            {
-                ipAddress: req.ip,
-                userAgent: req.headers['user-agent']
-            }
-        );
-        const { accessToken, refreshToken } = tokens.data;
-        res.cookie(COOKIE_NAMES.MFA_TOKEN, accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
-        // res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        const mfaTokenRes = await tokenService.generateMfaAccessToken(companyObj, roleObj, userObj, userType);
+        if (!mfaTokenRes.success) {
+            return HttpResponse.error(res, { message: mfaTokenRes.message, statusCode: 500 });
+        }
+
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,

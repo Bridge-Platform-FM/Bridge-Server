@@ -4,12 +4,14 @@ const mockPipeline = { set: jest.fn(), exec: jest.fn() };
 
 jest.mock('../../configs/redis', () => ({
     get: jest.fn(),
+    set: jest.fn(),
     del: jest.fn(),
     pipeline: jest.fn()
 }));
 
 jest.mock('../../repositories/permissionRepository', () => ({
-    getAllRolePermissions: jest.fn()
+    getAllRolePermissions: jest.fn(),
+    getPermissionKeysForUserType: jest.fn()
 }));
 
 jest.mock('../../configs/logger', () => ({
@@ -77,8 +79,62 @@ describe('permissionService.hasPermission', () => {
         expect(result).toBe(false);
     });
 
-    test('returns false when redis has no entry for the userType, without querying the database', async () => {
+    /*
+     * Redis is an accelerator, not the source of truth. An empty or unreachable
+     * cache must not deny access to every authorize()-gated route.
+     */
+    test('falls back to the database when redis has no entry for the userType', async () => {
         redis.get.mockResolvedValue(null);
+        permissionRepository.getPermissionKeysForUserType.mockResolvedValue(['DEAL_ROOM.CLOSE']);
+
+        const result = await permissionService.hasPermission('USER', 'DEAL_ROOM.CLOSE');
+
+        expect(result).toBe(true);
+        expect(permissionRepository.getPermissionKeysForUserType).toHaveBeenCalledWith('USER');
+    });
+
+    test('backfills the cache after rebuilding from the database', async () => {
+        redis.get.mockResolvedValue(null);
+        permissionRepository.getPermissionKeysForUserType.mockResolvedValue(['DEAL_ROOM.CLOSE']);
+
+        await permissionService.hasPermission('USER', 'DEAL_ROOM.CLOSE');
+
+        expect(redis.set).toHaveBeenCalledWith(
+            'role_permissions:USER',
+            JSON.stringify(['DEAL_ROOM.CLOSE'])
+        );
+    });
+
+    test('falls back to the database when redis throws', async () => {
+        redis.get.mockRejectedValue(new Error('ECONNREFUSED'));
+        permissionRepository.getPermissionKeysForUserType.mockResolvedValue(['DEAL_ROOM.CLOSE']);
+
+        const result = await permissionService.hasPermission('USER', 'DEAL_ROOM.CLOSE');
+
+        expect(result).toBe(true);
+    });
+
+    test('falls back to the database when the cached value is corrupt', async () => {
+        redis.get.mockResolvedValue('not-json');
+        permissionRepository.getPermissionKeysForUserType.mockResolvedValue(['DEAL_ROOM.CLOSE']);
+
+        const result = await permissionService.hasPermission('USER', 'DEAL_ROOM.CLOSE');
+
+        expect(result).toBe(true);
+    });
+
+    test('treats a cached empty grant list as authoritative and does not hit the database', async () => {
+        redis.get.mockResolvedValue(JSON.stringify([]));
+
+        const result = await permissionService.hasPermission('USER', 'DEAL_ROOM.CLOSE');
+
+        expect(result).toBe(false);
+        expect(permissionRepository.getPermissionKeysForUserType).not.toHaveBeenCalled();
+    });
+
+    test('denies when neither redis nor the database grants the permission', async () => {
+        redis.get.mockResolvedValue(null);
+        permissionRepository.getPermissionKeysForUserType.mockResolvedValue(['DEAL_ROOM.VIEW_LIST']);
 
         const result = await permissionService.hasPermission('USER', 'DEAL_ROOM.CLOSE');
 

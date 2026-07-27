@@ -16,7 +16,6 @@ const mfaMiddleware = require('../middleware/mfaMiddleware');
 const authorize = require('../middleware/authorize');
 const resetPasswordMiddleware = require('../middleware/resetPasswordMiddleware');
 const { PERMISSIONS } = require('../utils/constant');
-const { PERMISSIONS } = require('../utils/constant');
 
 
 // Route for starting Company registration and generating OTPs

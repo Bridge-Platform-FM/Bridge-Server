@@ -1,7 +1,7 @@
 'use strict';
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid');
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
@@ -282,6 +282,18 @@ const getUserLimitConfig = async (req, res, next) => {
     }
 };
 
+const logout = async (req, res, next) => {
+    try {
+        res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, clearCookieOptions());
+        res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, clearCookieOptions());
+
+        return HttpResponse.success(res, { message: SESSION_MESSAGES.LOGOUT_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: SESSION_MESSAGES.LOGOUT_FAILED, statusCode: 500 });
+    }
+};
+
 const updateUserLimitConfig = async (req, res, next) => {
     try {
         const { userType, adminId } = req;
@@ -336,4 +348,4 @@ const updateUserLimitConfig = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig };
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, logout, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig };

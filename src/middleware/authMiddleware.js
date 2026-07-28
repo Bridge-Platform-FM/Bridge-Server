@@ -69,12 +69,13 @@ const authMiddleware = async (req, res, next) => {
             });
         }
 
-        if (!ROLES.USER.includes(decoded.role)) {
-            return HttpResponse.error(res, {
-                message: AUTH_MESSAGES.FORBIDDEN,
-                statusCode: 403
-            });
-        }
+        // TODO: remove it after admn jti implemented
+        // if (!ROLES.USER.includes(decoded.role)) {
+        //     return HttpResponse.error(res, {
+        //         message: AUTH_MESSAGES.FORBIDDEN,
+        //         statusCode: 403
+        //     });
+        // }
 
         // Attach decoded payload to request object
         req.companyId = decoded.companyId;

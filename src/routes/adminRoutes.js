@@ -35,4 +35,7 @@ router.post('/faqs', adminMiddleware, faqController.createFaq);
 
 router.put('/faqs/:id', adminMiddleware, faqController.updateFaq);
 
+// Matching Engine Dashboard
+router.get('/matching-engine/stats', adminMiddleware, adminController.getMatchingEngineStats);
+
 module.exports = router;

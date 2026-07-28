@@ -325,4 +325,17 @@ const updateUserLimitConfig = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig };
+const getMatchingEngineStats = async (req, res, next) => {
+    try {
+        const result = await adminService.getMatchingEngineStats();
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: 'Error fetching matching engine stats.', statusCode: 500 });
+    }
+};
+
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, getMatchingEngineStats };

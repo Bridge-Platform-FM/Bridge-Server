@@ -40,7 +40,6 @@ const adminMiddleware = (req, res, next) => {
         req.role = decoded.role;
         req.userType = decoded.userType;
         req.adminId = decoded.adminId;
-        req.userType = decoded.userType;
         next();
     } catch (error) {
         errorLogger.error(error);

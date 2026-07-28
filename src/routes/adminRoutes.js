@@ -18,6 +18,8 @@ router.post('/auth/mfa/verify-otp', adminMfaMiddleware, authorize(PERMISSIONS.AD
 
 router.post('/auth/mfa/resend-otp', adminMfaMiddleware, authorize(PERMISSIONS.ADMIN_AUTH.MFA_RESEND_OTP), adminController.resendMfaOtp);
 
+router.post('/auth/logout', adminMiddleware, authorize(PERMISSIONS.SESSION.LOGOUT), adminController.logout);
+
 router.get('/get-user-list', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.LIST), adminController.getUserList);
 
 router.get('/get-user-kyc_docs', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.VIEW_KYC_DOCS), adminController.getUserKycDocs);

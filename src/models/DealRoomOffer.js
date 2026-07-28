@@ -27,7 +27,7 @@ module.exports = (sequelize) => {
         },
 
         offered_by_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: { model: 'user', key: 'id' }
         },
@@ -37,13 +37,13 @@ module.exports = (sequelize) => {
             references: { model: 'company_role_master', key: 'id' }
         },
         offered_by_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: { model: 'company', key: 'id' }
         },
 
         recipient_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: { model: 'user', key: 'id' }
         },
@@ -53,7 +53,7 @@ module.exports = (sequelize) => {
             references: { model: 'company_role_master', key: 'id' }
         },
         recipient_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: { model: 'company', key: 'id' }
         },
@@ -122,7 +122,7 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         responded_by_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             references: { model: 'user', key: 'id' }
         },

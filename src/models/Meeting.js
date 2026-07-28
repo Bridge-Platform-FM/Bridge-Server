@@ -23,7 +23,7 @@ module.exports = (sequelize) => {
         },
 
         requester_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
         },
 
         recipient_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',

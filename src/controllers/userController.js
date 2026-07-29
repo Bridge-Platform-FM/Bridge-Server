@@ -138,8 +138,8 @@ const searchUsers = async (req, res, next) => {
 
 const getUserRoleDetails = async (req, res, next) => {
     try {
-        const userId = parseInt(req.query.userId, 10);
-        const companyId = parseInt(req.query.companyId, 10);
+        const userId = req.query.userId;
+        const companyId = req.query.companyId;
         const roleId = parseInt(req.query.roleId, 10);
 
         if (!req.query.userId || isNaN(userId) || userId <= 0) {

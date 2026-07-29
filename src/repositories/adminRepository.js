@@ -81,9 +81,9 @@ const getZeroEngagementProfiles = async () => {
 const getMatchesGenerated = async () => {
     const [rows] = await sequelize.query(`
         SELECT
-            COUNT(*) FILTER (WHERE action = 'shown' AND created_at >= CURRENT_DATE)                    AS today,
-            COUNT(*) FILTER (WHERE action = 'shown' AND created_at >= DATE_TRUNC('week',  NOW()))      AS this_week,
-            COUNT(*) FILTER (WHERE action = 'shown' AND created_at >= DATE_TRUNC('month', NOW()))      AS this_month
+            COUNT(*) FILTER (WHERE action = 'shown' AND created_at >= CURRENT_DATE) AS today,
+            COUNT(*) FILTER (WHERE action = 'shown' AND created_at >= DATE_TRUNC('week',  NOW())) AS this_week,
+            COUNT(*) FILTER (WHERE action = 'shown' AND created_at >= DATE_TRUNC('month', NOW())) AS this_month
         FROM matching_events
         WHERE is_deleted IS NOT TRUE
     `);

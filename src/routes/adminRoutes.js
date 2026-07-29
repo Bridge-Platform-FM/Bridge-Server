@@ -43,4 +43,7 @@ router.put('/faqs/:id', adminMiddleware, authorize(PERMISSIONS.ADMIN_FAQ.UPDATE)
 // Matching Engine Dashboard
 router.get('/matching-engine/stats', adminMiddleware, adminController.getMatchingEngineStats);
 
+// Matching Engine Dashboard
+router.get('/matching-engine/stats', adminMiddleware, adminController.getMatchingEngineStats);
+
 module.exports = router;

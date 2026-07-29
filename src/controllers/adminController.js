@@ -28,6 +28,23 @@ function setAuthCookies(res, accessToken, refreshToken) {
     res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
 }
 
+const ACCESS_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+};
+const REFRESH_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+function setAuthCookies(res, accessToken, refreshToken) {
+    res.cookie('access_token', accessToken, ACCESS_COOKIE_OPTS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+}
+
 const updateLimitConfigSchema = Joi.object({
     allowed_connections: Joi.number().integer().min(0).optional(),
     allowed_free_trial_days: Joi.number().integer().min(0).optional(),

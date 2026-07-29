@@ -31,6 +31,7 @@ const userSessionRoutes = require('./routes/userSessionRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
+const cookieParser = require('cookie-parser');
 const app = express();
 
 // credentials: true + an explicit origin (never '*') is required for the browser to

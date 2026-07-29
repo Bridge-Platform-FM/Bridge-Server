@@ -17,7 +17,6 @@ const adminMiddleware = (req, res, next) => {
                 statusCode: 401
             });
         }
-
         const decoded = verifyAccessToken(token);
 
         if (decoded.type !== TOKEN_TYPES.AUTH_ACCESS_TOKEN) {

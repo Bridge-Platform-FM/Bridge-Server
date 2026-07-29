@@ -78,7 +78,7 @@ const validateUserPayload = async (role, payload) => {
                     break;
                 case 'date':
                 case 'datetime':
-                    if (!(value instanceof Date))
+                    if (isNaN(Date.parse(value)))
                         errors.push({ field: lookup, message: `${display_name} must be a valid ${datatype}` });
                     break;
                 case 'json':

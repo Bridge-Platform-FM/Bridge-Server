@@ -10,6 +10,7 @@ const ServiceResponse = require('../utils/ServiceResponse');
 const { MATCHING_MESSAGES, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
 const { MATCHES_LIMIT } = require('./matchingConfig');
 const { errorLogger } = require('../configs/logger');
+const { isValidUUID } = require('../utils/Helper');
 
 /**
  * Main matching orchestrator.

@@ -16,19 +16,19 @@ const getMatchingEngineKpis = async () => {
         SELECT
             (SELECT COUNT(DISTINCT cur.user_id)
              FROM company_user_role cur
-             WHERE cur.is_default_role IS TRUE)                                    AS total_profiles,
+             WHERE cur.is_default_role IS TRUE) AS total_profiles,
 
             (SELECT COUNT(*)
              FROM user_connection
-             WHERE is_deleted IS NOT TRUE)                                          AS total_connections,
+             WHERE is_deleted IS NOT TRUE) AS total_connections,
 
             (SELECT COUNT(*)
              FROM user_connection
-             WHERE is_deleted IS NOT TRUE AND status = 'Accepted')                 AS accepted_connections,
+             WHERE is_deleted IS NOT TRUE AND status = 'Accepted') AS accepted_connections,
 
             (SELECT COUNT(*)
              FROM deal_room
-             WHERE is_deleted IS NOT TRUE AND status = 'Active')                   AS active_deal_rooms
+             WHERE is_deleted IS NOT TRUE AND status = 'Active') AS active_deal_rooms
     `);
     return rows[0] || {};
 };
@@ -47,7 +47,7 @@ const getConnectionStatusBreakdown = async () => {
 const getZeroEngagementProfiles = async () => {
     const [rows] = await sequelize.query(`
         SELECT
-            u.id           AS user_id,
+            u.id AS user_id,
             u.first_name,
             u.last_name,
             u.created_at,

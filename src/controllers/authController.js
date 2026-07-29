@@ -107,7 +107,7 @@ const companyRegistration = async (req, res, next) => {
 
         res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
-        setAuthCookies(res, accessToken, refreshToken);
+        // setAuthCookies(res, accessToken, refreshToken);
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,
             statusCode: 200

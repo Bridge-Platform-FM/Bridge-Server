@@ -9,6 +9,7 @@ const ServiceResponse = require('../utils/ServiceResponse');
 const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES, ADMIN_USER_TYPES, TOKEN_TYPES } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
+const { sequelize } = require('../models');
 
 const login = async (email, password) => {
     try {

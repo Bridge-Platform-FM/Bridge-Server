@@ -378,4 +378,4 @@ const getMatchingEngineStats = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, getMatchingEngineStats };
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, getMatchingEngineStats, logout };

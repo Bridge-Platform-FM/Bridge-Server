@@ -334,7 +334,7 @@ const CONNECTION_REQUEST_LIMITS = {
 };
 
 const TRIAL_DAYS_LIMITS = {
-    FREE: 30
+    FREE: 7
 };
 
 const CONNECTION_MESSAGES = {

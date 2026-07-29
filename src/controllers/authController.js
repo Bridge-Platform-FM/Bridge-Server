@@ -10,6 +10,25 @@ const { maskPhone, maskEmail } = require('../utils/Helper');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
 const env = require('../configs/env_configs');
 
+/** Cookie options — httpOnly so JS can't read the token. */
+const ACCESS_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,       // 1 day
+};
+const REFRESH_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,   // 7 days
+};
+
+function setAuthCookies(res, accessToken, refreshToken) {
+    res.cookie('access_token', accessToken, ACCESS_COOKIE_OPTS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+}
+
 //  POST /api/v1/auth/company-registration
 const companyRegistration = async (req, res, next) => {
     try {
@@ -69,6 +88,7 @@ const companyRegistration = async (req, res, next) => {
 
         res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
+        // setAuthCookies(res, accessToken, refreshToken);
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,
             statusCode: 200
@@ -380,9 +400,9 @@ const verifyMfaOtp = async (req, res, next) => {
         });
         const { accessToken, refreshToken } = tokens.data;
 
+        res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
         res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
         res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
-        res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
         return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { userId: user.id, tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN, redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);

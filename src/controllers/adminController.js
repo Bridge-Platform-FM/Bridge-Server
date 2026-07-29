@@ -11,6 +11,23 @@ const kycService = require('../services/kycService');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions, generateAccessToken, generateRefreshToken } = require('../utils/token');
 const env = require('../configs/env_configs');
 
+const ACCESS_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+};
+const REFRESH_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+function setAuthCookies(res, accessToken, refreshToken) {
+    res.cookie('access_token', accessToken, ACCESS_COOKIE_OPTS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+}
+
 const updateLimitConfigSchema = Joi.object({
     allowed_connections: Joi.number().integer().min(0).optional(),
     allowed_free_trial_days: Joi.number().integer().min(0).optional(),
@@ -247,9 +264,9 @@ const kycReviewAction = async (req, res, next) => {
 const getUserLimitConfig = async (req, res, next) => {
     try {
         const { userType } = req;
-        const userId = parseInt(req.params.userId);
-
-        if (!userId || isNaN(userId)) {
+        const userId = req.params.userId;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!userId || !UUID_REGEX.test(userId)) {
             return HttpResponse.error(res, {
                 message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
                 statusCode: 400
@@ -297,9 +314,9 @@ const logout = async (req, res, next) => {
 const updateUserLimitConfig = async (req, res, next) => {
     try {
         const { userType, adminId } = req;
-        const userId = parseInt(req.params.userId);
-
-        if (!userId || isNaN(userId)) {
+        const userId = req.params.userId;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!userId || !UUID_REGEX.test(userId)) {
             return HttpResponse.error(res, {
                 message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
                 statusCode: 400
@@ -348,4 +365,17 @@ const updateUserLimitConfig = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, logout, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig };
+const getMatchingEngineStats = async (req, res, next) => {
+    try {
+        const result = await adminService.getMatchingEngineStats();
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: 'Error fetching matching engine stats.', statusCode: 500 });
+    }
+};
+
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, getMatchingEngineStats, logout };

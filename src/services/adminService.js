@@ -1,6 +1,5 @@
 'use strict';
 const bcrypt = require('bcrypt');
-const { sequelize } = require('../models');
 const adminRepository = require('../repositories/adminRepository');
 const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
@@ -10,6 +9,7 @@ const ServiceResponse = require('../utils/ServiceResponse');
 const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES, ADMIN_USER_TYPES, TOKEN_TYPES } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
+const { sequelize } = require('../models');
 
 const login = async (email, password) => {
     try {
@@ -155,4 +155,110 @@ const updateUserLimitConfig = async ({ userId, adminId, userType, payload }) => 
 };
 
 
-module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig };
+module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig, getMatchingEngineStats };
+
+
+// ─── Matching Engine Dashboard ─────────────────────────────────────────────────
+
+/**
+ * Aggregate KPIs for the Matching Engine Dashboard.
+ * All DB queries are delegated to adminRepository — this layer only handles
+ * business logic (rate calculation, normalization) and error propagation.
+ */
+async function getMatchingEngineStats() {
+    try {
+        // Run all queries in parallel for performance
+        const [
+            kpi,
+            breakdownRows,
+            zeroRows,
+            matchVolume,
+            avgScoreRow,
+            topSectors,
+            algorithmDist,
+            behavioralSignals,
+        ] = await Promise.all([
+            adminRepository.getMatchingEngineKpis(),
+            adminRepository.getConnectionStatusBreakdown(),
+            adminRepository.getZeroEngagementProfiles(),
+            adminRepository.getMatchesGenerated(),
+            adminRepository.getAverageCompatibilityScore(),
+            adminRepository.getTopSectorsByVolume(),
+            adminRepository.getAlgorithmDistribution(),
+            adminRepository.getBehavioralSignals(),
+        ]);
+
+        const totalConnections    = parseInt(kpi.total_connections)    || 0;
+        const acceptedConnections = parseInt(kpi.accepted_connections)  || 0;
+        const acceptanceRate = totalConnections > 0
+            ? Math.round((acceptedConnections / totalConnections) * 1000) / 10
+            : 0;
+
+        // Algorithm distribution with percentage (for cold-start vs. ML ratio)
+        const totalAlgoShown = algorithmDist.reduce((s, r) => s + (parseInt(r.count) || 0), 0);
+        const algorithmDistribution = algorithmDist.map(r => ({
+            algorithmType: r.algorithm_type,
+            count:         parseInt(r.count) || 0,
+            percentage:    totalAlgoShown > 0
+                ? Math.round((parseInt(r.count) / totalAlgoShown) * 100)
+                : 0,
+        }));
+
+        return ServiceResponse.success({
+            message: 'Matching engine stats fetched successfully.',
+            data: {
+                // ── Existing metrics (from connection/deal_room/user tables) ──
+                totalProfiles:         parseInt(kpi.total_profiles)    || 0,
+                totalConnections,
+                acceptedConnections,
+                acceptanceRate,
+                activeDealRooms:       parseInt(kpi.active_deal_rooms) || 0,
+                connectionStatusBreakdown: breakdownRows.map(r => ({
+                    status: r.status,
+                    count:  parseInt(r.count) || 0,
+                })),
+                zeroEngagementProfiles: zeroRows.map(r => ({
+                    userId:   String(r.user_id),
+                    name:     [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || '—',
+                    role:     r.role_code    || '—',
+                    company:  r.company_name || '—',
+                    joinedAt: r.created_at
+                        ? (r.created_at.toISOString?.() ?? String(r.created_at))
+                        : null,
+                })),
+
+                // ── FRD Module 12.3 — new metrics from matching_events table ──
+                /** Total matches generated: today / this week / this month */
+                matchesGenerated: {
+                    today:     parseInt(matchVolume.today)      || 0,
+                    thisWeek:  parseInt(matchVolume.this_week)  || 0,
+                    thisMonth: parseInt(matchVolume.this_month) || 0,
+                },
+                /** Average compatibility score (null = no data yet) */
+                avgCompatibilityScore: avgScoreRow.avg_score != null
+                    ? parseFloat(avgScoreRow.avg_score) || 0
+                    : null,
+                /** Top 5 sectors by match volume */
+                topSectorsByVolume: topSectors.map(r => ({
+                    sector: r.sector,
+                    count:  parseInt(r.count) || 0,
+                })),
+                /** Cold-start (rule_based) vs. ML model distribution */
+                algorithmDistribution,
+                /** Behavioural signals: skips, accepts, flags etc. */
+                behavioralSignals: behavioralSignals.map(r => ({
+                    action: r.action,
+                    count:  parseInt(r.count) || 0,
+                })),
+            },
+            statusCode: 200,
+        });
+
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: 'Error fetching matching engine stats.',
+            statusCode: 500,
+        });
+    }
+}

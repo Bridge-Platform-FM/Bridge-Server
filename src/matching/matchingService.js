@@ -10,6 +10,7 @@ const ServiceResponse = require('../utils/ServiceResponse');
 const { MATCHING_MESSAGES, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
 const { MATCHES_LIMIT } = require('./matchingConfig');
 const { errorLogger } = require('../configs/logger');
+const { isValidUUID } = require('../utils/Helper');
 
 /**
  * Main matching orchestrator.
@@ -20,8 +21,8 @@ const { errorLogger } = require('../configs/logger');
  */
 const getMatches = async (profileId) => {
     try {
-        const userId = parseInt(profileId, 10);
-        if (!userId || isNaN(userId)) {
+        const userId = profileId;
+        if (!userId || !isValidUUID(userId)) {
             return ServiceResponse.error({
                 message: MATCHING_MESSAGES.PROFILE_NOT_FOUND,
                 statusCode: 404

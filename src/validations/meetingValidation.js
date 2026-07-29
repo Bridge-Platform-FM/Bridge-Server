@@ -8,10 +8,9 @@ const createMeetingSchema = Joi.object({
         'string.guid': 'dealRoomId must be a valid UUID',
         'any.required': 'dealRoomId is required'
     }),
-    recipientUserId: Joi.number().integer().positive().required().messages({
-        'number.base': 'recipientUserId must be a number',
-        'number.integer': 'recipientUserId must be an integer',
-        'number.positive': 'recipientUserId must be a positive number',
+    recipientUserId: Joi.string().guid({ version: 'uuidv4' }).required().messages({
+        'string.base': 'recipientUserId must be a string',
+        'string.guid': 'recipientUserId must be a valid UUID',
         'any.required': 'recipientUserId is required'
     }),
     title: Joi.string().min(3).max(255).required().messages({

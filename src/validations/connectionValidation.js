@@ -4,10 +4,9 @@ const Joi = require('joi');
 const HttpResponse = require('../utils/HttpResponse');
 
 const sendConnectionRequestSchema = Joi.object({
-    recipientUserId: Joi.number().integer().positive().required().messages({
-        'number.base': 'recipientUserId must be a number',
-        'number.integer': 'recipientUserId must be an integer',
-        'number.positive': 'recipientUserId must be a positive number',
+    recipientUserId: Joi.string().guid({ version: 'uuidv4' }).required().messages({
+        'string.base': 'recipientUserId must be a string',
+        'string.guid': 'recipientUserId must be a valid UUID',
         'any.required': 'recipientUserId is required'
     }),
     recipientRoleId: Joi.number().integer().positive().required().messages({
@@ -16,10 +15,9 @@ const sendConnectionRequestSchema = Joi.object({
         'number.positive': 'recipientRoleId must be a positive number',
         'any.required': 'recipientRoleId is required'
     }),
-    recipientCompanyId: Joi.number().integer().positive().required().messages({
-        'number.base': 'recipientCompanyId must be a number',
-        'number.integer': 'recipientCompanyId must be an integer',
-        'number.positive': 'recipientCompanyId must be a positive number',
+    recipientCompanyId: Joi.string().guid({ version: 'uuidv4' }).required().messages({
+        'string.base': 'recipientCompanyId must be a string',
+        'string.guid': 'recipientCompanyId must be a valid UUID',
         'any.required': 'recipientCompanyId is required'
     }),
     personalMessage: Joi.string().max(500).optional().allow(null, '').messages({

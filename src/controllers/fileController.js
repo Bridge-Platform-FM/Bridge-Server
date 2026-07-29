@@ -45,16 +45,16 @@ const scanFile = async (req, res, next) => {
 
         // Upload to S3
         const s3KeyToUpload = `company/${companyId}/${userId}/${s3_file_type}/${Date.now()}-${req.file.originalname}`;
-        const s3Key = await uploadToS3(
-            s3_file_type,
-            fileBuffer,
-            req.file.originalname,
-            req.file.mimetype,
-            companyName,
-            userId,
-            s3KeyToUpload
-        )
-        console.log("s3Key", s3Key)
+        // const s3Key = await uploadToS3(
+        //     s3_file_type,
+        //     fileBuffer,
+        //     req.file.originalname,
+        //     req.file.mimetype,
+        //     companyName,
+        //     userId,
+        //     s3KeyToUpload
+        // )
+        // console.log("s3Key", s3Key)
 
         return HttpResponse.success(res, {
             message: "File uploaded successfully",
@@ -62,7 +62,7 @@ const scanFile = async (req, res, next) => {
                 fileName: req.file.originalname,
                 fileSize: req.file.size,
                 mimeType: req.file.mimetype,
-                s3Key: s3Key,
+                s3Key: s3KeyToUpload,
                 side: side,
                 docType: docType
             },

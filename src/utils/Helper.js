@@ -33,10 +33,17 @@ const maskEmail = (email) => {
   return `${local[0]}${".".repeat(hidden)}${local.slice(-4)}@${domain}`;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isValidUUID = (uuid) => {
+  return UUID_REGEX.test(uuid);
+}
+
 module.exports = {
     generateOTP,
     hashPassword,
     waterMarkFunction,
     maskPhone,
-    maskEmail
+    maskEmail,
+    isValidUUID
 };

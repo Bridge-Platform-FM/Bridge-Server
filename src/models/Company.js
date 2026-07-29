@@ -7,9 +7,9 @@ module.exports = (sequelize) => {
     const Company = sequelize.define('Company', {
 
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
-            autoIncrement: true,
+            defaultValue: DataTypes.UUIDV4,
             allowNull: false,
             field: 'id'
         },

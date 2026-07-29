@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
             defaultValue: DataTypes.NOW
         },
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         updated_at: {
@@ -34,7 +34,7 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         is_deleted: {
@@ -47,7 +47,7 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
     }, {

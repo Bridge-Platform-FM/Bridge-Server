@@ -29,25 +29,6 @@ function setAuthCookies(res, accessToken, refreshToken) {
     res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
 }
 
-/** Cookie options — httpOnly so JS can't read the token. */
-const ACCESS_COOKIE_OPTS = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000,       // 1 day
-};
-const REFRESH_COOKIE_OPTS = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,   // 7 days
-};
-
-function setAuthCookies(res, accessToken, refreshToken) {
-    res.cookie('access_token', accessToken, ACCESS_COOKIE_OPTS);
-    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
-}
-
 //  POST /api/v1/auth/company-registration
 const companyRegistration = async (req, res, next) => {
     try {

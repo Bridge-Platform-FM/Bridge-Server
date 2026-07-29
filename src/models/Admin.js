@@ -5,9 +5,9 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
     const Admin = sequelize.define('Admin', {
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
-            autoIncrement: true,
+            defaultValue: DataTypes.UUIDV4,
             allowNull: false,
             field: 'id'
         },
@@ -43,7 +43,7 @@ module.exports = (sequelize) => {
             defaultValue: DataTypes.NOW
         },
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         updated_at: {
@@ -51,7 +51,7 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         is_deleted: {
@@ -64,13 +64,12 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
     }, {
         tableName: 'admin',
         timestamps: true,
-        initialAutoIncrement: 1,
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });

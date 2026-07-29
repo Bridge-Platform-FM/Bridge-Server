@@ -56,7 +56,7 @@ module.exports = (sequelize) => {
         },
 
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
 
@@ -66,7 +66,7 @@ module.exports = (sequelize) => {
         },
 
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
 
@@ -82,7 +82,7 @@ module.exports = (sequelize) => {
         },
 
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
 

@@ -109,7 +109,7 @@ module.exports = (sequelize) => {
         },
 
         verified_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
 
@@ -129,7 +129,7 @@ module.exports = (sequelize) => {
             field: 'updated_at'
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         is_deleted: {

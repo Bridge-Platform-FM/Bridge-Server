@@ -20,8 +20,8 @@ const { errorLogger } = require('../configs/logger');
  */
 const getMatches = async (profileId) => {
     try {
-        const userId = parseInt(profileId, 10);
-        if (!userId || isNaN(userId)) {
+        const userId = profileId;
+        if (!userId || !isValidUUID(userId)) {
             return ServiceResponse.error({
                 message: MATCHING_MESSAGES.PROFILE_NOT_FOUND,
                 statusCode: 404

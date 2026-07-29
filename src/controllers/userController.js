@@ -4,6 +4,7 @@ const fieldMetadataService = require('../services/fieldMetadataService');
 const userService = require('../services/userService');
 const { USER_MESSAGES } = require('../utils/constant');
 const { encrypt } = require('../utils/encryption');
+const { isValidUUID } = require('../utils/Helper');
 const HttpResponse = require('../utils/HttpResponse');
 
 
@@ -142,14 +143,14 @@ const getUserRoleDetails = async (req, res, next) => {
         const companyId = req.query.companyId;
         const roleId = parseInt(req.query.roleId, 10);
 
-        if (!req.query.userId || isNaN(userId) || userId <= 0) {
+        if (!req.query.userId || !isValidUUID(userId)) {
             return HttpResponse.error(res, {
                 message: USER_MESSAGES.USER_ID_REQUIRED,
                 statusCode: 400
             });
         }
 
-        if (!req.query.companyId || isNaN(companyId) || companyId <= 0) {
+        if (!req.query.companyId || !isValidUUID(companyId)) {
             return HttpResponse.error(res, {
                 message: USER_MESSAGES.COMPANY_ID_REQUIRED,
                 statusCode: 400

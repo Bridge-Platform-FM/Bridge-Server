@@ -61,7 +61,7 @@ module.exports = (sequelize) => {
         },
         updated_by: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
             references: {
                 model: 'admin',
                 key: 'id'
@@ -78,7 +78,7 @@ module.exports = (sequelize) => {
         },
         deleted_by: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
             references: {
                 model: 'admin',
                 key: 'id'

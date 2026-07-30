@@ -13,7 +13,7 @@ VALUES
     30,
     true,
     NOW(),
-    1
+    (select id from "admin" a where email = 'admin@test.com')
 ),
 (
     'Yearly Plan',
@@ -28,5 +28,5 @@ VALUES
     365,
     true,
     NOW(),
-    1
+   (select id from "admin" a where email = 'admin@test.com')
 );

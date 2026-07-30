@@ -31,7 +31,7 @@ module.exports = (sequelize) => {
         },
         created_by: {
             type: DataTypes.UUID,
-            allowNull: true
+            allowNull: false
         },
         updated_at: {
             type: DataTypes.DATE,

@@ -47,8 +47,12 @@ module.exports = (sequelize) => {
             field: 'created_at'
         },
         created_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
+            type: DataTypes.UUID,
+            allowNull: false,
+            references: {
+                model: 'admin',
+                key: 'id'
+            }
         },
         updated_at: {
             type: DataTypes.DATE,
@@ -56,8 +60,12 @@ module.exports = (sequelize) => {
             field: 'updated_at'
         },
         updated_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
+            type: DataTypes.UUID,
+            allowNull: false,
+            references: {
+                model: 'admin',
+                key: 'id'
+            }
         },
         is_deleted: {
             type: DataTypes.BOOLEAN,
@@ -69,8 +77,12 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         deleted_by: {
-            type: DataTypes.INTEGER,
-            allowNull: true
+            type: DataTypes.UUID,
+            allowNull: false,
+            references: {
+                model: 'admin',
+                key: 'id'
+            }
         }
 
     }, {

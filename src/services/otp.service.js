@@ -64,7 +64,7 @@ const sendOTP = async (channelType, channelId) => {
 
         // 3. Check resend count
         const resendCount = await redis.get(`otp_resend_count:${channelId}`);
-        const maxResend = await adminConfigService.getOtpConfigValue('MAX_RESEND');
+        const maxResend = await adminConfigService.getOtpConfigValue('MAX_OTP_RESEND_COUNT_IN_HR');
         if (resendCount && Number(resendCount) >= maxResend) {
             return ServiceResponse.error({ message: OTP_MESSAGES.MAX_RESEND, statusCode: 400 });
         }
@@ -74,11 +74,11 @@ const sendOTP = async (channelType, channelId) => {
         console.log(`Generated OTP for channel ${channelId}: ${otp}`);
 
         // 4. Save OTP
-        const otpTtl = await adminConfigService.getOtpConfigValue('OTP_TTL');
+        const otpTtl = await adminConfigService.getOtpConfigValue('SENT_OTP_TTL');
         await redis.set(`otp:${channelId}`, otp, "EX", otpTtl);
 
         // 5. Create resend cooldown
-        const resendTtl = await adminConfigService.getOtpConfigValue('RESEND_TTL');
+        const resendTtl = await adminConfigService.getOtpConfigValue('RESEND_COOLDOWN_TTL');
         await redis.set(
             `otp_resend:${channelId}`,
             "true",
@@ -100,7 +100,7 @@ const sendOTP = async (channelType, channelId) => {
         // 7. Increment OTP resent count
         const newCount = await redis.incr(`otp_resend_count:${channelId}`);
         if (newCount === 1) {
-            const resendCountTtl = (await adminConfigService.getOtpConfigValue('RESEND_COUNT_TTL')) || 3600;
+            const resendCountTtl = (await adminConfigService.getOtpConfigValue('OTP_RESEND_COUNT_TTL_IN_HR')) || 3600;
             await redis.expire(
                 `otp_resend_count:${channelId}`,
                 resendCountTtl
@@ -148,7 +148,7 @@ const verifyOTP = async (channelId, enteredOTP) => {
 
             // Set expiry only on first wrong attempt
             if (attempts === 1) {
-                const otpTtl = await adminConfigService.getOtpConfigValue('OTP_TTL');
+                const otpTtl = await adminConfigService.getOtpConfigValue('SENT_OTP_TTL');
                 await redis.expire(
                     `otp_attempt:${channelId}`,
                     otpTtl
@@ -156,11 +156,11 @@ const verifyOTP = async (channelId, enteredOTP) => {
             }
 
             // Block after max attempts
-            const maxAttempts = await adminConfigService.getOtpConfigValue('MAX_ATTEMPTS');
+            const maxAttempts = await adminConfigService.getOtpConfigValue('MAX_OTP_VERIFY_ATTEMPTS');
             if (attempts >= maxAttempts) {
 
                 // Block user for the configured resend-TTL duration
-                const blockDuration = await adminConfigService.getOtpConfigValue('RESEND_TTL');
+                const blockDuration = await adminConfigService.getOtpConfigValue('OTP_BLOCK_TTL');
                 await redis.set(
                     `otp_block:${channelId}`,
                     "true",

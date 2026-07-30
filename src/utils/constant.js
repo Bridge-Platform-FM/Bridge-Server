@@ -120,6 +120,13 @@ const SESSION_MESSAGES = {
     SESSION_SELECTION_INVALID: 'One or more selected sessions are invalid or do not belong to you.'
 }
 
+const ADMIN_CONFIG_MESSAGES = {
+    CONFIG_FETCH_FAILED: 'Failed to fetch the configuration',
+    CONFIG_FETCH_SUCCESS: 'Successfully fetched the configuration',
+    CONFIG_UPDATE_FAILED: 'Failed to update the configuration',
+    CONFIG_UPDATE_SUCCESS: 'Successfully updated the configuration',
+};
+
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
     KYC: 'kyc',
@@ -292,6 +299,10 @@ const PERMISSIONS = {
         LIST: 'ADMIN_FAQ.LIST',
         CREATE: 'ADMIN_FAQ.CREATE',
         UPDATE: 'ADMIN_FAQ.UPDATE'
+    },
+    ADMIN_CONFIG: {
+        VIEW_OTP_CONFIG: 'ADMIN_CONFIG.VIEW_OTP_CONFIG',
+        UPDATE_OTP_CONFIG: 'ADMIN_CONFIG.UPDATE_OTP_CONFIG'
     }
 };
 
@@ -593,6 +604,29 @@ const SUBSCRIPTION_PLAN_MESSAGES = {
     SUBSCRIPTION_FETCH_FAILED: 'Error encountered while fetching subscription details'
 };
 
+const DATA_TYPES = {
+    STRING: 'string',
+    INTEGER: 'integer',
+    FLOAT: 'float',
+    BOOLEAN: 'boolean',
+    DATETIME: 'datetime',
+    DATE: 'date'
+};
+
+const UNITS = {
+    MINUTE: 'minute',
+    SECOND: 'second',
+    HOUR: 'hour',
+    DAY: 'day',
+    MONTH: 'month',
+    YEAR: 'year',
+    NUMBER: 'number'
+}
+
+const REDIS_BASE_KEYS = {
+    CONFIG_OTP_CONFIG: 'config:otp_config'
+}
+
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
@@ -605,5 +639,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE, ADMIN_ROLES_CODE,
     DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
     DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES, PERMISSIONS, USER_TYPES, USER_TYPE_VALUES, ADMIN_USER_TYPES,
-    SUBSCRIPTION_PLAN_MESSAGES 
+    SUBSCRIPTION_PLAN_MESSAGES,
+    DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS
 };

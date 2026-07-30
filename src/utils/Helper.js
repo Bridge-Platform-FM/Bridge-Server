@@ -1,5 +1,6 @@
 'use strict';
 const bcrypt = require('bcrypt');
+const { DATA_TYPES } = require('./constant');
 require('dotenv').config();
 
 // Generates a random 4-digit OTP
@@ -39,11 +40,66 @@ const isValidUUID = (uuid) => {
   return UUID_REGEX.test(uuid);
 }
 
+function formatValue(value, dataType, unit) {
+    if (value === null || value === undefined) {
+        return value;
+    }
+
+    switch (dataType) {
+        case DATA_TYPES.STRING:
+            return String(value);
+
+        case DATA_TYPES.INTEGER: {
+            const intValue = parseInt(value, 10);
+
+            if (Number.isNaN(intValue)) {
+                throw new Error(`Invalid integer value: ${value}`);
+            }
+
+            return intValue;
+        }
+
+        case DATA_TYPES.FLOAT: {
+            const floatValue = parseFloat(value);
+
+            if (Number.isNaN(floatValue)) {
+                throw new Error(`Invalid float value: ${value}`);
+            }
+
+            return floatValue;
+        }
+
+        case DATA_TYPES.BOOLEAN:
+            if (typeof value === 'boolean') {
+                return value;
+            }
+
+            return ['true', '1', 'yes'].includes(
+                String(value).toLowerCase()
+            );
+
+        case DATA_TYPES.DATE:
+        case DATA_TYPES.DATETIME: {
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                throw new Error(`Invalid date value: ${value}`);
+            }
+
+            return date;
+        }
+
+        default:
+            return value;
+    }
+}
+
 module.exports = {
     generateOTP,
     hashPassword,
     waterMarkFunction,
     maskPhone,
     maskEmail,
-    isValidUUID
+    isValidUUID,
+    formatValue
 };

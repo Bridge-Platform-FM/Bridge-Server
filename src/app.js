@@ -16,10 +16,12 @@ const HttpResponse = require('./utils/HttpResponse');
 const db = require('./models');
 const redis = require('./configs/redis');
 const permissionService = require('./services/permissionService');
+const adminConfigService = require('./services/adminConfigService');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const superAdminRoutes = require('./routes/superAdminRoutes');
 const matchingRoutes = require('./routes/matchingRoutes');
 const connectionRoutes = require('./routes/connectionRoutes');
 const dealRoomRoutes = require('./routes/dealRoomRoutes');
@@ -60,6 +62,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/file', fileRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/super-admin', superAdminRoutes);
 app.use('/api/v1/matching', matchingRoutes);
 app.use('/api/v1/connections', connectionRoutes);
 app.use('/api/v1/deal-rooms', dealRoomRoutes);
@@ -92,7 +95,11 @@ redis.on('connect', () => {
 
 server.listen(SERVER_PORT, () => {
     db.sequelize.authenticate()
-        .then(() => console.info('Database connected successfully.'))
+        .then(() => {
+            console.info('Database connected successfully.');
+            adminConfigService.cacheOtpConfig()
+                .catch(err => console.error('Failed to cache OTP config into Redis:', err));
+        })
         .catch(err => console.error('Unable to connect to the database:', err));
     console.info(`Server is running on port http://localhost:${SERVER_PORT}`);
 });

@@ -7,6 +7,7 @@ const adminMfaMiddleware = require('../middleware/adminMfaMiddleware');
 const authorize = require('../middleware/authorize');
 const adminController = require('../controllers/adminController');
 const faqController = require('../controllers/faqController');
+const adminConfigController = require('../controllers/adminConfigController');
 const { PERMISSIONS } = require('../utils/constant');
 
 // File scan for Img and Pdf

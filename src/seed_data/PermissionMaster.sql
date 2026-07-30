@@ -84,4 +84,7 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 
 ('ADMIN_FAQ.LIST', 'List all FAQs for admin', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_FAQ.CREATE', 'Create an FAQ', (select id from "admin" a where a.email = 'admin@test.com'), now()),
-('ADMIN_FAQ.UPDATE', 'Update an FAQ', (select id from "admin" a where a.email = 'admin@test.com'), now());
+('ADMIN_FAQ.UPDATE', 'Update an FAQ', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+
+('ADMIN_CONFIG.VIEW_OTP_CONFIG', 'View OTP configuration', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_CONFIG.UPDATE_OTP_CONFIG', 'Update OTP configuration', (select id from "admin" a where a.email = 'admin@test.com'), now());

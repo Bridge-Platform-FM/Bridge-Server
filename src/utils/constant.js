@@ -96,6 +96,31 @@ const ADMIN_MESSAGES = {
     LOGIN_FAILED: 'Error encountered while logging in'
 }
 
+const ADMIN_MANAGEMENT_MESSAGES = {
+    CREATE_SUCCESS: 'Admin created successfully',
+    CREATE_FAILED: 'Error encountered while creating admin',
+    UPDATE_SUCCESS: 'Admin updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating admin',
+    DELETE_SUCCESS: 'Admin deleted successfully',
+    DELETE_FAILED: 'Error encountered while deleting admin',
+    SUSPEND_SUCCESS: 'Admin suspended successfully',
+    SUSPEND_FAILED: 'Error encountered while suspending admin',
+    ACTIVATE_SUCCESS: 'Admin activated successfully',
+    ACTIVATE_FAILED: 'Error encountered while activating admin',
+    LIST_SUCCESS: 'Admin list fetched successfully',
+    LIST_FAILED: 'Error encountered while fetching admin list',
+    DETAIL_SUCCESS: 'Admin details fetched successfully',
+    DETAIL_FAILED: 'Error encountered while fetching admin details',
+    NOT_FOUND: 'Admin not found',
+    EMAIL_ALREADY_EXISTS: 'An admin with this email already exists',
+    CANNOT_SELF_ACTION: 'You cannot perform this action on your own account',
+    ALREADY_DELETED: 'Admin is already deleted',
+    ALREADY_SUSPENDED: 'Admin is already suspended',
+    ALREADY_ACTIVE: 'Admin is already active',
+    CANNOT_ACTION_DELETED: 'Cannot perform this action on a deleted admin',
+    INVALID_ROLE: 'Only ADMIN role accounts can be managed through this endpoint'
+};
+
 const MATCHING_MESSAGES = {
     MATCH_SUCCESS: 'Matches retrieved successfully',
     MATCH_FAILED: 'Error encountered while retrieving matches',
@@ -193,6 +218,29 @@ const USER_TYPE_VALUES = {
 };
 
 const ADMIN_USER_TYPES = [USER_TYPE_VALUES.ADMIN, USER_TYPE_VALUES.SUPER_ADMIN];
+
+const ADMIN_STATUS = {
+    ACTIVE: 'ACTIVE',
+    SUSPENDED: 'SUSPENDED'
+};
+
+const ADMIN_ACTIVITY_ACTIONS = {
+    CREATED: 'CREATED',
+    UPDATED: 'UPDATED',
+    DELETED: 'DELETED',
+    SUSPENDED: 'SUSPENDED',
+    ACTIVATED: 'ACTIVATED',
+    PERMISSIONS_UPDATED: 'PERMISSIONS_UPDATED'
+};
+
+// Keys for per-admin feature permissions (stored in admin_permission table).
+// These are the checkbox options shown on the admin creation / edit screen.
+// Add new keys here when new admin-facing modules are introduced.
+const ADMIN_PERMISSION_KEYS = {
+    KYC_REVIEW: 'KYC_REVIEW',
+    FAQ_MANAGEMENT: 'FAQ_MANAGEMENT',
+    USER_MANAGEMENT: 'USER_MANAGEMENT'
+};
 
 // ── Permissions ──────────────────────────────────────────────────────────────
 // Keys are namespaced MODULE.ACTION and must match permission_master.permission_key
@@ -304,6 +352,15 @@ const PERMISSIONS = {
     ADMIN_CONFIG: {
         VIEW_OTP_CONFIG: 'ADMIN_CONFIG.VIEW_OTP_CONFIG',
         UPDATE_OTP_CONFIG: 'ADMIN_CONFIG.UPDATE_OTP_CONFIG'
+    },
+    ADMIN_MANAGEMENT: {
+        LIST: 'ADMIN_MANAGEMENT.LIST',
+        VIEW: 'ADMIN_MANAGEMENT.VIEW',
+        CREATE: 'ADMIN_MANAGEMENT.CREATE',
+        UPDATE: 'ADMIN_MANAGEMENT.UPDATE',
+        DELETE: 'ADMIN_MANAGEMENT.DELETE',
+        SUSPEND: 'ADMIN_MANAGEMENT.SUSPEND',
+        ACTIVATE: 'ADMIN_MANAGEMENT.ACTIVATE'
     }
 };
 
@@ -651,5 +708,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
     DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES, PERMISSIONS, USER_TYPES, USER_TYPE_VALUES, ADMIN_USER_TYPES,
     SUBSCRIPTION_PLAN_MESSAGES,
-    DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES
+    DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES,
+    ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS 
 };

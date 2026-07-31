@@ -268,3 +268,24 @@ VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = '
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_CONFIG.UPDATE_OTP_CONFIG'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.LIST'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.VIEW'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.CREATE'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.UPDATE'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.DELETE'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.SUSPEND'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.ACTIVATE'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);

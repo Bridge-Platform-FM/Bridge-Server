@@ -88,4 +88,12 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 ('ADMIN_FAQ.UPDATE', 'Update an FAQ', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('ADMIN_CONFIG.VIEW_OTP_CONFIG', 'View OTP configuration', (select id from "admin" a where a.email = 'admin@test.com'), now()),
-('ADMIN_CONFIG.UPDATE_OTP_CONFIG', 'Update OTP configuration', (select id from "admin" a where a.email = 'admin@test.com'), now());
+('ADMIN_CONFIG.UPDATE_OTP_CONFIG', 'Update OTP configuration', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+
+('ADMIN_MANAGEMENT.LIST', 'List staff accounts', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_MANAGEMENT.VIEW', 'View a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_MANAGEMENT.CREATE', 'Create a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_MANAGEMENT.UPDATE', 'Update a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_MANAGEMENT.DELETE', 'Delete a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_MANAGEMENT.SUSPEND', 'Suspend a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_MANAGEMENT.ACTIVATE', 'Reactivate a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now());

@@ -67,12 +67,35 @@ const getTrialConfig = async (req, res) => {
         return HttpResponse.success(res, {
             message: ADMIN_CONFIG_MESSAGES.CONFIG_FETCH_SUCCESS,
             data: trialConfig,
-            statusCode: 200
-        });
+        }); 
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, {
             message: ADMIN_CONFIG_MESSAGES.CONFIG_FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+
+}
+        
+const resetOtpConfig = async (req, res, next) => {
+    try {
+        const resetOtpConfigResp = await adminConfigService.resetOtpConfig(req.adminId);
+        if (!resetOtpConfigResp.success) {
+            return HttpResponse.error(res, {
+                message: resetOtpConfigResp.message,
+                statusCode: resetOtpConfigResp.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_RESET_SUCCESS,
+            statusCode: 200
+        }); 
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_RESET_FAILED,
             statusCode: 500
         });
     }
@@ -102,4 +125,4 @@ const updateTrialConfig = async (req, res) => {
     }
 };
 
-module.exports = { getOtpConfig, updateOtpConfig, getTrialConfig, updateTrialConfig };
+module.exports = { getOtpConfig, updateOtpConfig, getTrialConfig, updateTrialConfig, resetOtpConfig }

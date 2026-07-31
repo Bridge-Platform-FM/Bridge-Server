@@ -146,12 +146,13 @@ const SESSION_MESSAGES = {
 }
 
 const ADMIN_CONFIG_MESSAGES = {
-    CONFIG_FETCH_FAILED: 'Failed to fetch the configuration',
-    CONFIG_FETCH_SUCCESS: 'Successfully fetched the configuration',
-    CONFIG_UPDATE_FAILED: 'Failed to update the configuration',
-    CONFIG_UPDATE_SUCCESS: 'Successfully updated the configuration',
+    CONFIG_FETCH_SUCCESS: 'OTP configuration fetched successfully',
+    CONFIG_FETCH_FAILED: 'Error encountered while fetching OTP configuration',
+    CONFIG_UPDATE_SUCCESS: 'OTP configuration updated successfully',
+    CONFIG_UPDATE_FAILED: 'Error encountered while updating OTP configuration',
+    CONFIG_RESET_SUCCESS: 'OTP configuration reset to defaults successfully',
+    CONFIG_RESET_FAILED: 'Error encountered while resetting OTP configuration'
 };
-
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
     KYC: 'kyc',
@@ -351,7 +352,8 @@ const PERMISSIONS = {
     },
     ADMIN_CONFIG: {
         VIEW_OTP_CONFIG: 'ADMIN_CONFIG.VIEW_OTP_CONFIG',
-        UPDATE_OTP_CONFIG: 'ADMIN_CONFIG.UPDATE_OTP_CONFIG'
+        UPDATE_OTP_CONFIG: 'ADMIN_CONFIG.UPDATE_OTP_CONFIG',
+        RESET_OTP_CONFIG: 'ADMIN_CONFIG.RESET_OTP_CONFIG'
     },
     ADMIN_MANAGEMENT: {
         LIST: 'ADMIN_MANAGEMENT.LIST',

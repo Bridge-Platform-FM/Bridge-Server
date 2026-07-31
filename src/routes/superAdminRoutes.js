@@ -16,5 +16,6 @@ router.put('/config/otp-config', adminMiddleware, authorize(PERMISSIONS.ADMIN_CO
 router.get('/config/trial-config', adminMiddleware, adminConfigController.getTrialConfig);
 
 router.put('/config/trial-config', adminMiddleware, validate(updateTrialConfigSchema), adminConfigController.updateTrialConfig);
+router.put('/config/otp-config/reset', adminMiddleware, authorize(PERMISSIONS.ADMIN_CONFIG.RESET_OTP_CONFIG), adminConfigController.resetOtpConfig);
 
 module.exports = router;

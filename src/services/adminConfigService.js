@@ -51,6 +51,29 @@ const updateOtpConfig = async (updates, adminId) => {
     }
 };
 
+const resetOtpConfig = async (adminId) => {
+    const transaction = await sequelize.transaction();
+    try {
+        await adminConfigRepository.resetConfigToDefaults(adminId, { transaction });
+
+        await transaction.commit();
+
+        await cacheOtpConfig();
+
+        return ServiceResponse.success({
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_RESET_SUCCESS,
+            statusCode: 200
+        });
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_RESET_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
 const cacheOtpConfig = async () => {
     const config = await getOtpConfig();
     if (!config.success) return;

@@ -179,7 +179,7 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
             is_updated_by_super_admin: isUpdatedBySuperAdmin
         }, { transaction });
 
-        await userRepository.updateUser({ is_active: !is_suspended }, userId, { transaction });
+        await userRepository.updateUser({ is_user_active: !is_suspended }, userId, { transaction });
 
         await transaction.commit();
 

@@ -575,6 +575,7 @@ const USER_LIMIT_CONFIG_MESSAGES = {
 
 const USER_SUSPENSION_MESSAGES = {
     USER_ID_REQUIRED: 'userId is required',
+    IS_SUSPENDED_REQUIRED: 'isSuspended is required and must be a boolean',
     SUSPENSION_REASON_REQUIRED: 'suspension_reason is required when suspending a user',
     FORBIDDEN_SUPER_ADMIN_LOCK: 'This user\'s suspension status was last set by a super admin and cannot be changed by an admin.',
     UPDATE_SUCCESS: 'User suspension status updated successfully.',

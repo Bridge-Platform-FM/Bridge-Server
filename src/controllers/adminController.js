@@ -375,6 +375,10 @@ const updateUserSuspension = async (req, res, next) => {
             return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.USER_ID_REQUIRED, statusCode: 400 });
         }
 
+        if (typeof isSuspended !== 'boolean') {
+            return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.IS_SUSPENDED_REQUIRED, statusCode: 400 });
+        }
+
         if (isSuspended && !suspensionReason) {
             return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.SUSPENSION_REASON_REQUIRED, statusCode: 400 });
         }

@@ -25,7 +25,7 @@ router.get('/get-user-list', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.L
 
 router.get('/get-user-kyc_docs', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.VIEW_KYC_DOCS), adminController.getUserKycDocs);
 
-router.put('/users/suspension', adminMiddleware, adminController.updateUserSuspension);
+router.put('/users/suspension', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.SUSPENSION_ACTION), adminController.updateUserSuspension);
 
 router.put('/kyc/document-action', adminMiddleware, authorize(PERMISSIONS.ADMIN_KYC.DOCUMENT_ACTION), adminController.kycDocumentAction);
 

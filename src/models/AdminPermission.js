@@ -3,7 +3,7 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-    const Admin = sequelize.define('Admin', {
+    const AdminPermission = sequelize.define('AdminPermission', {
         id: {
             type: DataTypes.UUID,
             primaryKey: true,
@@ -11,37 +11,19 @@ module.exports = (sequelize) => {
             allowNull: false,
             field: 'id'
         },
-        name: {
+        admin_id: {
+            type: DataTypes.UUID,
+            allowNull: false
+        },
+        permission_key: {
             type: DataTypes.STRING,
             allowNull: false
         },
-        email: {
-            type: DataTypes.STRING,
-            allowNull: true,
-            unique: true
-        },
-        password: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        role: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        status: {
-            type: DataTypes.STRING,
+        is_allowed: {
+            type: DataTypes.BOOLEAN,
             allowNull: false,
-            defaultValue: 'ACTIVE'
+            defaultValue: false
         },
-        country_code: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        mobile_number: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -73,11 +55,26 @@ module.exports = (sequelize) => {
             allowNull: true
         }
     }, {
-        tableName: 'admin',
+        tableName: 'admin_permission',
         timestamps: true,
         createdAt: 'created_at',
-        updatedAt: 'updated_at'
+        updatedAt: 'updated_at',
+        indexes: [
+            {
+                name: 'admin_permission_admin_id_permission_key_active',
+                unique: true,
+                fields: ['admin_id', 'permission_key'],
+                where: { is_deleted: false }
+            }
+        ]
     });
 
-    return Admin;
+    AdminPermission.associate = (models) => {
+        AdminPermission.belongsTo(models.Admin, {
+            foreignKey: 'admin_id',
+            as: 'admin'
+        });
+    };
+
+    return AdminPermission;
 };

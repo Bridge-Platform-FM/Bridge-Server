@@ -56,6 +56,7 @@ const getUserList = async () => {
             u.id as user_id,
             u.first_name, 
             u.last_name, 
+            c.id as company_id,
             c.company_email, 
             c.company_name, 
             c.country_code, 
@@ -63,6 +64,7 @@ const getUserList = async () => {
             c.is_email_verified, 
             c.is_mobile_number_verified, 
             c.kyc_status,
+            u.is_active,
             (select crm.role_code from company_role_master crm where id = cur.role_id) as role
         from "user" u 
         join company c on u.company_email = c.company_email 

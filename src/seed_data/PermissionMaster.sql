@@ -75,6 +75,7 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 
 ('ADMIN_USER.LIST', 'List company users', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_USER.VIEW_KYC_DOCS', 'View a user''s KYC documents', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_USER.SUSPENSION_ACTION', 'Suspend or activate a user', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('ADMIN_KYC.DOCUMENT_ACTION', 'Approve or reject a KYC document', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_KYC.REVIEW_ACTION', 'Final KYC review action', (select id from "admin" a where a.email = 'admin@test.com'), now()),

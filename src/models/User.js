@@ -68,6 +68,12 @@ module.exports = (sequelize) => {
             defaultValue: false
         },
 
+        is_user_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true
+        }, // admin or super admin can change this field
+
         company_email: {
             type: DataTypes.STRING,
             allowNull: true,

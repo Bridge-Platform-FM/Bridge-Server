@@ -179,11 +179,11 @@ const ADMIN_ROLES_CODE = {
 };
 
 const USER_TYPES = {
-    "B2B": "USER",
-    "INVESTOR": "USER",
-    "STARTUP": "USER",
-    "ADMIN": "ADMIN",
-    "SUPER_ADMIN": "SUPER_ADMIN"
+    'B2B': 'USER',
+    'INVESTOR': 'USER',
+    'STARTUP': 'USER',
+    'ADMIN': 'ADMIN',
+    'SUPER_ADMIN': 'SUPER_ADMIN'
 }
 
 const USER_TYPE_VALUES = {
@@ -285,7 +285,8 @@ const PERMISSIONS = {
     },
     ADMIN_USER: {
         LIST: 'ADMIN_USER.LIST',
-        VIEW_KYC_DOCS: 'ADMIN_USER.VIEW_KYC_DOCS'
+        VIEW_KYC_DOCS: 'ADMIN_USER.VIEW_KYC_DOCS',
+        SUSPENSION_ACTION: 'ADMIN_USER.SUSPENSION_ACTION'
     },
     ADMIN_KYC: {
         DOCUMENT_ACTION: 'ADMIN_KYC.DOCUMENT_ACTION',
@@ -572,6 +573,15 @@ const USER_LIMIT_CONFIG_MESSAGES = {
     INVALID_USER_ID: 'Invalid user ID provided'
 };
 
+const USER_SUSPENSION_MESSAGES = {
+    USER_ID_REQUIRED: 'userId is required',
+    IS_SUSPENDED_REQUIRED: 'isSuspended is required and must be a boolean',
+    SUSPENSION_REASON_REQUIRED: 'suspension_reason is required when suspending a user',
+    FORBIDDEN_SUPER_ADMIN_LOCK: 'This user\'s suspension status was last set by a super admin and cannot be changed by an admin.',
+    UPDATE_SUCCESS: 'User suspension status updated successfully.',
+    UPDATE_FAILED: 'Failed to update user suspension status.'
+};
+
 const PREMIUM_DAYS_LIMIT_DEFAULT = 30;
 
 const USER_LIMIT_DEFAULTS = {
@@ -640,5 +650,5 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
     DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES, PERMISSIONS, USER_TYPES, USER_TYPE_VALUES, ADMIN_USER_TYPES,
     SUBSCRIPTION_PLAN_MESSAGES,
-    DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS
+    DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES
 };

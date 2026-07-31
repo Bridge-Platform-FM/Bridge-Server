@@ -87,4 +87,59 @@ const getOtpConfigValue = async (lookup) => {
     return Number(process.env[lookup]);
 };
 
-module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue };
+const getTrialConfig = async () => {
+    try {
+        const config = await adminConfigRepository.getAllTrialConfig();
+
+        // `value` is stored as text; expose a typed copy so clients don't have to
+        // coerce it themselves (the string "false" is truthy everywhere).
+        const formattedConfig = config.map((row) => {
+            const plainRow = row.toJSON();
+            let formatted_value = plainRow.value;
+
+            try {
+                formatted_value = formatValue(plainRow.value, plainRow.data_type, plainRow.unit);
+            } catch (error) {
+                errorLogger.error(`[AdminConfigService] Failed to format trial config ${plainRow.lookup}:`, error.message);
+            }
+
+            return { ...plainRow, formatted_value };
+        });
+
+        return ServiceResponse.success({
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_FETCH_SUCCESS,
+            data: formattedConfig,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+const updateTrialConfig = async (updates, adminId) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const updated = await adminConfigRepository.bulkUpdateTrialConfig(updates, adminId, { transaction });
+
+        await transaction.commit();
+
+        return ServiceResponse.success({
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_UPDATE_SUCCESS,
+            data: updated,
+            statusCode: 200
+        });
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_UPDATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue, getTrialConfig, updateTrialConfig };

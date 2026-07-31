@@ -630,7 +630,8 @@ const UNITS = {
     DAY: 'day',
     MONTH: 'month',
     YEAR: 'year',
-    NUMBER: 'number'
+    NUMBER: 'number',
+    FLAG: 'flag'
 }
 
 const REDIS_BASE_KEYS = {

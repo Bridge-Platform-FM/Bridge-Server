@@ -8,6 +8,7 @@ const authorize = require('../middleware/authorize');
 const adminController = require('../controllers/adminController');
 const faqController = require('../controllers/faqController');
 const adminConfigController = require('../controllers/adminConfigController');
+const adminManagementRoutes = require('./adminManagementRoutes');
 const { PERMISSIONS } = require('../utils/constant');
 
 // File scan for Img and Pdf
@@ -46,6 +47,9 @@ router.put('/faqs/:id', adminMiddleware, authorize(PERMISSIONS.ADMIN_FAQ.UPDATE)
 // Matching Engine Dashboard
 // TODO: add permission for this route
 router.get('/matching-engine/stats', adminMiddleware, adminController.getMatchingEngineStats);
+
+// Super Admin — Admin Management
+router.use('/management', adminManagementRoutes);
 
 
 module.exports = router;

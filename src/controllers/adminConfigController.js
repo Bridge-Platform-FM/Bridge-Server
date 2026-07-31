@@ -53,4 +53,53 @@ const updateOtpConfig = async (req, res, next) => {
     }
 };
 
-module.exports = { getOtpConfig, updateOtpConfig };
+const getTrialConfig = async (req, res) => {
+    try {
+        const getTrialConfigResp = await adminConfigService.getTrialConfig();
+        if (!getTrialConfigResp.success) {
+            return HttpResponse.error(res, {
+                message: getTrialConfigResp.message,
+                statusCode: getTrialConfigResp.statusCode
+            });
+        }
+        const trialConfig = getTrialConfigResp.data;
+
+        return HttpResponse.success(res, {
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_FETCH_SUCCESS,
+            data: trialConfig,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+const updateTrialConfig = async (req, res) => {
+    try {
+        const { trialConfig } = req.body;
+        const updateTrialConfigResp = await adminConfigService.updateTrialConfig(trialConfig, req.adminId);
+        if (!updateTrialConfigResp.success) {
+            return HttpResponse.error(res, {
+                message: updateTrialConfigResp.message,
+                statusCode: updateTrialConfigResp.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_UPDATE_SUCCESS,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: ADMIN_CONFIG_MESSAGES.CONFIG_UPDATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+module.exports = { getOtpConfig, updateOtpConfig, getTrialConfig, updateTrialConfig };

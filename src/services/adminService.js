@@ -3,10 +3,11 @@ const bcrypt = require('bcrypt');
 const adminRepository = require('../repositories/adminRepository');
 const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
+const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
 const { generateAccessToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES, ADMIN_USER_TYPES, TOKEN_TYPES } = require('../utils/constant');
+const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES, ADMIN_ROLES_CODE, ADMIN_USER_TYPES, TOKEN_TYPES, USER_SUSPENSION_MESSAGES } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
 const { sequelize } = require('../models');
@@ -155,7 +156,46 @@ const updateUserLimitConfig = async ({ userId, adminId, userType, payload }) => 
 };
 
 
-module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig, getMatchingEngineStats };
+const updateUserSuspension = async (userId, companyId, adminId, role, is_suspended, suspension_reason ) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const isUpdatedBySuperAdmin = role === ADMIN_ROLES_CODE.SUPER_ADMIN;
+
+        const latestHistory = await userSuspensionHistoryRepository.findLatestByUserId(userId, { transaction });
+        if (latestHistory?.is_updated_by_super_admin && !isUpdatedBySuperAdmin) {
+            await transaction.rollback();
+            return ServiceResponse.error({
+                message: USER_SUSPENSION_MESSAGES.FORBIDDEN_SUPER_ADMIN_LOCK,
+                statusCode: 403
+            });
+        }
+
+        const history = await userSuspensionHistoryRepository.create({
+            user_id: userId,
+            company_id: companyId,
+            is_suspended,
+            suspension_reason,
+            created_by: adminId,
+            is_updated_by_super_admin: isUpdatedBySuperAdmin
+        }, { transaction });
+
+        await userRepository.updateUser({ is_active: !is_suspended }, userId, { transaction });
+
+        await transaction.commit();
+
+        return ServiceResponse.success({
+            message: USER_SUSPENSION_MESSAGES.UPDATE_SUCCESS,
+            data: history,
+            statusCode: 200
+        });
+    } catch (error) {
+        await transaction.rollback();
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_SUSPENSION_MESSAGES.UPDATE_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig, updateUserSuspension, getMatchingEngineStats };
 
 
 // ─── Matching Engine Dashboard ─────────────────────────────────────────────────

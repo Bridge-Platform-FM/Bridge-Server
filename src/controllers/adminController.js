@@ -1,7 +1,7 @@
 'use strict';
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid');
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES } = require('../utils/constant');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES, USER_SUSPENSION_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
@@ -365,6 +365,40 @@ const updateUserLimitConfig = async (req, res, next) => {
     }
 };
 
+const updateUserSuspension = async (req, res, next) => {
+    try {
+        const adminId = req.adminId;
+        const role = req.role;
+        const { userId, companyId, isSuspended, suspensionReason } = req.body;
+
+        if (!userId) {
+            return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.USER_ID_REQUIRED, statusCode: 400 });
+        }
+
+        if (isSuspended && !suspensionReason) {
+            return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.SUSPENSION_REASON_REQUIRED, statusCode: 400 });
+        }
+
+        const result = await adminService.updateUserSuspension(
+            userId,
+            companyId,
+            adminId,
+            role,
+            isSuspended,
+            suspensionReason
+        );
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.UPDATE_FAILED, statusCode: 500 });
+    }
+};
+
 const getMatchingEngineStats = async (req, res, next) => {
     try {
         const result = await adminService.getMatchingEngineStats();
@@ -378,4 +412,4 @@ const getMatchingEngineStats = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, getMatchingEngineStats, logout };
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, updateUserSuspension, getMatchingEngineStats, logout };

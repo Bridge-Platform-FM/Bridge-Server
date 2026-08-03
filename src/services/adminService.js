@@ -5,6 +5,8 @@ const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
 const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
 const suspensionCacheRepository = require('../repositories/suspensionCacheRepository');
+const userSessionRepository = require('../repositories/userSessionRepository');
+const sessionCacheRepository = require('../repositories/sessionCacheRepository');
 const { generateAccessToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
@@ -182,6 +184,13 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
 
         await userRepository.updateUser({ is_user_suspended: is_suspended }, userId, { transaction });
 
+        // Suspension must kill every existing session immediately, otherwise
+        // a token issued before the suspension keeps passing authMiddleware's
+        // jti check until it naturally expires.
+        if (is_suspended) {
+            await userSessionRepository.revokeAllSessionsByUser(userId, { transaction });
+        }
+
         await transaction.commit();
 
         // Keep the Redis suspension cache in sync so authMiddleware's
@@ -200,6 +209,9 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
                 // role: userRole?.[0]?.role_code ?? null,
                 suspendedAt: history.created_at
             });
+            // Drop the cached active-jti set too, so isSessionJtiValid can't
+            // serve a stale VALID from Redis for a session we just revoked.
+            await sessionCacheRepository.invalidateUser(userId);
         } else {
             await suspensionCacheRepository.clearSuspension(userId);
         }

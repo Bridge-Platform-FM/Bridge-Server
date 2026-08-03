@@ -3,7 +3,7 @@
 const { errorLogger } = require('../configs/logger');
 const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES, ROLES, USER_SUSPENSION_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
-const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
+const { verifyAccessToken, COOKIE_NAMES, clearCookieOptions } = require('../utils/token');
 
 const userSessionRepository = require('../repositories/userSessionRepository');
 const sessionCacheRepository = require('../repositories/sessionCacheRepository');
@@ -124,6 +124,8 @@ const authMiddleware = async (req, res, next) => {
         const suspension = await checkUserSuspension(decoded.userId);
 
         if (suspension) {
+            res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, clearCookieOptions());
+            res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, clearCookieOptions());
             return HttpResponse.error(res, {
                 message: USER_SUSPENSION_MESSAGES.ACCOUNT_SUSPENDED,
                 statusCode: 403,

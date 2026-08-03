@@ -4,6 +4,9 @@ const adminRepository = require('../repositories/adminRepository');
 const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
 const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
+const suspensionCacheRepository = require('../repositories/suspensionCacheRepository');
+const userSessionRepository = require('../repositories/userSessionRepository');
+const sessionCacheRepository = require('../repositories/sessionCacheRepository');
 const { generateAccessToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
@@ -52,7 +55,6 @@ const login = async (email, password) => {
             statusCode: 200
         });
     } catch (error) {
-        console.log(error);
         errorLogger.error(error);
         return ServiceResponse.error({ message: ADMIN_MESSAGES.LOGIN_FAILED, statusCode: 500 });
     }
@@ -182,7 +184,37 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
 
         await userRepository.updateUser({ is_user_suspended: is_suspended }, userId, { transaction });
 
+        // Suspension must kill every existing session immediately, otherwise
+        // a token issued before the suspension keeps passing authMiddleware's
+        // jti check until it naturally expires.
+        if (is_suspended) {
+            await userSessionRepository.revokeAllSessionsByUser(userId, { transaction });
+        }
+
         await transaction.commit();
+
+        // Keep the Redis suspension cache in sync so authMiddleware's
+        // per-request suspension check reflects this change on the very
+        // next authenticated request, without waiting for the next app
+        // restart. Best-effort: Postgres already committed and is the
+        // source of truth, so a Redis hiccup here must not fail the
+        // admin's request — worst case it self-heals on the
+        // next startup load.
+        if (is_suspended) {
+            // const userRole = await userRepository.getCompanyUser_role(companyId, userId);
+            await suspensionCacheRepository.cacheSuspension(userId, {
+                reason: suspension_reason,
+                companyId,
+                // roleId: userRole?.[0]?.id ?? null,
+                // role: userRole?.[0]?.role_code ?? null,
+                suspendedAt: history.created_at
+            });
+            // Drop the cached active-jti set too, so isSessionJtiValid can't
+            // serve a stale VALID from Redis for a session we just revoked.
+            await sessionCacheRepository.invalidateUser(userId);
+        } else {
+            await suspensionCacheRepository.clearSuspension(userId);
+        }
 
         return ServiceResponse.success({
             message: USER_SUSPENSION_MESSAGES.UPDATE_SUCCESS,

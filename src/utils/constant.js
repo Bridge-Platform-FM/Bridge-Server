@@ -210,7 +210,7 @@ const USER_TYPES = {
     'STARTUP': 'USER',
     'ADMIN': 'ADMIN',
     'SUPER_ADMIN': 'SUPER_ADMIN'
-}
+};
 
 const USER_TYPE_VALUES = {
     USER: 'USER',
@@ -456,10 +456,10 @@ const DEAL_ROOM_MESSAGES = {
 };
 
 const DEAL_ROOM_STAGES = {
-    INITIAL_CONNECTION: "Initial Connection",
-    NEGOTIATION: "Negotiation",
-    DUE_DILIGENCE: "Due Diligence",
-    CLOSED: "Closed"
+    INITIAL_CONNECTION: 'Initial Connection',
+    NEGOTIATION: 'Negotiation',
+    DUE_DILIGENCE: 'Due Diligence',
+    CLOSED: 'Closed'
 };
 
 const DEAL_ROOM_STAGE_REQUEST_STATUS = {
@@ -638,7 +638,8 @@ const USER_SUSPENSION_MESSAGES = {
     SUSPENSION_REASON_REQUIRED: 'suspension_reason is required when suspending a user',
     FORBIDDEN_SUPER_ADMIN_LOCK: 'This user\'s suspension status was last set by a super admin and cannot be changed by an admin.',
     UPDATE_SUCCESS: 'User suspension status updated successfully.',
-    UPDATE_FAILED: 'Failed to update user suspension status.'
+    UPDATE_FAILED: 'Failed to update user suspension status.',
+    ACCOUNT_SUSPENDED: 'Your account has been suspended. Please contact support.'
 };
 
 const PREMIUM_DAYS_LIMIT_DEFAULT = 30;
@@ -691,11 +692,12 @@ const UNITS = {
     YEAR: 'year',
     NUMBER: 'number',
     FLAG: 'flag'
-}
+};
 
 const REDIS_BASE_KEYS = {
-    CONFIG_OTP_CONFIG: 'config:otp_config'
-}
+    CONFIG_OTP_CONFIG: 'config:otp_config',
+    SUSPENDED_USERS_HASH: 'suspended_users'
+};
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
     USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,

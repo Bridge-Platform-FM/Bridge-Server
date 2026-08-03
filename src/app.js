@@ -17,6 +17,7 @@ const db = require('./models');
 const redis = require('./configs/redis');
 const permissionService = require('./services/permissionService');
 const adminConfigService = require('./services/adminConfigService');
+const suspensionCacheService = require('./services/suspensionCacheService');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
@@ -99,6 +100,8 @@ server.listen(SERVER_PORT, () => {
             console.info('Database connected successfully.');
             adminConfigService.cacheOtpConfig()
                 .catch(err => console.error('Failed to cache OTP config into Redis:', err));
+            suspensionCacheService.loadSuspendedUsersIntoCache()
+                .catch(err => console.error('Failed to load suspended users into Redis:', err));
         })
         .catch(err => console.error('Unable to connect to the database:', err));
     console.info(`Server is running on port http://localhost:${SERVER_PORT}`);

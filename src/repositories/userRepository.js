@@ -77,6 +77,33 @@ const getUserList = async () => {
     );
 };
 
+const getSuspendedUsersWithRoleAndCompany = async () => {
+    return await sequelize.query(
+        `SELECT
+            u.id AS "userId",
+            c.id AS "companyId",
+            cur.role_id AS "roleId",
+            crm.role_code AS "role",
+            h.suspension_reason AS "reason",
+            h.created_at AS "suspendedAt"
+        FROM "user" u
+        JOIN company_user_role cur ON cur.user_id = u.id AND cur.is_default_role IS TRUE AND cur.is_deleted IS NOT TRUE
+        JOIN company_role_master crm ON crm.id = cur.role_id
+        JOIN company c ON c.id = cur.company_id
+        LEFT JOIN LATERAL (
+            SELECT suspension_reason, created_at
+            FROM user_suspension_history
+            WHERE user_id = u.id
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) h ON true
+        WHERE u.is_user_suspended IS TRUE AND u.is_deleted IS NOT TRUE`,
+        {
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
 const getUserKycDocs = async () => {
     return await sequelize.query(
         `SELECT
@@ -205,6 +232,7 @@ module.exports = {
     findByEmail,
     getCompanyUser_role,
     getUserList,
+    getSuspendedUsersWithRoleAndCompany,
     getUserKycDocs,
     searchUsers,
     getUserById,

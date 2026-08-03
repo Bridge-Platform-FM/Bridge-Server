@@ -1,12 +1,15 @@
 'use strict';
 
 const { errorLogger } = require('../configs/logger');
-const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES, ROLES } = require('../utils/constant');
+const { AUTH_MESSAGES, TOKEN_TYPES, ADMIN_USER_TYPES, ROLES, USER_SUSPENSION_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { verifyAccessToken, COOKIE_NAMES } = require('../utils/token');
 
 const userSessionRepository = require('../repositories/userSessionRepository');
 const sessionCacheRepository = require('../repositories/sessionCacheRepository');
+const suspensionCacheRepository = require('../repositories/suspensionCacheRepository');
+const userRepository = require('../repositories/userRepository');
+const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
 const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
 
 /**
@@ -43,6 +46,34 @@ const isSessionJtiValid = async (userId, jti) => {
         }
 
         return true;
+    }
+};
+
+/**
+ * Suspension lookup. Normal path is a synchronous, in-memory Map read (no
+ * network call at all — see suspensionCacheRepository's in-process mirror of
+ * the suspended_users Redis hash). The only time this falls back to Redis or
+ * Postgres is the brief cold-start window before the boot-time hydration
+ * (suspensionCacheService.loadSuspendedUsersIntoCache) has completed, so a
+ * suspended user can never slip through right after a restart either.
+ */
+const checkUserSuspension = async (userId) => {
+    if (suspensionCacheRepository.isMemoryHydrated()) {
+        return suspensionCacheRepository.getSuspensionFromMemory(userId);
+    }
+
+    try {
+        return await suspensionCacheRepository.getSuspension(userId);
+    } catch (error) {
+        errorLogger.error('[authMiddleware] Redis suspension check failed, falling back to DB:', error.message);
+
+        const user = await userRepository.getUserById(userId);
+        if (!user?.is_user_suspended) {
+            return null;
+        }
+
+        const latestHistory = await userSuspensionHistoryRepository.findLatestByUserId(userId);
+        return { reason: latestHistory?.suspension_reason ?? null };
     }
 };
 
@@ -88,6 +119,17 @@ const authMiddleware = async (req, res, next) => {
         req.role = decoded.role;
         req.userType = decoded.userType;
         req.jti = decoded?.jti; // lets controllers flag the current session
+
+        // Per-request suspension check — runs for every decoded token, regardless of user type.
+        const suspension = await checkUserSuspension(decoded.userId);
+
+        if (suspension) {
+            return HttpResponse.error(res, {
+                message: USER_SUSPENSION_MESSAGES.ACCOUNT_SUSPENDED,
+                statusCode: 403,
+                data: { is_user_suspended: true, reason: suspension.reason ?? null }
+            });
+        }
 
         /*
          * Per-request session validation.

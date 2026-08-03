@@ -118,7 +118,8 @@ const ADMIN_MANAGEMENT_MESSAGES = {
     ALREADY_SUSPENDED: 'Admin is already suspended',
     ALREADY_ACTIVE: 'Admin is already active',
     CANNOT_ACTION_DELETED: 'Cannot perform this action on a deleted admin',
-    INVALID_ROLE: 'Only ADMIN role accounts can be managed through this endpoint'
+    INVALID_ROLE: 'Only ADMIN role accounts can be managed through this endpoint',
+    ACCOUNT_SUSPENDED: 'Your admin account has been suspended. Please contact a super admin.'
 };
 
 const MATCHING_MESSAGES = {
@@ -696,7 +697,8 @@ const UNITS = {
 
 const REDIS_BASE_KEYS = {
     CONFIG_OTP_CONFIG: 'config:otp_config',
-    SUSPENDED_USERS_HASH: 'suspended_users'
+    SUSPENDED_USERS_HASH: 'suspended_users',
+    SUSPENDED_ADMINS_HASH: 'suspended_admins'
 };
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,

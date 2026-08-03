@@ -28,10 +28,10 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: false
         },
-        status: {
-            type: DataTypes.STRING,
+        is_admin_suspended: {
+            type: DataTypes.BOOLEAN,
             allowNull: false,
-            defaultValue: 'ACTIVE'
+            defaultValue: false
         },
         country_code: {
             type: DataTypes.STRING,

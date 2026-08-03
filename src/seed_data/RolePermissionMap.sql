@@ -289,3 +289,6 @@ VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = '
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_MANAGEMENT.ACTIVATE'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO public.role_permission_map
+(id, user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_CONFIG.RESET_OTP_CONFIG'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);

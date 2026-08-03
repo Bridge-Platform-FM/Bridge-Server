@@ -1,9 +1,11 @@
 'use strict';
 const bcrypt = require('bcrypt');
 const adminManagementRepository = require('../repositories/adminManagementRepository');
+const adminSuspensionHistoryRepository = require('../repositories/adminSuspensionHistoryRepository');
+const adminSuspensionCacheRepository = require('../repositories/adminSuspensionCacheRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_ROLES_CODE } = require('../utils/constant');
+const { ADMIN_MANAGEMENT_MESSAGES, ADMIN_ACTIVITY_ACTIONS, ADMIN_ROLES_CODE } = require('../utils/constant');
 const { sequelize } = require('../models');
 
 const SALT_ROUNDS = 10;
@@ -84,7 +86,7 @@ const createAdmin = async ({ name, email, password, country_code, mobile_number,
             country_code: country_code || null,
             mobile_number: mobile_number || null,
             role: ADMIN_ROLES_CODE.ADMIN,
-            status: ADMIN_STATUS.ACTIVE,
+            is_admin_suspended: false,
             created_by: performedBy
         }, { transaction });
 
@@ -319,7 +321,7 @@ const suspendAdmin = async ({ adminId, reason, performedBy }) => {
             });
         }
 
-        if (admin.status === ADMIN_STATUS.SUSPENDED) {
+        if (admin.is_admin_suspended) {
             await transaction.rollback();
             return ServiceResponse.error({
                 message: ADMIN_MANAGEMENT_MESSAGES.ALREADY_SUSPENDED,
@@ -328,7 +330,7 @@ const suspendAdmin = async ({ adminId, reason, performedBy }) => {
         }
 
         await adminManagementRepository.updateAdmin(adminId, {
-            status: ADMIN_STATUS.SUSPENDED,
+            is_admin_suspended: true,
             updated_by: performedBy,
             updated_at: new Date()
         }, { transaction });
@@ -341,7 +343,25 @@ const suspendAdmin = async ({ adminId, reason, performedBy }) => {
             metadata: { adminEmail: admin.email, adminName: admin.name }
         }, { transaction });
 
+        const history = await adminSuspensionHistoryRepository.create({
+            admin_id: adminId,
+            is_suspended: true,
+            suspension_reason: reason,
+            created_by: performedBy
+        }, { transaction });
+
         await transaction.commit();
+
+        // Keep the Redis suspension cache in sync so adminMiddleware's
+        // per-request suspension check reflects this change on the very
+        // next authenticated request, without waiting for the next app
+        // restart. Best-effort: Postgres already committed and is the
+        // source of truth, so a Redis hiccup here must not fail the
+        // admin's request — worst case it self-heals on the next startup load.
+        await adminSuspensionCacheRepository.cacheSuspension(adminId, {
+            reason,
+            suspendedAt: history.created_at
+        });
 
         return ServiceResponse.success({
             message: ADMIN_MANAGEMENT_MESSAGES.SUSPEND_SUCCESS,
@@ -393,7 +413,7 @@ const activateAdmin = async ({ adminId, reason, performedBy }) => {
             });
         }
 
-        if (admin.status === ADMIN_STATUS.ACTIVE) {
+        if (!admin.is_admin_suspended) {
             await transaction.rollback();
             return ServiceResponse.error({
                 message: ADMIN_MANAGEMENT_MESSAGES.ALREADY_ACTIVE,
@@ -402,7 +422,7 @@ const activateAdmin = async ({ adminId, reason, performedBy }) => {
         }
 
         await adminManagementRepository.updateAdmin(adminId, {
-            status: ADMIN_STATUS.ACTIVE,
+            is_admin_suspended: false,
             updated_by: performedBy,
             updated_at: new Date()
         }, { transaction });
@@ -415,7 +435,17 @@ const activateAdmin = async ({ adminId, reason, performedBy }) => {
             metadata: { adminEmail: admin.email, adminName: admin.name }
         }, { transaction });
 
+        await adminSuspensionHistoryRepository.create({
+            admin_id: adminId,
+            is_suspended: false,
+            suspension_reason: reason,
+            created_by: performedBy
+        }, { transaction });
+
         await transaction.commit();
+
+        // Best-effort, mirrors the note in suspendAdmin above.
+        await adminSuspensionCacheRepository.clearSuspension(adminId);
 
         return ServiceResponse.success({
             message: ADMIN_MANAGEMENT_MESSAGES.ACTIVATE_SUCCESS,

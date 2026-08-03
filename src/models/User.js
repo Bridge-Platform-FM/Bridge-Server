@@ -68,10 +68,10 @@ module.exports = (sequelize) => {
             defaultValue: false
         },
 
-        is_user_active: {
+        is_user_suspended: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
-            defaultValue: true
+            defaultValue: false
         }, // admin or super admin can change this field
 
         company_email: {

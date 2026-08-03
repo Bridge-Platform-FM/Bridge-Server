@@ -52,6 +52,7 @@ const login = async (email, password) => {
             statusCode: 200
         });
     } catch (error) {
+        console.log(error);
         errorLogger.error(error);
         return ServiceResponse.error({ message: ADMIN_MESSAGES.LOGIN_FAILED, statusCode: 500 });
     }
@@ -179,7 +180,7 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
             is_updated_by_super_admin: isUpdatedBySuperAdmin
         }, { transaction });
 
-        await userRepository.updateUser({ is_user_active: !is_suspended }, userId, { transaction });
+        await userRepository.updateUser({ is_user_suspended: is_suspended }, userId, { transaction });
 
         await transaction.commit();
 

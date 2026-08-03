@@ -165,4 +165,4 @@ const updateTrialConfig = async (updates, adminId) => {
     }
 };
 
-module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue, getTrialConfig, updateTrialConfig };
+module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue, getTrialConfig, updateTrialConfig, resetOtpConfig };

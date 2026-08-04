@@ -10,6 +10,11 @@ const userService = require('../services/userService');
 const kycService = require('../services/kycService');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions, generateAccessToken, generateRefreshToken } = require('../utils/token');
 const env = require('../configs/env_configs');
+const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
+const adminSessionRepository = require('../repositories/adminSessionRepository');
+const adminSessionCacheRepository = require('../repositories/adminSessionCacheRepository');
+const adminSessionService = require('../services/adminSessionService');
+const { parseDeviceInfo } = require('../utils/deviceInfo');
 
 const ACCESS_COOKIE_OPTS = {
     httpOnly: true,
@@ -108,12 +113,9 @@ const verifyMfaOtp = async (req, res, next) => {
             return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
         }
 
-        // OTP passed: exchange the MFA token for the full access/refresh pair and
-        // clear the MFA cookie — mirrors the user verify-otp flow.
-        // Admins aren't tracked in user_sessions, but the token still carries a
-        // jti so it passes authMiddleware's `if (!jti)` guard.
+        const jti = uuidv4();
         const payload = {
-            jti: uuidv4(),
+            jti,
             adminId: admin.id,
             email: admin.email,
             mobileNumber: admin.mobile_number,
@@ -127,7 +129,35 @@ const verifyMfaOtp = async (req, res, next) => {
         res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
         res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
 
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { userId: admin.id, tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN, first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
+        // Create admin session row and prime the Redis cache.
+        // Wrapped in its own try/catch so a session-tracking failure never
+        // prevents the admin from logging in.
+        if (SESSION_LIMIT_ENABLED) {
+            try {
+                const deviceInfo = parseDeviceInfo(req.headers);
+                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days, mirrors refresh token
+                await adminSessionRepository.createSession({ id: admin.id }, jti, deviceInfo, req.ip, expiresAt);
+
+                // Prime Redis so the very next request hits cache, not Postgres
+                const activeSessions = await adminSessionRepository.getActiveSessionsByAdmin(admin.id);
+                const activeJtis = activeSessions.map((s) => s.token_jti);
+                await adminSessionCacheRepository.cacheActiveJtis(admin.id, activeJtis);
+            } catch (sessionError) {
+                errorLogger.error('[adminController.verifyMfaOtp] Failed to create admin session:', sessionError);
+            }
+        }
+
+        return HttpResponse.success(res, {
+            message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
+            data: {
+                userId: admin.id,
+                tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN,
+                first_name: admin.name,
+                role: admin.role,
+                redirectRoute
+            },
+            statusCode: 200
+        });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
@@ -299,8 +329,21 @@ const getUserLimitConfig = async (req, res, next) => {
     }
 };
 
+/**
+ * POST /api/v1/admin/auth/logout
+ * Revokes the current admin session (if SESSION_LIMIT_ENABLED) then clears cookies.
+ * req.adminId and req.jti are set by adminMiddleware.
+ */
 const logout = async (req, res, next) => {
     try {
+        if (SESSION_LIMIT_ENABLED && req.jti && req.adminId) {
+            const logoutResult = await adminSessionService.logoutCurrentSession(req.adminId, req.jti);
+            if (!logoutResult.success) {
+                // Log but don't fail — cookies must always be cleared
+                errorLogger.error('[adminController.logout] Session revocation failed:', logoutResult.message);
+            }
+        }
+
         res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, clearCookieOptions());
         res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, clearCookieOptions());
 

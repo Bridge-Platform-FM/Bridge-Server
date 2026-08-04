@@ -89,6 +89,7 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 
 ('ADMIN_CONFIG.VIEW_OTP_CONFIG', 'View OTP configuration', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_CONFIG.UPDATE_OTP_CONFIG', 'Update OTP configuration', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_CONFIG.RESET_OTP_CONFIG', 'Reset OTP config to default', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('ADMIN_MANAGEMENT.LIST', 'List staff accounts', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_MANAGEMENT.VIEW', 'View a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),

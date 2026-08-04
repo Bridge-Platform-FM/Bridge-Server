@@ -1,6 +1,7 @@
 'use strict';
-const { Admin, AdminActivityLog, AdminPermission } = require('../models');
-const { Op } = require('sequelize');
+const { Admin, AdminActivityLog, AdminPermission, sequelize } = require('../models');
+const { Op, QueryTypes } = require('sequelize');
+const { ADMIN_STATUS } = require('../utils/constant');
 
 /**
  * Fetch a single admin by id regardless of deletion state.
@@ -34,7 +35,7 @@ const getAllAdmins = async ({ page = 1, limit = 10, status, search } = {}) => {
     };
 
     if (status) {
-        where.status = status;
+        where.is_admin_suspended = status === ADMIN_STATUS.SUSPENDED;
     }
 
     if (search) {
@@ -89,6 +90,32 @@ const getAdminActivityLogs = async (adminId) => {
     });
 };
 
+/**
+ * Every currently-suspended admin, with the reason from their latest
+ * admin_suspension_history row. Used once at boot to warm the Redis
+ * suspended_admins cache (see adminSuspensionCacheService).
+ */
+const getSuspendedAdminsWithReason = async () => {
+    return await sequelize.query(
+        `SELECT
+            a.id AS "adminId",
+            h.suspension_reason AS "reason",
+            h.created_at AS "suspendedAt"
+        FROM admin a
+        LEFT JOIN LATERAL (
+            SELECT suspension_reason, created_at
+            FROM admin_suspension_history
+            WHERE admin_id = a.id
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) h ON true
+        WHERE a.is_admin_suspended IS TRUE AND a.is_deleted IS NOT TRUE`,
+        {
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
 // ── Admin Permission operations ───────────────────────────────────────────────
 
 const getAdminPermissions = async (adminId) => {
@@ -138,5 +165,6 @@ module.exports = {
     logAdminActivity,
     getAdminActivityLogs,
     getAdminPermissions,
-    replaceAdminPermissions
+    replaceAdminPermissions,
+    getSuspendedAdminsWithReason
 };

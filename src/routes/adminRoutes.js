@@ -1,5 +1,6 @@
 'use strict';
 const express = require('express');
+const Joi = require('joi');
 const router = express.Router();
 
 const adminMiddleware = require('../middleware/adminMiddleware');
@@ -10,6 +11,33 @@ const adminSessionController = require('../controllers/adminSessionController');
 const faqController = require('../controllers/faqController');
 const adminManagementRoutes = require('./adminManagementRoutes');
 const { PERMISSIONS } = require('../utils/constant');
+
+// ─── Validation Schemas ────────────────────────────────────────────────────────
+
+const validateRevokeSelectedSessions = (req, res, next) => {
+    const schema = Joi.object({
+        sessionIds: Joi.array()
+            .items(Joi.string().uuid())
+            .min(1)
+            .required()
+            .messages({
+                'array.base': 'sessionIds must be an array',
+                'array.min': 'At least one session must be selected',
+                'string.guid': 'Each session ID must be a valid UUID'
+            })
+    });
+
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
+    if (error) {
+        return res.status(400).json({
+            message: error.details.map(d => d.message).join(', '),
+            statusCode: 400
+        });
+    }
+
+    req.validatedBody = value;
+    next();
+};
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -48,7 +76,7 @@ router.post('/sessions/logout', adminMiddleware, adminSessionController.logoutCu
 router.post('/sessions/logout-all', adminMiddleware, adminSessionController.logoutAllSessions);
 
 // POST /api/v1/admin/sessions/revoke-selected  — device-chooser modal selection
-router.post('/sessions/revoke-selected', adminMiddleware, adminSessionController.revokeSelectedSessions);
+router.post('/sessions/revoke-selected', adminMiddleware, validateRevokeSelectedSessions, adminSessionController.revokeSelectedSessions);
 
 // DELETE /api/v1/admin/sessions/:sessionId  — revoke one specific session by id
 router.delete('/sessions/:sessionId', adminMiddleware, adminSessionController.revokeOneSession);

@@ -6,6 +6,7 @@
  */
 const redisClient = require('../configs/redis');
 const { SESSION_CACHE_TTL_SECONDS } = require('../configs/sessionConfig');
+const { errorLogger } = require('../configs/logger');
 
 /**
  * Redis key for the admin's active JTI set.
@@ -55,25 +56,25 @@ const checkJti = async (adminId, jti) => {
 
 /**
  * Remove a single JTI from the admin's cached set (on session revocation).
- * Best-effort — swallows errors so a Redis hiccup never blocks logout.
+ * Best-effort — logs errors but never throws, so a Redis hiccup never blocks logout.
  */
 const removeJti = async (adminId, jti) => {
     try {
         await redisClient.srem(cacheKey(adminId), jti);
-    } catch {
-        // best-effort: Redis failure must not block the logout response
+    } catch (error) {
+        errorLogger.error('[adminSessionCacheRepository.removeJti] Redis error:', error.message);
     }
 };
 
 /**
  * Delete the admin's entire JTI cache.
- * Used on logout-all. Best-effort — swallows errors.
+ * Used on logout-all. Best-effort — logs errors but never throws.
  */
 const invalidateAdmin = async (adminId) => {
     try {
         await redisClient.del(cacheKey(adminId));
-    } catch {
-        // best-effort
+    } catch (error) {
+        errorLogger.error('[adminSessionCacheRepository.invalidateAdmin] Redis error:', error.message);
     }
 };
 

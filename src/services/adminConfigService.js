@@ -211,8 +211,7 @@ const getTrialConfigValue = async (lookup, fallback) => {
 
 const isAwsServiceEnabled = async () => {
     const value = await getTrialConfigValue(
-        TRIAL_CONFIG_LOOKUP_KEYS.AWS_SERVICE_ENABLED,
-        process.env.IS_AWS_SERVICE_ACTIVE === 'true'
+        TRIAL_CONFIG_LOOKUP_KEYS.AWS_SERVICE_ENABLED
     );
     return value === true || String(value).toLowerCase() === 'true';
 };

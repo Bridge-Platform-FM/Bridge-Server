@@ -83,7 +83,7 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
         }
 
         const s3_file_type = S3_FILE_TYPE.CHAT;
-        // const s3KeyToUpload = `dealroom/${dealRoomId}/${s3_file_type}/${Date.now()}-${file.originalname}`;
+        const s3KeyToUpload = `dealroom/${dealRoomId}/${s3_file_type}/${Date.now()}-${file.originalname}`;
         const s3Key = await uploadToBucket(S3_FILE_TYPE.CHAT, file.buffer, file.originalname, file.mimetype, senderCompanyId, senderUserId, s3KeyToUpload);
 
         const { recipientUserId, recipientRoleId } = resolveRecipient(dealRoom, senderUserId);

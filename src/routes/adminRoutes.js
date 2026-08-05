@@ -27,7 +27,7 @@ const validateRevokeSelectedSessions = (req, res, next) => {
             })
     });
 
-    const { error, value } = schema.validate(req.body, { abortEarly: false });
+    const { error } = schema.validate(req.body, { abortEarly: false });
     if (error) {
         return res.status(400).json({
             message: error.details.map(d => d.message).join(', '),
@@ -35,7 +35,8 @@ const validateRevokeSelectedSessions = (req, res, next) => {
         });
     }
 
-    req.validatedBody = value;
+    // Controller reads req.body.sessionIds directly — validation above ensures
+    // it is a non-empty UUID array before execution reaches the controller.
     next();
 };
 

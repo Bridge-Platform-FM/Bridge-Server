@@ -33,6 +33,12 @@ const getAllTrialConfig = async () => {
     });
 };
 
+const getTrialConfigByLookup = async (lookup) => {
+    return await TrialConfigMaster.findOne({
+        where: { lookup, is_deleted: false }
+    });
+};
+
 const bulkUpdateTrialConfig = async (updates, adminId, { transaction } = {}) => {
     if (!Object.keys(updates).length) return [];
 
@@ -78,6 +84,7 @@ module.exports = {
     getAllConfig,
     bulkUpdateConfig,
     getAllTrialConfig,
+    getTrialConfigByLookup,
     bulkUpdateTrialConfig,
     resetConfigToDefaults
-}
+};

@@ -9,6 +9,10 @@ VALUES('free_trial_connection_limit', '3', '3', 'integer', 'number', 'Connection
 
 INSERT INTO public.trial_config_master
 (lookup, value, default_value, data_type, unit, description, created_by, created_at)
+VALUES('premium_connection_limit', '50', '50', 'integer', 'number', 'Connection requests allowed per billing window with an active subscription', (select id from "admin" a where a.email = 'super_admin@test.com'), now());
+
+INSERT INTO public.trial_config_master
+(lookup, value, default_value, data_type, unit, description, created_by, created_at)
 VALUES('manual_extension', 'true', 'true', 'boolean', 'flag', 'Manual Extension - allows support to extend active trials', (select id from "admin" a where a.email = 'super_admin@test.com'), now());
 
 INSERT INTO public.trial_config_master

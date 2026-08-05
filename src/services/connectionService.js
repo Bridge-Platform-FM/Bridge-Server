@@ -5,10 +5,12 @@ const { errorLogger } = require('../configs/logger');
 const connectionRepository = require('../repositories/connectionRepository');
 const connectionStatusLogRepository = require('../repositories/connectionStatusLogRepository');
 const userRepository = require('../repositories/userRepository');
+const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
 const dealRoomService = require('./dealRoomService');
+const adminConfigService = require('./adminConfigService');
 const { ELIGIBLE_ROLE_PAIRS } = require('../matching/matchingConfig');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { CONNECTION_STATUS, CONNECTION_MESSAGES, CONNECTION_VALID_TRANSITIONS, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
+const { CONNECTION_STATUS, CONNECTION_MESSAGES, CONNECTION_VALID_TRANSITIONS, CONNECTION_REQUEST_LIMITS, TRIAL_CONFIG_LOOKUP_KEYS } = require('../utils/constant');
 
 const getConnectionBillingWindow_internal = (registrationDate) => {
     const today = new Date();
@@ -45,8 +47,25 @@ const getConnectionRequestsInWindow = async (userId, windowStart, windowEnd) => 
     }
 };
 
-const validateConnectionLimit = (requestCount, hasActiveSubscription) => {
-    const limit = hasActiveSubscription ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
+// Resolution order: per-user override (UserLimitConfig) → trial/plan default
+// (TrialConfigMaster, via adminConfigService — already Redis read-through) →
+// hardcoded constant as a last-resort fallback if the config row is missing.
+const getConnectionRequestLimit = async (userId, hasActiveSubscription) => {
+    const userLimitConfig = await userLimitConfigRepository.findByUserId(userId);
+    if (userLimitConfig?.allowed_connections != null) {
+        return userLimitConfig.allowed_connections;
+    }
+
+    const lookup = hasActiveSubscription
+        ? TRIAL_CONFIG_LOOKUP_KEYS.PREMIUM_CONNECTION_LIMIT
+        : TRIAL_CONFIG_LOOKUP_KEYS.FREE_CONNECTION_LIMIT;
+    const fallback = hasActiveSubscription ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
+
+    return await adminConfigService.getTrialConfigValue(lookup, fallback);
+};
+
+const validateConnectionLimit = async (userId, requestCount, hasActiveSubscription) => {
+    const limit = await getConnectionRequestLimit(userId, hasActiveSubscription);
     if (requestCount >= limit) {
         return ServiceResponse.error({ message: CONNECTION_MESSAGES.CONNECTION_LIMIT_REACHED, statusCode: 403 });
     }
@@ -197,4 +216,4 @@ const getReceivedConnections = async (userId, roleId) => {
     }
 };
 
-module.exports = { getConnectionBillingWindow, getConnectionRequestsInWindow, validateConnectionLimit, sendRequest, changeStatus, getSentConnections, getReceivedConnections };
+module.exports = { getConnectionBillingWindow, getConnectionRequestsInWindow, getConnectionRequestLimit, validateConnectionLimit, sendRequest, changeStatus, getSentConnections, getReceivedConnections };

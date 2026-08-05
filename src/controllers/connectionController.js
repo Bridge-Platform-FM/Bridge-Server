@@ -3,7 +3,6 @@
 const { errorLogger } = require('../configs/logger');
 const connectionService = require('../services/connectionService');
 const subscriptionService = require('../services/subscriptionService');
-const { CONNECTION_MESSAGES, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 
 const sendConnectionRequest = async (req, res, next) => {
@@ -35,18 +34,12 @@ const sendConnectionRequest = async (req, res, next) => {
         const requestCount = countResult.data.count
 
         // 4. Validate the limit — return message if exceeded
-        const hasActiveSubscription =  userSubscriptions? true : false;
+        const hasActiveSubscription = userSubscriptions ? true : false;
 
-        const limit = hasActiveSubscription === true ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
-
-        if (requestCount >= limit) {
-            return HttpResponse.error(res, { message: CONNECTION_MESSAGES.CONNECTION_LIMIT_REACHED, statusCode: 403 });
+        const limitResult = await connectionService.validateConnectionLimit(userId, requestCount, hasActiveSubscription);
+        if (!limitResult.success) {
+            return HttpResponse.error(res, { message: limitResult.message, statusCode: limitResult.statusCode });
         }
-
-        // const limitResult = connectionService.validateConnectionLimit(requestCount, hasActiveSubscription);
-        // if (!limitResult.success) {
-        //     return HttpResponse.error(res, { message: limitResult.message, statusCode: limitResult.statusCode });
-        // }
 
         // 5. Send the connection request
         const result = await connectionService.sendRequest({

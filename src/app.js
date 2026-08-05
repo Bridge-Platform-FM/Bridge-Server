@@ -101,6 +101,8 @@ server.listen(SERVER_PORT, () => {
             console.info('Database connected successfully.');
             adminConfigService.cacheOtpConfig()
                 .catch(err => console.error('Failed to cache OTP config into Redis:', err));
+            adminConfigService.cacheTrialConfig()
+                .catch(err => console.error('Failed to cache trial config into Redis:', err));
             suspensionCacheService.loadSuspendedUsersIntoCache()
                 .catch(err => console.error('Failed to load suspended users into Redis:', err));
             adminSuspensionCacheService.loadSuspendedAdminsIntoCache()

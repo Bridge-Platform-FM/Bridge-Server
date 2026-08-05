@@ -7,7 +7,7 @@ const rationaleService = require('./rationaleService');
 const connectionService = require('../services/connectionService');
 const subscriptionService = require('../services/subscriptionService');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { MATCHING_MESSAGES, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
+const { MATCHING_MESSAGES } = require('../utils/constant');
 const { MATCHES_LIMIT } = require('./matchingConfig');
 const { errorLogger } = require('../configs/logger');
 const { isValidUUID } = require('../utils/Helper');
@@ -59,7 +59,7 @@ const getMatches = async (profileId) => {
             return ServiceResponse.error({ message: subscriptionResult.message, statusCode: subscriptionResult.statusCode });
         }
         const hasActiveSubscription = subscriptionResult.data ? true : false;
-        const requestLimit = hasActiveSubscription ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
+        const requestLimit = await connectionService.getConnectionRequestLimit(userId, hasActiveSubscription);
         const requestsRemaining = Math.max(requestLimit - requestsSentInWindow, 0);
 
         // Step 4: Fetch all candidate profiles (excluding user+role combos already connected)

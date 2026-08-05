@@ -150,7 +150,7 @@ const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId 
                 adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_TRIAL_DAY, USER_LIMIT_DEFAULTS.ALLOWED_FREE_TRIAL_DAYS)
             ]);
 
-            await userLimitConfigRepository.upsertUserLimitConfig(
+            await userLimitConfigRepository.createDefaultUserLimitConfig(
                 userId,
                 { allowed_connections: allowedConnections, allowed_free_trial_days: allowedFreeTrialDays },
                 adminId,

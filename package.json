@@ -24,6 +24,7 @@
     "dependencies": {
         "@aws-sdk/client-s3": "^3.1061.0",
         "@aws-sdk/s3-request-presigner": "^3.1062.0",
+        "@azure/storage-blob": "^12.33.0",
         "@sendgrid/mail": "^8.1.6",
         "archiver": "^7.0.1",
         "bcrypt": "^6.0.0",

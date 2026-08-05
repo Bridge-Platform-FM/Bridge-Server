@@ -6,7 +6,7 @@ const chatRepository = require('../repositories/chatRepository');
 const mediaRepository = require('../repositories/mediaRepository');
 const dealRoomRepository = require('../repositories/dealRoomRepository');
 const dealRoomService = require('./dealRoomService');
-const { uploadToS3, getFileBuffer } = require('./s3.service');
+const { uploadToBucket, getFileBuffer } = require('./s3.service');
 const { CHAT_MEDIA_RULES } = require('../configs/scan');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { DEAL_ROOM_STATUS, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, S3_FILE_TYPE } = require('../utils/constant');
@@ -83,8 +83,8 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
         }
 
         const s3_file_type = S3_FILE_TYPE.CHAT;
-        const s3KeyToUpload = `dealroom/${dealRoomId}/${s3_file_type}/${Date.now()}-${file.originalname}`;
-        // const s3Key = await uploadToS3(S3_FILE_TYPE.CHAT, file.buffer, file.originalname, file.mimetype, senderCompanyId, senderUserId, s3KeyToUpload);
+        // const s3KeyToUpload = `dealroom/${dealRoomId}/${s3_file_type}/${Date.now()}-${file.originalname}`;
+        const s3Key = await uploadToBucket(S3_FILE_TYPE.CHAT, file.buffer, file.originalname, file.mimetype, senderCompanyId, senderUserId, s3KeyToUpload);
 
         const { recipientUserId, recipientRoleId } = resolveRecipient(dealRoom, senderUserId);
 
@@ -98,7 +98,7 @@ const sendMediaMessage = async ({ dealRoomId, senderUserId, senderRoleId, sender
             download_allowed: download_allowed,
             view_only: view_only,
             media_type: rule.messageType,
-            attachment_s3_key: s3KeyToUpload,
+            attachment_s3_key: s3Key,
             attachment_file_name: file.originalname,
             attachment_mime_type: file.mimetype,
             attachment_file_size: file.size,

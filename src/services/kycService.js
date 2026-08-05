@@ -2,9 +2,11 @@
 const { sequelize } = require('../models');
 const kycInfoRepository = require('../repositories/kycInfoRepository');
 const companyRepository = require('../repositories/companyRepository');
+const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
+const adminConfigService = require('./adminConfigService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS } = require('../utils/constant');
+const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS, TRIAL_CONFIG_LOOKUP_KEYS, USER_LIMIT_DEFAULTS } = require('../utils/constant');
 const { decrypt } = require("../utils/encryption");
 const userService = require('./userService');
 
@@ -142,6 +144,18 @@ const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId 
             if (!updateUserRes.success) {
                 return ServiceResponse.error({ message: updateUserRes.message, statusCode: updateUserRes.statusCode });
             }
+
+            const [allowedConnections, allowedFreeTrialDays] = await Promise.all([
+                adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_CONNECTION_LIMIT, USER_LIMIT_DEFAULTS.ALLOWED_CONNECTIONS),
+                adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_TRIAL_DAY, USER_LIMIT_DEFAULTS.ALLOWED_FREE_TRIAL_DAYS)
+            ]);
+
+            await userLimitConfigRepository.upsertUserLimitConfig(
+                userId,
+                { allowed_connections: allowedConnections, allowed_free_trial_days: allowedFreeTrialDays },
+                adminId,
+                { transaction }
+            );
         }
 
         await transaction.commit();

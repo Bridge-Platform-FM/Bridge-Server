@@ -9,7 +9,7 @@ const companyRegistrationSchema = Joi.object({
         'string.max': 'companyName must not exceed 100 characters',
         'any.required': 'companyName is required'
     }),
-    email: Joi.string().email().required().messages({
+    email: Joi.string().email({ tlds: { allow: false } }).required().messages({
         'string.email': 'email must be a valid email address',
         'any.required': 'email is required'
     }),
@@ -56,7 +56,7 @@ const verifyOtpSchema = Joi.object({
         'string.pattern.base': 'otp must contain only digits',
         'any.required': 'otp is required'
     }),
-    email: Joi.string().email().when('channel', {
+    email: Joi.string().email({ tlds: { allow: false } }).when('channel', {
         is: 'EMAIL',
         then: Joi.required().messages({ 'any.required': OTP_MESSAGES.EMAIL_VALIDATION_FAILED }),
         otherwise: Joi.optional().allow(null, '')
@@ -73,7 +73,7 @@ const resendOtpSchema = Joi.object({
         'any.only': 'channel must be EMAIL or PHONE',
         'any.required': 'channel is required'
     }),
-    email: Joi.string().email().when('channel', {
+    email: Joi.string().email({ tlds: { allow: false } }).when('channel', {
         is: 'EMAIL',
         then: Joi.required().messages({ 'any.required': 'email is required when channel is EMAIL' }),
         otherwise: Joi.optional().allow(null, '')
@@ -92,7 +92,7 @@ const refreshTokenSchema = Joi.object({
 });
 
 const loginSchema = Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().email({ tlds: { allow: false } }).required().messages({
         'string.email': 'email must be a valid email address',
         'any.required': 'email is required'
     }),

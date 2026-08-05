@@ -7,6 +7,7 @@ const { sgMailClient } = require("../configs/twilio.js");
 const ServiceResponse = require("../utils/ServiceResponse.js");
 const { errorLogger } = require("../configs/logger.js");
 const { CHANNEL_TYPE } = require("../utils/constant.js")
+const adminConfigService = require("./adminConfigService.js");
 
 require('dotenv').config();
 
@@ -61,9 +62,10 @@ const sendOTP = async (channelType, channelId) => {
             return ServiceResponse.error({ message: OTP_MESSAGES.RESEND_TIMER, statusCode: 429 });
         }
 
-        // 3. Check resend count        
+        // 3. Check resend count
         const resendCount = await redis.get(`otp_resend_count:${channelId}`);
-        if (resendCount && Number(resendCount) >= Number(process.env.MAX_RESEND)) {
+        const maxResend = await adminConfigService.getOtpConfigValue('MAX_OTP_RESEND_COUNT_IN_HR');
+        if (resendCount && Number(resendCount) >= maxResend) {
             return ServiceResponse.error({ message: OTP_MESSAGES.MAX_RESEND, statusCode: 400 });
         }
 
@@ -72,14 +74,16 @@ const sendOTP = async (channelType, channelId) => {
         console.log(`Generated OTP for channel ${channelId}: ${otp}`);
 
         // 4. Save OTP
-        await redis.set(`otp:${channelId}`, otp, "EX", Number(process.env.OTP_TTL));
+        const otpTtl = await adminConfigService.getOtpConfigValue('SENT_OTP_TTL');
+        await redis.set(`otp:${channelId}`, otp, "EX", otpTtl);
 
         // 5. Create resend cooldown
+        const resendTtl = await adminConfigService.getOtpConfigValue('RESEND_COOLDOWN_TTL');
         await redis.set(
             `otp_resend:${channelId}`,
             "true",
             "EX",
-            Number(process.env.RESEND_TTL)
+            resendTtl
         );
 
         // Reset attempt count on new OTP
@@ -96,14 +100,16 @@ const sendOTP = async (channelType, channelId) => {
         // 7. Increment OTP resent count
         const newCount = await redis.incr(`otp_resend_count:${channelId}`);
         if (newCount === 1) {
+            const resendCountTtl = (await adminConfigService.getOtpConfigValue('OTP_RESEND_COUNT_TTL_IN_HR')) || 3600;
             await redis.expire(
                 `otp_resend_count:${channelId}`,
-                Number(process.env.RESEND_COUNT_TTL || 3600)
+                resendCountTtl
             );
         }
 
         return ServiceResponse.success({
-            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            message: `OTP - ${otp}`,
+            // message: OTP_MESSAGES.OTP_SEND_SUCCESS,
         });
 
     } catch (err) {
@@ -142,21 +148,24 @@ const verifyOTP = async (channelId, enteredOTP) => {
 
             // Set expiry only on first wrong attempt
             if (attempts === 1) {
+                const otpTtl = await adminConfigService.getOtpConfigValue('SENT_OTP_TTL');
                 await redis.expire(
                     `otp_attempt:${channelId}`,
-                    Number(process.env.OTP_TTL)
+                    otpTtl
                 );
             }
 
             // Block after max attempts
-            if (attempts >= Number(process.env.MAX_ATTEMPTS)) {
+            const maxAttempts = await adminConfigService.getOtpConfigValue('MAX_OTP_VERIFY_ATTEMPTS');
+            if (attempts >= maxAttempts) {
 
-                // Block user for 1 hour
+                // Block user for the configured resend-TTL duration
+                const blockDuration = await adminConfigService.getOtpConfigValue('OTP_BLOCK_TTL');
                 await redis.set(
                     `otp_block:${channelId}`,
                     "true",
                     "EX",
-                    3600
+                    blockDuration
                 );
 
                 // Cleanup
@@ -166,7 +175,7 @@ const verifyOTP = async (channelId, enteredOTP) => {
                 return ServiceResponse.error({ message: OTP_MESSAGES.BLOCKED, statusCode: 403 });
             }
 
-            return ServiceResponse.error({ message: `Invalid OTP. Attempts left: ${Number(process.env.MAX_ATTEMPTS) - attempts}`, statusCode: 400 });
+            return ServiceResponse.error({ message: `Invalid OTP. Attempts left: ${maxAttempts - attempts}`, statusCode: 400 });
         }
 
         // Success cleanup

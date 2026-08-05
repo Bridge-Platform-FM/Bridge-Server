@@ -4,9 +4,30 @@ const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
 const userRepository = require('../repositories/userRepository');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { maskPhone, maskEmail } = require('../utils/Helper');
+const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
+const env = require('../configs/env_configs');
+
+/** Cookie options — httpOnly so JS can't read the token. */
+const ACCESS_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,       // 1 day
+};
+const REFRESH_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,   // 7 days
+};
+
+function setAuthCookies(res, accessToken, refreshToken) {
+    res.cookie('access_token', accessToken, ACCESS_COOKIE_OPTS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+}
 
 //  POST /api/v1/auth/company-registration
 const companyRegistration = async (req, res, next) => {
@@ -59,13 +80,17 @@ const companyRegistration = async (req, res, next) => {
         const roleObj = createCompanyRes.data.role
         const userObj = createCompanyRes.data.user
 
+        const userType = USER_TYPES[roleObj.role_code];
+        const mfaTokenRes = await tokenService.generateMfaAccessToken(companyObj, roleObj, userObj, userType);
+        if (!mfaTokenRes.success) {
+            return HttpResponse.error(res, { message: mfaTokenRes.message, statusCode: 500 });
+        }
 
-        const tokens = await tokenService.generateTokens(companyObj, roleObj, userObj);
-        const { accessToken, refreshToken } = tokens.data;
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
+        // setAuthCookies(res, accessToken, refreshToken);
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.SUCCESS,
-            data: { accessToken, refreshToken },
             statusCode: 200
         });
 
@@ -119,17 +144,33 @@ const verifyOtp = async (req, res, next) => {
         const last_name = user?.last_name ?? null;
         const role = req.role ?? null;
 
-        // If both channels verified, send status to client to enable continue button
-        if (statusResult.success) {
-            const companyData = statusResult.data;
-            if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
-                return HttpResponse.success(res, {
-                    message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
-                    data: { bothChannelsVerified: true, first_name, last_name, role },
-                    statusCode: 200
-                });
-            }
+        const companyData = statusResult.data;
+        const roleObj = { role_code: req.role, id: req.roleId };
+
+        // If both channels verified, set the full access token; otherwise keep the mfa token
+        if (companyData.is_email_verified && companyData.is_mobile_number_verified) {
+            const tokens = await tokenService.generateTokens(companyData, roleObj, user, req.userType, {
+                ipAddress: req.ip,
+                headers: req.headers
+            });
+            const { accessToken, refreshToken } = tokens.data;
+
+            res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+            res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+            res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
+
+            return HttpResponse.success(res, {
+                message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
+                data: { bothChannelsVerified: true, first_name, last_name, role },
+                statusCode: 200
+            });
         }
+
+        const mfaTokenRes = await tokenService.generateMfaAccessToken(companyData, roleObj, user, req.userType);
+        if (!mfaTokenRes.success) {
+            return HttpResponse.error(res, { message: mfaTokenRes.message, statusCode: 500 });
+        }
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
 
         return HttpResponse.success(res, {
             message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
@@ -211,42 +252,71 @@ const login = async (req, res, next) => {
         const { email, password } = req.body;
 
         const existingCompanyRes = await authService.getCompanyByEmail(email);
+
         if (!existingCompanyRes.success) {
-            return HttpResponse.error(res, { message: existingCompanyRes.message, statusCode: existingCompanyRes.statusCode });
+            return HttpResponse.error(res, {
+                message: existingCompanyRes.message,
+                statusCode: existingCompanyRes.statusCode
+            });
         }
 
         const existingCompany = existingCompanyRes.data;
 
         if (!existingCompany) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompanyRes.statusCode });
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
-        const passwordRes = await authService.checkPassword(password, existingCompany.password)
+        const passwordRes = await authService.checkPassword(
+            password,
+            existingCompany.password
+        );
+
         if (!passwordRes.success) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompany.statusCode });
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
         const existingUserRes = await authService.getUserByEmail(email);
+
         if (!existingUserRes.success) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: existingCompany.statusCode });
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
-        const existingUser = existingUserRes.data
+        const existingUser = existingUserRes.data;
 
-        const companyUserRoleRes = await authService.getCompanyUser_role(existingCompany.id, existingUser.id);
+        const companyUserRoleRes =
+            await authService.getCompanyUser_role(
+                existingCompany.id,
+                existingUser.id
+            );
+
         if (!companyUserRoleRes) {
-            return HttpResponse.error(res, { message: LOGIN_MESSAGES.INVALID_CREDENTIALS, statusCode: companyUserRoleRes.statusCode });
+            return HttpResponse.error(res, {
+                message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
+                statusCode: 400
+            });
         }
 
+        // rest unchanged
         const role = companyUserRoleRes.data;
 
         const maskedMobile = maskPhone(existingCompany.country_code + existingCompany.mobile_number);
         const maskedEmail = maskEmail(existingCompany.company_email);
 
-        const tokens = await tokenService.generateTokens(existingCompany, role, existingUser);
-        const { accessToken, refreshToken } = tokens.data;
+        const userType = USER_TYPES[role.role_code];
+        const tokens = await tokenService.generateMfaAccessToken(existingCompany, role, existingUser, userType);
+        const { accessToken } = tokens.data;
 
-        return HttpResponse.success( res, {data: { accessToken, refreshToken, role: role.role_code, maskedMobile, maskedEmail }, message: LOGIN_MESSAGES.VALID_CREDENTIALS })
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
+        return HttpResponse.success( res, {data: { role: role.role_code, maskedMobile, maskedEmail }, message: LOGIN_MESSAGES.VALID_CREDENTIALS })
     } catch (error) {
         console.error(error)
         errorLogger.error(error);
@@ -273,7 +343,7 @@ const triggerOtp = async (req, res, next) => {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
         }
 
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_SEND_SUCCESS, statusCode: 200 });
+        return HttpResponse.success(res, { message: result.message, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_GENERATION_FAILED, statusCode: 500 });
@@ -322,8 +392,18 @@ const verifyMfaOtp = async (req, res, next) => {
             redirectRoute = REDIRECT_ROUTES.DASHBOARD.DASHBOARD;
         }
 
+        
+        const role = { role_code: req.role, id: req.roleId };
+        const tokens = await tokenService.generateTokens(company, role, user, req.userType, {
+            ipAddress: req.ip,
+            headers: req.headers          // full headers — parseDeviceInfo reads sec-ch-ua* from these
+        });
+        const { accessToken, refreshToken } = tokens.data;
 
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name }, statusCode: 200 });
+        res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
+        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { userId: user.id, tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN, redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
@@ -437,7 +517,9 @@ const resetPasswordVerifyOtp = async (req, res, next) => {
             return HttpResponse.error(res, { message: verifyOtpRes.message, statusCode: verifyOtpRes.statusCode });
         }
 
-        return HttpResponse.success(res, { data: { accessToken }, message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, statusCode: 200 });
+        res.cookie(COOKIE_NAMES.RESET_TOKEN, accessToken, cookieOptions(env.JWT.RESET_PASSWORD_EXPIRY));
+
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
@@ -469,6 +551,7 @@ const resetPassword = async (req, res, next) => {
         if (!result.success) {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
         }
+        res.clearCookie(COOKIE_NAMES.RESET_TOKEN, clearCookieOptions());
 
         return HttpResponse.success(res, { message: result.message, statusCode: 200 });
     } catch (error) {

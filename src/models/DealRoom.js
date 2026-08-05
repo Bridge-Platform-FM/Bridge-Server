@@ -2,16 +2,16 @@
 
 const { DataTypes } = require('sequelize');
 
-const { DEAL_ROOM_STATUS } = require('../utils/constant');
+const { DEAL_ROOM_STATUS, DEAL_ROOM_STAGES } = require('../utils/constant');
 
 module.exports = (sequelize) => {
 
     const DealRoom = sequelize.define('DealRoom', {
 
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
-            autoIncrement: true,
+            defaultValue: DataTypes.UUIDV4,
             allowNull: false
         },
 
@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
         },
 
         requester_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -44,7 +44,7 @@ module.exports = (sequelize) => {
         },
 
         requester_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -53,7 +53,7 @@ module.exports = (sequelize) => {
         },
 
         recipient_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -71,7 +71,7 @@ module.exports = (sequelize) => {
         },
 
         recipient_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -89,6 +89,11 @@ module.exports = (sequelize) => {
             allowNull: false,
             defaultValue: DEAL_ROOM_STATUS.ACTIVE
         },
+        stage: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+            defaultValue: DEAL_ROOM_STAGES.INITIAL_CONNECTION
+        },
 
         closed_at: {
             type: DataTypes.DATE,
@@ -100,6 +105,15 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        closed_by: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            references: {
+                model: 'user',
+                key: 'id'
+            }
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -107,7 +121,7 @@ module.exports = (sequelize) => {
             field: 'created_at'
         },
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         updated_at: {
@@ -116,7 +130,7 @@ module.exports = (sequelize) => {
             field: 'updated_at'
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         is_deleted: {
@@ -129,14 +143,13 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
 
     }, {
         tableName: 'deal_room',
         timestamps: true,
-        initialAutoIncrement: 1,
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });
@@ -176,6 +189,26 @@ module.exports = (sequelize) => {
         DealRoom.belongsTo(models.Company, {
             foreignKey: 'recipient_company_id',
             as: 'recipientCompany'
+        });
+
+        DealRoom.hasMany(models.DealRoomMessage, {
+            foreignKey: 'deal_room_id',
+            as: 'messages'
+        });
+
+        DealRoom.hasMany(models.DealRoomMedia, {
+            foreignKey: 'deal_room_id',
+            as: 'media'
+        });
+
+        DealRoom.hasMany(models.DealRoomStageRequest, {
+            foreignKey: 'deal_room_id',
+            as: 'stageRequests'
+        });
+
+        DealRoom.hasMany(models.DealRoomArchive, {
+            foreignKey: 'deal_room_id',
+            as: 'archives'
         });
 
     };

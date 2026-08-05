@@ -7,9 +7,9 @@ module.exports = (sequelize) => {
     const User = sequelize.define('User', {
 
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
-            autoIncrement: true,
+            defaultValue: DataTypes.UUIDV4,
             allowNull: false
         },
         // basic info
@@ -68,6 +68,12 @@ module.exports = (sequelize) => {
             defaultValue: false
         },
 
+        is_user_suspended: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        }, // admin or super admin can change this field
+
         company_email: {
             type: DataTypes.STRING,
             allowNull: true,
@@ -88,7 +94,7 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        
+
         // startup info
         startup_industry_sector: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
         funding_stage:  { type: DataTypes.STRING, allowNull: true },
@@ -135,7 +141,7 @@ module.exports = (sequelize) => {
             field: 'created_at'
         },
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         updated_at: {
@@ -144,7 +150,7 @@ module.exports = (sequelize) => {
             field: 'updated_at'
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         is_deleted: {
@@ -157,14 +163,13 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
     }, {
 
         tableName: 'user',
         timestamps: true,
-        initialAutoIncrement: 1,
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });

@@ -14,7 +14,7 @@ module.exports = (sequelize) => {
         },
 
         requester_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
         },
 
         requester_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -41,7 +41,7 @@ module.exports = (sequelize) => {
         },
 
         recipient_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -59,7 +59,7 @@ module.exports = (sequelize) => {
         },
 
         recipient_company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -78,6 +78,26 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        bussiness_intent: {
+            type: DataTypes.ARRAY(DataTypes.STRING),
+            allowNull: true
+        },
+
+        expected_deal_size: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        product_service_details: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        reason: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -86,7 +106,7 @@ module.exports = (sequelize) => {
         },
 
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
 
@@ -97,7 +117,7 @@ module.exports = (sequelize) => {
         },
 
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
 
@@ -113,7 +133,7 @@ module.exports = (sequelize) => {
         },
 
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
 
@@ -126,7 +146,8 @@ module.exports = (sequelize) => {
         indexes: [
             {
                 unique: true,
-                fields: ['requester_user_id', 'requester_role_id', 'recipient_user_id', 'recipient_role_id']
+                fields: ['requester_user_id', 'requester_role_id', 'recipient_user_id', 'recipient_role_id'],
+                name: 'uc_unique_connection'
             }
         ]
     });

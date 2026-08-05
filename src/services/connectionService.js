@@ -5,16 +5,20 @@ const { errorLogger } = require('../configs/logger');
 const connectionRepository = require('../repositories/connectionRepository');
 const connectionStatusLogRepository = require('../repositories/connectionStatusLogRepository');
 const userRepository = require('../repositories/userRepository');
+const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
 const dealRoomService = require('./dealRoomService');
+const adminConfigService = require('./adminConfigService');
 const { ELIGIBLE_ROLE_PAIRS } = require('../matching/matchingConfig');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { CONNECTION_STATUS, CONNECTION_MESSAGES, CONNECTION_VALID_TRANSITIONS, CONNECTION_REQUEST_LIMITS } = require('../utils/constant');
+const { CONNECTION_STATUS, CONNECTION_MESSAGES, CONNECTION_VALID_TRANSITIONS, CONNECTION_REQUEST_LIMITS, TRIAL_CONFIG_LOOKUP_KEYS } = require('../utils/constant');
 
 const getConnectionBillingWindow_internal = (registrationDate) => {
     const today = new Date();
-    const monthsElapsed = Math.floor(
-        (today - registrationDate) / (1000 * 60 * 60 * 24 * 30)
-    );
+    let monthsElapsed = (today.getFullYear() - registrationDate.getFullYear()) * 12
+        + (today.getMonth() - registrationDate.getMonth());
+    if (today.getDate() < registrationDate.getDate()) {
+        monthsElapsed -= 1;
+    }
     const windowStart = new Date(registrationDate);
     windowStart.setMonth(windowStart.getMonth() + monthsElapsed);
     const windowEnd = new Date(windowStart);
@@ -43,15 +47,32 @@ const getConnectionRequestsInWindow = async (userId, windowStart, windowEnd) => 
     }
 };
 
-const validateConnectionLimit = (requestCount, hasActiveSubscription) => {
-    const limit = hasActiveSubscription ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
+// Resolution order: per-user override (UserLimitConfig) → trial/plan default
+// (TrialConfigMaster, via adminConfigService — already Redis read-through) →
+// hardcoded constant as a last-resort fallback if the config row is missing.
+const getConnectionRequestLimit = async (userId, hasActiveSubscription) => {
+    const userLimitConfig = await userLimitConfigRepository.findByUserId(userId);
+    if (userLimitConfig?.allowed_connections != null) {
+        return userLimitConfig.allowed_connections;
+    }
+
+    const lookup = hasActiveSubscription
+        ? TRIAL_CONFIG_LOOKUP_KEYS.PREMIUM_CONNECTION_LIMIT
+        : TRIAL_CONFIG_LOOKUP_KEYS.FREE_CONNECTION_LIMIT;
+    const fallback = hasActiveSubscription ? CONNECTION_REQUEST_LIMITS.PREMIUM : CONNECTION_REQUEST_LIMITS.FREE;
+
+    return await adminConfigService.getTrialConfigValue(lookup, fallback);
+};
+
+const validateConnectionLimit = async (userId, requestCount, hasActiveSubscription) => {
+    const limit = await getConnectionRequestLimit(userId, hasActiveSubscription);
     if (requestCount >= limit) {
         return ServiceResponse.error({ message: CONNECTION_MESSAGES.CONNECTION_LIMIT_REACHED, statusCode: 403 });
     }
     return ServiceResponse.success({ statusCode: 200 });
 };
 
-const sendRequest = async ({ requesterUserId, requesterRoleId, requesterCompanyId, requesterRoleCode, recipientUserId, recipientRoleId, recipientCompanyId, message }) => {
+const sendRequest = async ({ requesterUserId, requesterRoleId, requesterCompanyId, requesterRoleCode, recipientUserId, recipientRoleId, recipientCompanyId, personalMessage, bussinessIntent, expectedDealSize, productServiceDetails }) => {
     const transaction = await sequelize.transaction();
     try {
         // 1. Check recipient user exists
@@ -84,7 +105,10 @@ const sendRequest = async ({ requesterUserId, requesterRoleId, requesterCompanyI
             recipient_role_id: recipientRoleId,
             recipient_company_id: recipientCompanyUserRole.company_id,
             status: CONNECTION_STATUS.PENDING,
-            message: message || null,
+            message: personalMessage || null,
+            bussiness_intent: bussinessIntent || null,
+            expected_deal_size: expectedDealSize || null,
+            product_service_details: productServiceDetails || null,
             created_by: requesterUserId
         }, { transaction });
 
@@ -99,13 +123,14 @@ const sendRequest = async ({ requesterUserId, requesterRoleId, requesterCompanyI
         return ServiceResponse.success({ data: connection, message: CONNECTION_MESSAGES.REQUEST_SENT, statusCode: 201 });
 
     } catch (error) {
+        console.log(error);
         await transaction.rollback();
         errorLogger.error(error);
         return ServiceResponse.error({ message: CONNECTION_MESSAGES.REQUEST_FAILED, statusCode: 500 });
     }
 };
 
-const changeStatus = async ({ connectionId, status, userId }) => {
+const changeStatus = async ({ connectionId, status, reason, userId }) => {
     const transaction = await sequelize.transaction();
     try {
         // 1. Fetch connection
@@ -137,7 +162,7 @@ const changeStatus = async ({ connectionId, status, userId }) => {
         }
 
         // 4. Update connection status
-        const updated = await connectionRepository.updateStatus(connectionId, status, { transaction });
+        const updated = await connectionRepository.updateStatus(connectionId, status, reason, { transaction });
 
         // 5. Log status change
         await connectionStatusLogRepository.create({
@@ -146,16 +171,23 @@ const changeStatus = async ({ connectionId, status, userId }) => {
             changed_by: userId
         }, { transaction });
 
+        let dealRoomResult = null;
         if (status === CONNECTION_STATUS.ACCEPTED) {
-            const dealRoomResult = await dealRoomService.createDealRoom(connection, { transaction });
+            dealRoomResult = await dealRoomService.createDealRoom(connection, { transaction });
             if (!dealRoomResult.success) {
                 await transaction.rollback();
                 return ServiceResponse.error({ message: dealRoomResult.message, statusCode: dealRoomResult.statusCode });
             }
         }
 
+        let dealRoomId = null;
+        if (dealRoomResult) {
+            const dealRoom = dealRoomResult.data;
+            dealRoomId = dealRoom.id;
+        }
+
         await transaction.commit();
-        return ServiceResponse.success({ data: updated, message: CONNECTION_MESSAGES[`REQUEST_${status.toUpperCase()}`], statusCode: 200 });
+        return ServiceResponse.success({ data: {connection: updated, deal_room_id: dealRoomId}, message: CONNECTION_MESSAGES[`REQUEST_${status.toUpperCase()}`], statusCode: 200 });
 
     } catch (error) {
         await transaction.rollback();
@@ -164,4 +196,24 @@ const changeStatus = async ({ connectionId, status, userId }) => {
     }
 };
 
-module.exports = { getConnectionBillingWindow, getConnectionRequestsInWindow, validateConnectionLimit, sendRequest, changeStatus };
+const getSentConnections = async (userId, roleId) => {
+    try {
+        const connections = await connectionRepository.findSentByUser(userId, roleId);
+        return ServiceResponse.success({ data: connections, message: CONNECTION_MESSAGES.SENT_FETCH_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: CONNECTION_MESSAGES.SENT_FETCH_FAILED, statusCode: 500 });
+    }
+};
+
+const getReceivedConnections = async (userId, roleId) => {
+    try {
+        const connections = await connectionRepository.findReceivedByUser(userId, roleId);
+        return ServiceResponse.success({ data: connections, message: CONNECTION_MESSAGES.RECEIVED_FETCH_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: CONNECTION_MESSAGES.RECEIVED_FETCH_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { getConnectionBillingWindow, getConnectionRequestsInWindow, getConnectionRequestLimit, validateConnectionLimit, sendRequest, changeStatus, getSentConnections, getReceivedConnections };

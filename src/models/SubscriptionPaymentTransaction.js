@@ -23,7 +23,7 @@ module.exports = (sequelize) => {
         },
 
         user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
         },
 
         company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -112,7 +112,7 @@ module.exports = (sequelize) => {
             field: 'created_at'
         },
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         updated_at: {
@@ -121,7 +121,7 @@ module.exports = (sequelize) => {
             field: 'updated_at'
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         is_deleted: {
@@ -134,7 +134,7 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
 

@@ -28,7 +28,7 @@ module.exports = (sequelize) => {
         },
 
         changed_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',

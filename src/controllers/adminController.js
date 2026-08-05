@@ -1,12 +1,43 @@
 'use strict';
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES } = require('../utils/constant');
+const Joi = require('joi');
+const { v4: uuidv4 } = require('uuid');
+const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES, USER_SUSPENSION_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
 const userService = require('../services/userService');
 const kycService = require('../services/kycService');
+const { COOKIE_NAMES, cookieOptions, clearCookieOptions, generateAccessToken, generateRefreshToken } = require('../utils/token');
+const env = require('../configs/env_configs');
+const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
+const adminSessionService = require('../services/adminSessionService');
+const { parseDeviceInfo } = require('../utils/deviceInfo');
 
+const ACCESS_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+};
+const REFRESH_COOKIE_OPTS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+function setAuthCookies(res, accessToken, refreshToken) {
+    res.cookie('access_token', accessToken, ACCESS_COOKIE_OPTS);
+    res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTS);
+}
+
+const updateLimitConfigSchema = Joi.object({
+    allowed_connections: Joi.number().integer().min(0).optional(),
+    allowed_free_trial_days: Joi.number().integer().min(0).optional(),
+    allowed_premium_days: Joi.number().integer().min(0).optional()
+}).min(1).messages({
+    'object.min': 'At least one limit configuration field must be provided'
+});
 
 const login = async (req, res, next) => {
     try {
@@ -17,7 +48,9 @@ const login = async (req, res, next) => {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
         }
 
-        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+        const { mfaToken, ...body } = result.data;
+        res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaToken, cookieOptions(env.JWT.MFA_EXPIRY));
+        return HttpResponse.success(res, { message: result.message, data: body, statusCode: result.statusCode });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: ADMIN_MESSAGES.LOGIN_FAILED, statusCode: 500 });
@@ -71,8 +104,55 @@ const verifyMfaOtp = async (req, res, next) => {
         }
 
         const admin = adminRes.data;
-        
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { first_name: admin.name, role: admin.role, redirectRoute: redirectRoute }, statusCode: 200 });
+
+        const userType = USER_TYPES[admin.role];
+        if (!userType) {
+            errorLogger.error(`Admin OTP verification blocked: unmapped role "${admin.role}" for admin id ${admin.id}`);
+            return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
+        }
+
+        const jti = uuidv4();
+        const payload = {
+            jti,
+            adminId: admin.id,
+            email: admin.email,
+            mobileNumber: admin.mobile_number,
+            role: admin.role,
+            userType
+        };
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+
+        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+        res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
+
+        // Create admin session row and prime the Redis cache.
+        // Best-effort session creation — routed through the service layer so
+        // no repository is called directly from the controller. Failure is
+        // logged but never blocks login (the service swallows it internally).
+        if (SESSION_LIMIT_ENABLED) {
+            const deviceInfo = parseDeviceInfo(req.headers);
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days, mirrors refresh token
+            const sessionResult = await adminSessionService.createAndCacheSession(
+                { id: admin.id }, jti, deviceInfo, req.ip, expiresAt
+            );
+            if (!sessionResult.success) {
+                errorLogger.error('[adminController.verifyMfaOtp] Session creation failed:', sessionResult.message);
+            }
+        }
+
+        return HttpResponse.success(res, {
+            message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,
+            data: {
+                userId: admin.id,
+                tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN,
+                first_name: admin.name,
+                role: admin.role,
+                redirectRoute
+            },
+            statusCode: 200
+        });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });
@@ -206,4 +286,172 @@ const kycReviewAction = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction };
+const getUserLimitConfig = async (req, res, next) => {
+    try {
+        const { userType } = req;
+        const userId = req.params.userId;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!userId || !UUID_REGEX.test(userId)) {
+            return HttpResponse.error(res, {
+                message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
+                statusCode: 400
+            });
+        }
+
+        const serviceResponse = await adminService.getUserLimitConfig({ userId, userType });
+
+        if (!serviceResponse.success) {
+            return HttpResponse.error(res, {
+                message: serviceResponse.message,
+                data: serviceResponse.data,
+                statusCode: serviceResponse.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: serviceResponse.message,
+            data: serviceResponse.data,
+            statusCode: serviceResponse.statusCode
+        });
+
+    } catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: USER_LIMIT_CONFIG_MESSAGES.FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * POST /api/v1/admin/auth/logout
+ * Revokes the current admin session (if SESSION_LIMIT_ENABLED) then clears cookies.
+ * req.adminId and req.jti are set by adminMiddleware.
+ */
+const logout = async (req, res, next) => {
+    try {
+        if (SESSION_LIMIT_ENABLED && req.jti && req.adminId) {
+            const logoutResult = await adminSessionService.logoutCurrentSession(req.adminId, req.jti);
+            if (!logoutResult.success) {
+                // Log but don't fail — cookies must always be cleared
+                errorLogger.error('[adminController.logout] Session revocation failed:', logoutResult.message);
+            }
+        }
+
+        res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, clearCookieOptions());
+        res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, clearCookieOptions());
+
+        return HttpResponse.success(res, { message: SESSION_MESSAGES.LOGOUT_SUCCESS, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: SESSION_MESSAGES.LOGOUT_FAILED, statusCode: 500 });
+    }
+};
+
+const updateUserLimitConfig = async (req, res, next) => {
+    try {
+        const { userType, adminId } = req;
+        const userId = req.params.userId;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!userId || !UUID_REGEX.test(userId)) {
+            return HttpResponse.error(res, {
+                message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID,
+                statusCode: 400
+            });
+        }
+
+        const { error: validationError, value: payload } = updateLimitConfigSchema.validate(req.body, {
+            abortEarly: false
+        });
+
+        if (validationError) {
+            return HttpResponse.error(res, {
+                message: validationError.details.map(d => d.message).join(', '),
+                statusCode: 400
+            });
+        }
+
+        const serviceResponse = await adminService.updateUserLimitConfig({
+            userId,
+            adminId,
+            userType,
+            payload
+        });
+
+        if (!serviceResponse.success) {
+            return HttpResponse.error(res, {
+                message: serviceResponse.message,
+                data: serviceResponse.data,
+                statusCode: serviceResponse.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: serviceResponse.message,
+            data: serviceResponse.data,
+            statusCode: serviceResponse.statusCode
+        });
+
+    } catch (error) {
+        console.error(error);
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: USER_LIMIT_CONFIG_MESSAGES.UPDATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+const updateUserSuspension = async (req, res, next) => {
+    try {
+        const adminId = req.adminId;
+        const role = req.role;
+        const { userId, companyId, isSuspended, suspensionReason } = req.body;
+
+        if (!userId) {
+            return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.USER_ID_REQUIRED, statusCode: 400 });
+        }
+
+        if (typeof isSuspended !== 'boolean') {
+            return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.IS_SUSPENDED_REQUIRED, statusCode: 400 });
+        }
+
+        if (isSuspended && !suspensionReason) {
+            return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.SUSPENSION_REASON_REQUIRED, statusCode: 400 });
+        }
+
+        const result = await adminService.updateUserSuspension(
+            userId,
+            companyId,
+            adminId,
+            role,
+            isSuspended,
+            suspensionReason
+        );
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: USER_SUSPENSION_MESSAGES.UPDATE_FAILED, statusCode: 500 });
+    }
+};
+
+const getMatchingEngineStats = async (req, res, next) => {
+    try {
+        const result = await adminService.getMatchingEngineStats();
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: 'Error fetching matching engine stats.', statusCode: 500 });
+    }
+};
+
+module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, updateUserSuspension, getMatchingEngineStats, logout };

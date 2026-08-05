@@ -8,17 +8,17 @@ async function uploadToS3(
     fileName,
     mimeType,
     companyId,
-    userId
-) {
-    const s3Key = `company/${companyId}/${userId}/${fileType}/${Date.now()}-${fileName}`;
+    userId,
+    s3Key
+) {    
     await s3.send(
         new PutObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET,
             Key: s3Key,
             Body: fileBuffer,
             ContentType: mimeType,
-            ServerSideEncryption: "aws:kms",
-            SSEKMSKeyId: process.env.AWS_KMS_KEY_ID
+            // ServerSideEncryption: "aws:kms",
+            // SSEKMSKeyId: process.env.AWS_KMS_KEY_ID
         })
     );
     return s3Key;
@@ -77,9 +77,22 @@ async function getFileBuffer(key) {
     return Buffer.concat(chunks);
 }
 
+async function getFileStream(key) {
+
+    const response = await s3.send(
+        new GetObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: key,
+        })
+    );
+
+    return response.Body;
+}
+
 module.exports = {
     uploadToS3,
     getFileCollection,
     getFileUrl,
-    getFileBuffer
+    getFileBuffer,
+    getFileStream
 };

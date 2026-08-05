@@ -14,7 +14,7 @@ module.exports = (sequelize) => {
         },
 
         user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -23,7 +23,7 @@ module.exports = (sequelize) => {
         },
 
         company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'company',
@@ -40,27 +40,6 @@ module.exports = (sequelize) => {
             }
         },
 
-        locked_price: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
-
-        locked_currency: {
-            type: DataTypes.STRING(10),
-            allowNull: false
-        },
-
-        billing_cycle: {
-            type: DataTypes.ENUM('monthly', 'yearly'),
-            allowNull: false
-        },
-
-        status: {
-            type: DataTypes.ENUM('pending', 'active', 'expired', 'cancelled'),
-            allowNull: false,
-            defaultValue: 'pending'
-        },
-
         start_date: {
             type: DataTypes.DATE,
             allowNull: false
@@ -71,20 +50,12 @@ module.exports = (sequelize) => {
             allowNull: false
         },
 
-        auto_renew: {
-            type: DataTypes.BOOLEAN,
+        // 'pending' kept for compatibility with findActivePrememiumSubscription
+        // in the connection service. Our new flow sets status directly to 'active'.
+        status: {
+            type: DataTypes.ENUM('pending', 'active', 'expired', 'cancelled'),
             allowNull: false,
-            defaultValue: true
-        },
-
-        cancelled_at: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
-
-        cancellation_reason: {
-            type: DataTypes.TEXT,
-            allowNull: true
+            defaultValue: 'active'
         },
 
         created_at: {
@@ -94,7 +65,7 @@ module.exports = (sequelize) => {
             field: 'created_at'
         },
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         updated_at: {
@@ -103,7 +74,7 @@ module.exports = (sequelize) => {
             field: 'updated_at'
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         },
         is_deleted: {
@@ -116,7 +87,7 @@ module.exports = (sequelize) => {
             allowNull: true
         },
         deleted_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true
         }
 
@@ -145,10 +116,8 @@ module.exports = (sequelize) => {
             as: 'plan'
         });
 
-        UserSubscription.hasMany(models.SubscriptionPaymentTransaction, {
-            foreignKey: 'user_subscription_id',
-            as: 'payment_transactions'
-        });
+        // Note: SubscriptionPaymentTransaction association will be added here
+        // when payment gateway is integrated.
 
     };
 

@@ -54,7 +54,15 @@ const USER_MESSAGES = {
     VALIDATION_FAILED: 'Validation failed for the submitted fields',
     USER_LISTING_FAILURE: 'Error encountered while fetching user list',
     USER_LISTING_SUCCESS: 'User list fetched successfully',
-    USER_NOT_FOUND: 'User not found'
+    USER_NOT_FOUND: 'User not found',
+    SEARCH_QUERY_REQUIRED: 'q query parameter is required and must be a non-empty string',
+    SEARCH_SUCCESS: 'User search results fetched successfully',
+    SEARCH_FAILED: 'Error encountered while searching users',
+    USER_ID_REQUIRED: 'userId query parameter is required and must be a positive integer',
+    COMPANY_ID_REQUIRED: 'companyId query parameter is required and must be a positive integer',
+    ROLE_ID_REQUIRED: 'roleId query parameter is required and must be a positive integer',
+    ROLE_DETAILS_SUCCESS: 'User role details fetched successfully',
+    ROLE_DETAILS_FAILED: 'Error encountered while fetching user role details'
 };
 
 const LOGIN_MESSAGES = {
@@ -88,6 +96,32 @@ const ADMIN_MESSAGES = {
     LOGIN_FAILED: 'Error encountered while logging in'
 }
 
+const ADMIN_MANAGEMENT_MESSAGES = {
+    CREATE_SUCCESS: 'Admin created successfully',
+    CREATE_FAILED: 'Error encountered while creating admin',
+    UPDATE_SUCCESS: 'Admin updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating admin',
+    DELETE_SUCCESS: 'Admin deleted successfully',
+    DELETE_FAILED: 'Error encountered while deleting admin',
+    SUSPEND_SUCCESS: 'Admin suspended successfully',
+    SUSPEND_FAILED: 'Error encountered while suspending admin',
+    ACTIVATE_SUCCESS: 'Admin activated successfully',
+    ACTIVATE_FAILED: 'Error encountered while activating admin',
+    LIST_SUCCESS: 'Admin list fetched successfully',
+    LIST_FAILED: 'Error encountered while fetching admin list',
+    DETAIL_SUCCESS: 'Admin details fetched successfully',
+    DETAIL_FAILED: 'Error encountered while fetching admin details',
+    NOT_FOUND: 'Admin not found',
+    EMAIL_ALREADY_EXISTS: 'An admin with this email already exists',
+    CANNOT_SELF_ACTION: 'You cannot perform this action on your own account',
+    ALREADY_DELETED: 'Admin is already deleted',
+    ALREADY_SUSPENDED: 'Admin is already suspended',
+    ALREADY_ACTIVE: 'Admin is already active',
+    CANNOT_ACTION_DELETED: 'Cannot perform this action on a deleted admin',
+    INVALID_ROLE: 'Only ADMIN role accounts can be managed through this endpoint',
+    ACCOUNT_SUSPENDED: 'Your admin account has been suspended. Please contact a super admin.'
+};
+
 const MATCHING_MESSAGES = {
     MATCH_SUCCESS: 'Matches retrieved successfully',
     MATCH_FAILED: 'Error encountered while retrieving matches',
@@ -95,9 +129,35 @@ const MATCHING_MESSAGES = {
     NO_MATCHES_FOUND: 'No matching profiles found'
 };
 
+const SESSION_MESSAGES = {
+    SESSION_LISTING_SUCCESS: 'Active sessions fetched successfully',
+    SESSION_LISTING_FAILED: 'Failed to fetch active sessions',
+    SESSION_REVOKE_SUCCESS: 'Session revoked successfully',
+    SESSION_REVOKE_FAILED: 'Failed to revoke session',
+    SESSION_NOT_FOUND: 'Session not found',
+    LOGOUT_ALL_SUCCESS: 'All sessions revoked. Please log in again.',
+    LOGOUT_ALL_FAILED: 'Failed to revoke all sessions',
+    LOGOUT_SUCCESS: 'Logged out successfully',
+    LOGOUT_FAILED: 'Failed to log out',
+    SESSION_CREATE_SUCCESS: 'Session created successfully',
+    SESSION_CREATE_FAILED: 'Failed to create session',
+    SESSION_LIMIT_REACHED: 'Maximum number of active devices reached. Please choose a device to log out.',
+    SESSION_SELECTION_REQUIRED: 'Please select at least one device to log out.',
+    SESSION_SELECTION_INVALID: 'One or more selected sessions are invalid or do not belong to you.'
+}
+
+const ADMIN_CONFIG_MESSAGES = {
+    CONFIG_FETCH_SUCCESS: 'OTP configuration fetched successfully',
+    CONFIG_FETCH_FAILED: 'Error encountered while fetching OTP configuration',
+    CONFIG_UPDATE_SUCCESS: 'OTP configuration updated successfully',
+    CONFIG_UPDATE_FAILED: 'Error encountered while updating OTP configuration',
+    CONFIG_RESET_SUCCESS: 'OTP configuration reset to defaults successfully',
+    CONFIG_RESET_FAILED: 'Error encountered while resetting OTP configuration'
+};
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
-    KYC: 'kyc'
+    KYC: 'kyc',
+    CHAT: 'chat'
 }
 
 const CHANNEL_TYPE = {
@@ -130,13 +190,188 @@ const REDIRECT_ROUTES = {
 
 const ROLES = {
     USER: ['STARTUP', 'INVESTOR', 'B2B'],
-    ADMIN: ['SYS_ADMIN']
+    ADMIN: ['ADMIN'],
+    SUPER_ADMIN: ['SUPER_ADMIN']
+};
+
+const USER_ROLES_CODE = {
+    STARTUP: 'STARTUP',
+    INVESTOR: 'INVESTOR',
+    B2B: 'B2B'
+};
+
+const ADMIN_ROLES_CODE = {
+    ADMIN: 'ADMIN',
+    SUPER_ADMIN: 'SUPER_ADMIN'
+};
+
+const USER_TYPES = {
+    'B2B': 'USER',
+    'INVESTOR': 'USER',
+    'STARTUP': 'USER',
+    'ADMIN': 'ADMIN',
+    'SUPER_ADMIN': 'SUPER_ADMIN'
+};
+
+const USER_TYPE_VALUES = {
+    USER: 'USER',
+    ADMIN: 'ADMIN',
+    SUPER_ADMIN: 'SUPER_ADMIN'
+};
+
+const ADMIN_USER_TYPES = [USER_TYPE_VALUES.ADMIN, USER_TYPE_VALUES.SUPER_ADMIN];
+
+const ADMIN_STATUS = {
+    ACTIVE: 'ACTIVE',
+    SUSPENDED: 'SUSPENDED'
+};
+
+const ADMIN_ACTIVITY_ACTIONS = {
+    CREATED: 'CREATED',
+    UPDATED: 'UPDATED',
+    DELETED: 'DELETED',
+    SUSPENDED: 'SUSPENDED',
+    ACTIVATED: 'ACTIVATED',
+    PERMISSIONS_UPDATED: 'PERMISSIONS_UPDATED'
+};
+
+// Keys for per-admin feature permissions (stored in admin_permission table).
+// These are the checkbox options shown on the admin creation / edit screen.
+// Add new keys here when new admin-facing modules are introduced.
+const ADMIN_PERMISSION_KEYS = {
+    KYC_REVIEW: 'KYC_REVIEW',
+    FAQ_MANAGEMENT: 'FAQ_MANAGEMENT',
+    USER_MANAGEMENT: 'USER_MANAGEMENT'
+};
+
+// ── Permissions ──────────────────────────────────────────────────────────────
+// Keys are namespaced MODULE.ACTION and must match permission_master.permission_key
+// (see src/seed_data/PermissionMaster.sql, the source of truth for the catalog).
+// This object only gives routes a typo-safe reference to those same key strings —
+// which roles get which permission still comes entirely from role_permission_map via Redis.
+const PERMISSIONS = {
+    AUTH: {
+        VERIFY_OTP: 'AUTH.VERIFY_OTP',
+        RESEND_OTP: 'AUTH.RESEND_OTP',
+        MFA_TRIGGER_OTP: 'AUTH.MFA_TRIGGER_OTP',
+        MFA_VERIFY_OTP: 'AUTH.MFA_VERIFY_OTP',
+        MFA_RESEND_OTP: 'AUTH.MFA_RESEND_OTP'
+    },
+    USER: {
+        BUILD_PROFILE: 'USER.BUILD_PROFILE',
+        VIEW_PROFILE: 'USER.VIEW_PROFILE',
+        UPDATE_PROFILE: 'USER.UPDATE_PROFILE',
+        SEARCH: 'USER.SEARCH',
+        VIEW_ROLE_DETAILS: 'USER.VIEW_ROLE_DETAILS'
+    },
+    FILE: {
+        SCAN_IMAGE: 'FILE.SCAN_IMAGE',
+        SCAN_DOCUMENT: 'FILE.SCAN_DOCUMENT',
+        SAVE_KYC_INFO: 'FILE.SAVE_KYC_INFO',
+        PREVIEW: 'FILE.PREVIEW',
+        GET_KYC_DOCS: 'FILE.GET_KYC_DOCS'
+    },
+    MATCHING: {
+        VIEW_PROFILES: 'MATCHING.VIEW_PROFILES'
+    },
+    SUBSCRIPTION: {
+        VIEW_PLANS: 'SUBSCRIPTION.VIEW_PLANS',
+        SELECT_PLAN: 'SUBSCRIPTION.SELECT_PLAN',
+        VIEW_MY_SUBSCRIPTION: 'SUBSCRIPTION.VIEW_MY_SUBSCRIPTION'
+    },
+    CONNECTION: {
+        SEND_REQUEST: 'CONNECTION.SEND_REQUEST',
+        CHANGE_STATUS: 'CONNECTION.CHANGE_STATUS',
+        VIEW_SENT: 'CONNECTION.VIEW_SENT',
+        VIEW_RECEIVED: 'CONNECTION.VIEW_RECEIVED'
+    },
+    SESSION: {
+        VIEW_ACTIVE: 'SESSION.VIEW_ACTIVE',
+        VIEW_LIMIT_STATUS: 'SESSION.VIEW_LIMIT_STATUS',
+        LOGOUT: 'SESSION.LOGOUT',
+        LOGOUT_ALL: 'SESSION.LOGOUT_ALL',
+        REVOKE_SELECTED: 'SESSION.REVOKE_SELECTED',
+        REVOKE: 'SESSION.REVOKE'
+    },
+    MEETING: {
+        CREATE: 'MEETING.CREATE',
+        VIEW_UPCOMING: 'MEETING.VIEW_UPCOMING',
+        VIEW_DETAIL: 'MEETING.VIEW_DETAIL',
+        VIEW_LIST: 'MEETING.VIEW_LIST',
+        UPDATE: 'MEETING.UPDATE'
+    },
+    CHAT: {
+        VIEW_MESSAGES: 'CHAT.VIEW_MESSAGES',
+        MARK_READ: 'CHAT.MARK_READ',
+        UPLOAD_MEDIA: 'CHAT.UPLOAD_MEDIA',
+        VIEW_SHARED_FILES: 'CHAT.VIEW_SHARED_FILES',
+        VIEW_MEDIA: 'CHAT.VIEW_MEDIA'
+    },
+    FAQ: {
+        VIEW: 'FAQ.VIEW'
+    },
+    DEAL_ROOM: {
+        VIEW_LIST: 'DEAL_ROOM.VIEW_LIST',
+        CLOSE: 'DEAL_ROOM.CLOSE',
+        ARCHIVE: 'DEAL_ROOM.ARCHIVE',
+        UNARCHIVE: 'DEAL_ROOM.UNARCHIVE',
+        VIEW_PENDING_STAGE_REQUEST: 'DEAL_ROOM.VIEW_PENDING_STAGE_REQUEST',
+        EXPORT: 'DEAL_ROOM.EXPORT'
+    },
+    DEAL_ROOM_TERM_SHEET: {
+        VIEW_CURRENT: 'DEAL_ROOM_TERM_SHEET.VIEW_CURRENT',
+        VIEW_HISTORY: 'DEAL_ROOM_TERM_SHEET.VIEW_HISTORY'
+    },
+    DEAL_ROOM_OFFER: {
+        VIEW_THREAD: 'DEAL_ROOM_OFFER.VIEW_THREAD',
+        VIEW_ALL: 'DEAL_ROOM_OFFER.VIEW_ALL',
+        VIEW_CURRENT: 'DEAL_ROOM_OFFER.VIEW_CURRENT',
+        VIEW_DRAFT: 'DEAL_ROOM_OFFER.VIEW_DRAFT'
+    },
+    ADMIN_AUTH: {
+        MFA_TRIGGER_OTP: 'ADMIN_AUTH.MFA_TRIGGER_OTP',
+        MFA_VERIFY_OTP: 'ADMIN_AUTH.MFA_VERIFY_OTP',
+        MFA_RESEND_OTP: 'ADMIN_AUTH.MFA_RESEND_OTP'
+    },
+    ADMIN_USER: {
+        LIST: 'ADMIN_USER.LIST',
+        VIEW_KYC_DOCS: 'ADMIN_USER.VIEW_KYC_DOCS',
+        SUSPENSION_ACTION: 'ADMIN_USER.SUSPENSION_ACTION'
+    },
+    ADMIN_KYC: {
+        DOCUMENT_ACTION: 'ADMIN_KYC.DOCUMENT_ACTION',
+        REVIEW_ACTION: 'ADMIN_KYC.REVIEW_ACTION'
+    },
+    ADMIN_USER_LIMIT: {
+        VIEW: 'ADMIN_USER_LIMIT.VIEW',
+        UPDATE: 'ADMIN_USER_LIMIT.UPDATE'
+    },
+    ADMIN_FAQ: {
+        LIST: 'ADMIN_FAQ.LIST',
+        CREATE: 'ADMIN_FAQ.CREATE',
+        UPDATE: 'ADMIN_FAQ.UPDATE'
+    },
+    ADMIN_CONFIG: {
+        VIEW_OTP_CONFIG: 'ADMIN_CONFIG.VIEW_OTP_CONFIG',
+        UPDATE_OTP_CONFIG: 'ADMIN_CONFIG.UPDATE_OTP_CONFIG',
+        RESET_OTP_CONFIG: 'ADMIN_CONFIG.RESET_OTP_CONFIG'
+    },
+    ADMIN_MANAGEMENT: {
+        LIST: 'ADMIN_MANAGEMENT.LIST',
+        VIEW: 'ADMIN_MANAGEMENT.VIEW',
+        CREATE: 'ADMIN_MANAGEMENT.CREATE',
+        UPDATE: 'ADMIN_MANAGEMENT.UPDATE',
+        DELETE: 'ADMIN_MANAGEMENT.DELETE',
+        SUSPEND: 'ADMIN_MANAGEMENT.SUSPEND',
+        ACTIVATE: 'ADMIN_MANAGEMENT.ACTIVATE'
+    }
 };
 
 const TOKEN_TYPES = {
     AUTH_ACCESS_TOKEN: 'AUTH_ACCESS_TOKEN',
     AUTH_REFRESH_ACCESS_TOKEN: 'REFRESH_ACCESS_TOKEN',
-    RESET_PASSWORD_ACCESS_TOKEN: 'RESET_PASSWORD_ACCESS_TOKEN'
+    RESET_PASSWORD_ACCESS_TOKEN: 'RESET_PASSWORD_ACCESS_TOKEN',
+    MFA_ACCESS_TOKEN: 'MFA_ACCESS_TOKEN'
 };
 
 const CONNECTION_VALID_TRANSITIONS = {
@@ -170,6 +405,15 @@ const CONNECTION_REQUEST_LIMITS = {
     PREMIUM: 50
 };
 
+const TRIAL_DAYS_LIMITS = {
+    FREE: 7
+};
+
+const TRIAL_CONFIG_LOOKUP_KEYS = {
+    FREE_CONNECTION_LIMIT: 'free_trial_connection_limit',
+    PREMIUM_CONNECTION_LIMIT: 'premium_connection_limit'
+};
+
 const CONNECTION_MESSAGES = {
     REQUEST_SENT: 'Connection request sent successfully',
     CONNECTION_LIMIT_REACHED: 'Connection request limit reached for this billing period',
@@ -187,7 +431,11 @@ const CONNECTION_MESSAGES = {
     INVALID_ROLE_PAIR: 'Connection is not allowed between these roles',
     FETCH_SUCCESS: 'Connections fetched successfully',
     FETCH_FAILED: 'Error encountered while fetching connections',
-    REQUEST_FAILED: 'Error encountered while sending connection request'
+    REQUEST_FAILED: 'Error encountered while sending connection request',
+    SENT_FETCH_SUCCESS: 'Sent connection requests fetched successfully',
+    SENT_FETCH_FAILED: 'Error encountered while fetching sent connection requests',
+    RECEIVED_FETCH_SUCCESS: 'Received connection requests fetched successfully',
+    RECEIVED_FETCH_FAILED: 'Error encountered while fetching received connection requests'
 };
 
 const DEAL_ROOM_STATUS = {
@@ -197,7 +445,266 @@ const DEAL_ROOM_STATUS = {
 
 const DEAL_ROOM_MESSAGES = {
     CREATE_SUCCESS: 'Deal room created successfully',
-    CREATE_FAILED: 'Error encountered while creating deal room'
+    CREATE_FAILED: 'Error encountered while creating deal room',
+    FETCH_SUCCESS: 'Deal rooms fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching deal rooms',
+    CLOSE_SUCCESS: 'Deal room closed successfully',
+    CLOSE_FAILED: 'Error encountered while closing deal room',
+    ALREADY_CLOSED: 'Deal room is already closed',
+    NOT_FOUND: 'Deal room not found',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    ARCHIVE_SUCCESS: 'Deal room archived successfully',
+    ARCHIVE_FAILED: 'Error encountered while archiving deal room',
+    ALREADY_ARCHIVED: 'Deal room is already archived',
+    UNARCHIVE_SUCCESS: 'Deal room unarchived successfully',
+    UNARCHIVE_FAILED: 'Error encountered while unarchiving deal room',
+    NOT_ARCHIVED: 'Deal room is not archived'
+};
+
+const DEAL_ROOM_STAGES = {
+    INITIAL_CONNECTION: 'Initial Connection',
+    NEGOTIATION: 'Negotiation',
+    DUE_DILIGENCE: 'Due Diligence',
+    CLOSED: 'Closed'
+};
+
+const DEAL_ROOM_STAGE_REQUEST_STATUS = {
+    PENDING: 'Pending',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected'
+};
+
+const DEAL_ROOM_STAGE_MESSAGES = {
+    REQUEST_SUCCESS: 'Stage update requested successfully',
+    REQUEST_FAILED: 'Error encountered while requesting stage update',
+    REQUEST_PENDING_EXISTS: 'A stage update request is already pending for this deal room',
+    INVALID_STAGE: 'Invalid deal room stage',
+    SAME_STAGE: 'Deal room is already in the requested stage',
+    RESPOND_SUCCESS: 'Stage update request updated successfully',
+    RESPOND_FAILED: 'Error encountered while responding to stage update request',
+    INVALID_DECISION: 'decision must be Accepted or Rejected',
+    REQUEST_NOT_FOUND: 'Stage update request not found',
+    REQUEST_NOT_PENDING: 'This stage update request has already been responded to',
+    CANNOT_RESPOND_OWN_REQUEST: 'You cannot respond to your own stage update request',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; stage updates are not allowed',
+    PENDING_OFFER_BLOCKS_TRANSITION: 'Resolve the pending funding offer (accept, reject or counter it) before moving past the Negotiation stage'
+};
+
+
+const DEAL_ROOM_OFFER_STATUS = {
+    DRAFT: 'Draft',
+    PENDING: 'Pending',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected',
+    COUNTERED: 'Countered'
+};
+
+const VALUATION_TYPE = {
+    PRE_MONEY: 'Pre-money',
+    POST_MONEY: 'Post-money'
+};
+
+const OFFER_CURRENCY = {
+    INR: 'INR',
+    USD: 'USD',
+    EUR: 'EUR',
+    GBP: 'GBP',
+    SGD: 'SGD',
+    AED: 'AED'
+};
+
+const DEAL_ROOM_OFFER_MESSAGES = {
+    DRAFT_SAVE_SUCCESS: 'Offer draft saved successfully',
+    DRAFT_SAVE_FAILED: 'Error encountered while saving offer draft',
+    SEND_SUCCESS: 'Offer sent successfully',
+    SEND_FAILED: 'Error encountered while sending offer',
+    RESPOND_SUCCESS: 'Offer updated successfully',
+    RESPOND_FAILED: 'Error encountered while responding to offer',
+    COUNTER_SUCCESS: 'Counter offer sent successfully',
+    COUNTER_FAILED: 'Error encountered while sending counter offer',
+    FETCH_SUCCESS: 'Offers fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching offers',
+    NOT_FOUND: 'Offer not found',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; offers are not allowed',
+    INVALID_ROLE_PAIR: 'Funding offers are only allowed between an Investor and a Startup',
+    PENDING_OFFER_EXISTS: 'A pending offer already exists for this deal room',
+    INVALID_DECISION: 'decision must be Accepted or Rejected',
+    OFFER_NOT_PENDING: 'This offer has already been responded to',
+    CANNOT_RESPOND_OWN_OFFER: 'You cannot respond to your own offer',
+    NOT_NEGOTIATION_STAGE: 'Funding offer actions are only allowed during the Negotiation stage'
+};
+
+const DEAL_ROOM_TERM_SHEET_MESSAGES = {
+    SAVE_SUCCESS: 'Term sheet saved successfully',
+    SAVE_FAILED: 'Error encountered while saving term sheet',
+    FETCH_SUCCESS: 'Term sheet fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching term sheet',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; term sheet edits are not allowed',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    INVALID_ROLE_PAIR: 'The B2B term sheet is only allowed between two B2B enterprises',
+    NOT_NEGOTIATION_STAGE: 'Term sheet edits are only allowed during the Negotiation stage'
+};
+
+
+const CHAT_MESSAGE_TYPE = {
+    TEXT: 'TEXT',
+    IMAGE: 'IMAGE',
+    DOCUMENT: 'DOCUMENT',
+    AUDIO: 'AUDIO',
+    VIDEO: 'VIDEO'
+};
+
+const CHAT_MESSAGES = {
+    SEND_SUCCESS: 'Message sent successfully',
+    SEND_FAILED: 'Error encountered while sending message',
+    FETCH_SUCCESS: 'Messages fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching messages',
+    MARK_READ_SUCCESS: 'Messages marked as read',
+    MARK_READ_FAILED: 'Error encountered while marking messages as read',
+    MEDIA_UPLOAD_SUCCESS: 'Media message sent successfully',
+    MEDIA_UPLOAD_FAILED: 'Error encountered while sending media message',
+    MEDIA_FETCH_FAILED: 'Error encountered while fetching media',
+    MEDIA_REQUIRED: 'Media file is required',
+    FILES_FETCH_SUCCESS: 'Shared files fetched successfully',
+    FILES_FETCH_FAILED: 'Error encountered while fetching shared files',
+    MESSAGE_NOT_FOUND: 'Message not found',
+    MEDIA_NOT_FOUND: 'Media not found',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; new messages are not allowed',
+    FORBIDDEN: 'You are not authorized to access this deal room chat',
+    EXPORT_FAILED: 'Error encountered while exporting deal room data'
+};
+
+const SOCKET_EVENTS = {
+    JOIN_DEAL_ROOM: 'join_deal_room',
+    LEAVE_DEAL_ROOM: 'leave_deal_room',
+    SEND_MESSAGE: 'send_message',
+    NEW_MESSAGE: 'new_message',
+    MARK_READ: 'mark_read',
+    MESSAGES_READ: 'messages_read',
+    TYPING: 'typing',
+    STOP_TYPING: 'stop_typing',
+    USER_TYPING: 'user_typing',
+    REQUEST_STAGE_UPDATE: 'request_stage_update',
+    RESPOND_STAGE_UPDATE: 'respond_stage_update',
+    STAGE_UPDATE_REQUESTED: 'stage_update_requested',
+    STAGE_UPDATE_RESPONDED: 'stage_update_responded',
+    ERROR: 'error',
+    USER_PRESENCE: 'user_presence',
+    MEETING_SCHEDULED: 'meeting_scheduled',
+
+
+    SAVE_OFFER_DRAFT: 'save_offer_draft',
+    OFFER_DRAFT_SAVED: 'offer_draft_saved',
+    SEND_OFFER: 'send_offer',
+    OFFER_RECEIVED: 'offer_received',
+    RESPOND_OFFER: 'respond_offer',
+    OFFER_RESPONDED: 'offer_responded',
+    COUNTER_OFFER: 'counter_offer',
+    OFFER_COUNTERED: 'offer_countered',
+
+    UPDATE_TERM_SHEET: 'update_term_sheet',
+    TERM_SHEET_UPDATED: 'term_sheet_updated'
+
+};
+
+const MEETING_MESSAGES = {
+    CREATE_SUCCESS: 'Meeting created successfully',
+    CREATE_FAILED: 'Error encountered while creating meeting',
+    UPDATE_SUCCESS: 'Meeting updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating meeting',
+    NOT_FOUND: 'Meeting not found',
+    DEAL_ROOM_NOT_FOUND: 'Deal room not found',
+    PAST_TIME: 'Meeting time cannot be in the past',
+    NOT_DEAL_ROOM_PARTICIPANT: 'You are not a participant in this deal room',
+    RECIPIENT_MISMATCH: 'The recipient does not match the deal room participant',
+    FETCH_SUCCESS: 'Meetings fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching meetings',
+    FORBIDDEN: 'You are not authorized to perform this action'
+};
+
+const USER_LIMIT_CONFIG_MESSAGES = {
+    FETCH_SUCCESS: 'User limit configuration fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching user limit configuration',
+    UPDATE_SUCCESS: 'User limit configuration updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating user limit configuration',
+    USER_NOT_FOUND: 'User not found',
+    FORBIDDEN: 'You are not authorized to perform this action',
+    INVALID_USER_ID: 'Invalid user ID provided'
+};
+
+const USER_SUSPENSION_MESSAGES = {
+    USER_ID_REQUIRED: 'userId is required',
+    IS_SUSPENDED_REQUIRED: 'isSuspended is required and must be a boolean',
+    SUSPENSION_REASON_REQUIRED: 'suspension_reason is required when suspending a user',
+    FORBIDDEN_SUPER_ADMIN_LOCK: 'This user\'s suspension status was last set by a super admin and cannot be changed by an admin.',
+    UPDATE_SUCCESS: 'User suspension status updated successfully.',
+    UPDATE_FAILED: 'Failed to update user suspension status.',
+    ACCOUNT_SUSPENDED: 'Your account has been suspended. Please contact support.'
+};
+
+const PREMIUM_DAYS_LIMIT_DEFAULT = 30;
+
+const USER_LIMIT_DEFAULTS = {
+    ALLOWED_CONNECTIONS: CONNECTION_REQUEST_LIMITS.FREE,
+    ALLOWED_FREE_TRIAL_DAYS: TRIAL_DAYS_LIMITS.FREE,
+    ALLOWED_PREMIUM_DAYS: PREMIUM_DAYS_LIMIT_DEFAULT
+};
+
+// ── FAQ ───────────────────────────────────────────────────────────────────────
+
+const FAQ_MESSAGES = {
+    FETCH_SUCCESS: 'FAQs fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching FAQs',
+    CREATE_SUCCESS: 'FAQ created successfully',
+    CREATE_FAILED: 'Error encountered while creating FAQ',
+    UPDATE_SUCCESS: 'FAQ updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating FAQ',
+    NOT_FOUND: 'FAQ not found'
+};
+
+const SUBSCRIPTION_PLAN_MESSAGES = {
+    PLANS_FETCH_SUCCESS: 'Subscription plans fetched successfully',
+    PLANS_FETCH_FAILED: 'Error encountered while fetching subscription plans',
+    PLAN_NOT_FOUND: 'Subscription plan not found or is no longer available',
+    PLAN_ID_REQUIRED: 'plan_id is required and must be a positive integer',
+    PLAN_SELECT_SUCCESS: 'Subscription plan selected successfully',
+    PLAN_SELECT_FAILED: 'Error encountered while selecting subscription plan',
+    SUBSCRIPTION_NOT_FOUND: 'No active subscription found',
+    SUBSCRIPTION_FETCH_SUCCESS: 'Subscription details fetched successfully',
+    SUBSCRIPTION_FETCH_FAILED: 'Error encountered while fetching subscription details'
+};
+
+const DATA_TYPES = {
+    STRING: 'string',
+    INTEGER: 'integer',
+    FLOAT: 'float',
+    BOOLEAN: 'boolean',
+    DATETIME: 'datetime',
+    DATE: 'date'
+};
+
+const UNITS = {
+    MINUTE: 'minute',
+    SECOND: 'second',
+    HOUR: 'hour',
+    DAY: 'day',
+    MONTH: 'month',
+    YEAR: 'year',
+    NUMBER: 'number',
+    FLAG: 'flag'
+};
+
+const REDIS_BASE_KEYS = {
+    CONFIG_OTP_CONFIG: 'config:otp_config',
+    CONFIG_TRIAL_CONFIG: 'config:trial_config',
+    SUSPENDED_USERS_HASH: 'suspended_users',
+    SUSPENDED_ADMINS_HASH: 'suspended_admins'
 };
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
@@ -205,7 +712,14 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
-    CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS,
-    DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES
-};
+    CONNECTION_VALID_TRANSITIONS, SUBSCRIPTION_MESSAGES, CONNECTION_REQUEST_LIMITS, TRIAL_DAYS_LIMITS, TRIAL_CONFIG_LOOKUP_KEYS,
+    DEAL_ROOM_STATUS, DEAL_ROOM_MESSAGES, CHAT_MESSAGE_TYPE, CHAT_MESSAGES, SOCKET_EVENTS,
+    SESSION_MESSAGES, MEETING_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, DEAL_ROOM_STAGES,
 
+    DEAL_ROOM_STAGE_REQUEST_STATUS, DEAL_ROOM_STAGE_MESSAGES, USER_ROLES_CODE, ADMIN_ROLES_CODE,
+    DEAL_ROOM_OFFER_STATUS, VALUATION_TYPE, OFFER_CURRENCY, DEAL_ROOM_OFFER_MESSAGES,
+    DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES, PERMISSIONS, USER_TYPES, USER_TYPE_VALUES, ADMIN_USER_TYPES,
+    SUBSCRIPTION_PLAN_MESSAGES,
+    DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES,
+    ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS 
+};

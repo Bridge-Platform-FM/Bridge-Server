@@ -2,6 +2,18 @@ require('dotenv').config();
 
 const env = {
     SERVER_PORT: process.env.SERVER_PORT,
+    SKIP_VIRUS_SCAN: process.env.SKIP_VIRUS_SCAN === 'true',
+    // The frontend origin(s) allowed to send/receive the httpOnly auth cookies (CORS
+    // credentials require an explicit origin per request, never '*' — this list lets
+    // multiple known dev/staging/prod origins each be individually allowed).
+    FRONTEND_ORIGINS: (process.env.FRONTEND_ORIGINS || 'http://localhost:3000')
+        .split(',').map((s) => s.trim()).filter(Boolean),
+    // true when the frontend and backend are on genuinely different domains (e.g. a
+    // devtunnel/forwarded-port URL) rather than just different localhost ports — a real
+    // cross-SITE setup, which needs SameSite=None + Secure instead of the local default
+    // Lax/non-Secure (SameSite=Lax cookies are never sent on cross-site fetch/XHR/socket
+    // requests, only top-level navigations, so the cookie would silently never arrive).
+    COOKIE_CROSS_SITE: process.env.COOKIE_CROSS_SITE === 'true',
     DB: {
         DB_HOST: process.env.DB_HOST,
         DB_PORT: process.env.DB_PORT,
@@ -17,7 +29,9 @@ const env = {
         ACCESS_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY || '55m',
         REFRESH_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY || '7d',
         RESET_PASSWORD_SECRET: process.env.RESET_PASSWORD_SECRET || 'reset_password_secret_key_12345',
-        RESET_PASSWORD_EXPIRY: process.env.RESET_PASSWORD_EXPIRY || '10m'
+        RESET_PASSWORD_EXPIRY: process.env.RESET_PASSWORD_EXPIRY || '10m',
+        MFA_SECRET: process.env.MFA_SECRET || 'mfa_secret_key_12345',
+        MFA_EXPIRY: process.env.MFA_EXPIRY || '15m'
     },
     OTP: {
         EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '5', 10),

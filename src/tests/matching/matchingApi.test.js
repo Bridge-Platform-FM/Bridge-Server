@@ -16,6 +16,26 @@ jest.mock('../../matching/matchingRepository', () => ({
     getCandidateProfiles: jest.fn()
 }));
 
+// Mock the connection service so tests are DB-free
+jest.mock('../../services/connectionService', () => ({
+    getConnectionBillingWindow: jest.fn().mockResolvedValue({
+        success: true,
+        data: { windowStart: new Date('2026-01-01'), windowEnd: new Date('2026-02-01') }
+    }),
+    getConnectionRequestsInWindow: jest.fn().mockResolvedValue({
+        success: true,
+        data: { count: 0 }
+    })
+}));
+
+// Mock the subscription service so tests are DB-free (defaults to no active premium subscription)
+jest.mock('../../services/subscriptionService', () => ({
+    findActivePrememiumSubscription: jest.fn().mockResolvedValue({
+        success: true,
+        data: null
+    })
+}));
+
 // Mock the logger to suppress output during tests
 jest.mock('../../configs/logger', () => ({
     errorLogger: { error: jest.fn(), info: jest.fn() },
@@ -23,6 +43,8 @@ jest.mock('../../configs/logger', () => ({
 }));
 
 const matchingRepository = require('../../matching/matchingRepository');
+const connectionService  = require('../../services/connectionService');
+const subscriptionService = require('../../services/subscriptionService');
 const matchingService    = require('../../matching/matchingService');
 
 // ─── Shared mock data ─────────────────────────────────────────────────────────
@@ -30,6 +52,7 @@ const matchingService    = require('../../matching/matchingService');
 const mockStartupProfile = {
     id: 1,
     role_code: 'STARTUP',
+    company_id: 100,
     company_name: 'FinCo',
     organization_name: 'FinCo',
     startup_industry_sector: ['fintech', 'saas'],
@@ -49,6 +72,7 @@ const mockStartupProfile = {
 const mockInvestorProfile = {
     id: 2,
     role_code: 'INVESTOR',
+    company_id: 200,
     company_name: 'VC Fund',
     organization_name: 'VC Fund',
     investor_sector_preference: ['fintech', 'saas'],
@@ -271,5 +295,100 @@ describe('MatchingService — getMatches()', () => {
         const result = await matchingService.getMatches(1);
         expect(result.success).toBe(true);
         expect(result.data.matches).toHaveLength(5);
+    });
+
+    // --- Connection request count in current billing window ---
+    test('includes requestsSentInWindow from connectionService in success response', async () => {
+        matchingRepository.getProfileWithRole.mockResolvedValue(mockStartupProfile);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([mockInvestorProfile]);
+        connectionService.getConnectionRequestsInWindow.mockResolvedValueOnce({ success: true, data: { count: 3 } });
+
+        const result = await matchingService.getMatches(1);
+
+        expect(result.data.requestsSentInWindow).toBe(3);
+    });
+
+    test('includes requestsSentInWindow when there are no eligible candidates', async () => {
+        const investorSource = { ...mockInvestorProfile, id: 10 };
+        const anotherInvestor = { ...mockInvestorProfile, id: 11 };
+
+        matchingRepository.getProfileWithRole.mockResolvedValue(investorSource);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([anotherInvestor]);
+        connectionService.getConnectionRequestsInWindow.mockResolvedValueOnce({ success: true, data: { count: 1 } });
+
+        const result = await matchingService.getMatches(10);
+
+        expect(result.data.matches).toHaveLength(0);
+        expect(result.data.requestsSentInWindow).toBe(1);
+    });
+
+    test('returns error when fetching the billing window fails', async () => {
+        matchingRepository.getProfileWithRole.mockResolvedValue(mockStartupProfile);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([mockInvestorProfile]);
+        connectionService.getConnectionBillingWindow.mockResolvedValueOnce({ success: false, message: 'window failed', statusCode: 500 });
+
+        const result = await matchingService.getMatches(1);
+
+        expect(result.success).toBe(false);
+        expect(result.statusCode).toBe(500);
+    });
+
+    test('returns error when fetching the request count fails', async () => {
+        matchingRepository.getProfileWithRole.mockResolvedValue(mockStartupProfile);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([mockInvestorProfile]);
+        connectionService.getConnectionRequestsInWindow.mockResolvedValueOnce({ success: false, message: 'count failed', statusCode: 500 });
+
+        const result = await matchingService.getMatches(1);
+
+        expect(result.success).toBe(false);
+        expect(result.statusCode).toBe(500);
+    });
+
+    // --- Connection request limit and remaining count ---
+    test('uses the FREE limit and computes remaining when there is no active subscription', async () => {
+        matchingRepository.getProfileWithRole.mockResolvedValue(mockStartupProfile);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([mockInvestorProfile]);
+        subscriptionService.findActivePrememiumSubscription.mockResolvedValueOnce({ success: true, data: null });
+        connectionService.getConnectionRequestsInWindow.mockResolvedValueOnce({ success: true, data: { count: 1 } });
+
+        const result = await matchingService.getMatches(1);
+
+        expect(result.data.requestLimit).toBe(3);
+        expect(result.data.requestsRemaining).toBe(2);
+    });
+
+    test('uses the PREMIUM limit when the user has an active subscription', async () => {
+        matchingRepository.getProfileWithRole.mockResolvedValue(mockStartupProfile);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([mockInvestorProfile]);
+        subscriptionService.findActivePrememiumSubscription.mockResolvedValueOnce({ success: true, data: { id: 1 } });
+        connectionService.getConnectionRequestsInWindow.mockResolvedValueOnce({ success: true, data: { count: 10 } });
+
+        const result = await matchingService.getMatches(1);
+
+        expect(result.data.requestLimit).toBe(50);
+        expect(result.data.requestsRemaining).toBe(40);
+    });
+
+    test('requestsRemaining does not go below zero when the limit is exceeded', async () => {
+        matchingRepository.getProfileWithRole.mockResolvedValue(mockStartupProfile);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([mockInvestorProfile]);
+        subscriptionService.findActivePrememiumSubscription.mockResolvedValueOnce({ success: true, data: null });
+        connectionService.getConnectionRequestsInWindow.mockResolvedValueOnce({ success: true, data: { count: 5 } });
+
+        const result = await matchingService.getMatches(1);
+
+        expect(result.data.requestLimit).toBe(3);
+        expect(result.data.requestsRemaining).toBe(0);
+    });
+
+    test('returns error when fetching the subscription status fails', async () => {
+        matchingRepository.getProfileWithRole.mockResolvedValue(mockStartupProfile);
+        matchingRepository.getCandidateProfiles.mockResolvedValue([mockInvestorProfile]);
+        subscriptionService.findActivePrememiumSubscription.mockResolvedValueOnce({ success: false, message: 'subscription lookup failed', statusCode: 500 });
+
+        const result = await matchingService.getMatches(1);
+
+        expect(result.success).toBe(false);
+        expect(result.statusCode).toBe(500);
     });
 });

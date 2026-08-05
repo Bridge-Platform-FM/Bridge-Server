@@ -39,8 +39,10 @@ const findByEmail = async (email) => {
 const getCompanyUser_role = async (companyId, userId) => {
     return await sequelize.query(
         `select crm.id, crm.role_name, crm.role_code, crm.role_description
-        from company_user_role cur join company_role_master crm on cur.role_id = crm.id
-        where cur.company_id = :companyId and cur.user_id = :userId and cur.is_default_role is True`,
+        from company_user_role cur
+        join company_role_master crm on cur.role_id = crm.id
+        where cur.company_id = :companyId
+        and cur.user_id = :userId`,
         {
             replacements: { userId, companyId },
             type: QueryTypes.SELECT
@@ -51,8 +53,10 @@ const getCompanyUser_role = async (companyId, userId) => {
 const getUserList = async () => {
     return await sequelize.query(
         `select 
+            u.id as user_id,
             u.first_name, 
             u.last_name, 
+            c.id as company_id,
             c.company_email, 
             c.company_name, 
             c.country_code, 
@@ -60,11 +64,40 @@ const getUserList = async () => {
             c.is_email_verified, 
             c.is_mobile_number_verified, 
             c.kyc_status,
+            u.is_active,
+            u.is_user_suspended,
             (select crm.role_code from company_role_master crm where id = cur.role_id) as role
         from "user" u 
         join company c on u.company_email = c.company_email 
         join company_user_role cur on cur.company_id = c.id and cur.user_id = u.id
         where u.is_deleted is not true and c.is_deleted is not true and cur.is_default_role is true`,
+        {
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
+const getSuspendedUsersWithRoleAndCompany = async () => {
+    return await sequelize.query(
+        `SELECT
+            u.id AS "userId",
+            c.id AS "companyId",
+            cur.role_id AS "roleId",
+            crm.role_code AS "role",
+            h.suspension_reason AS "reason",
+            h.created_at AS "suspendedAt"
+        FROM "user" u
+        JOIN company_user_role cur ON cur.user_id = u.id AND cur.is_default_role IS TRUE AND cur.is_deleted IS NOT TRUE
+        JOIN company_role_master crm ON crm.id = cur.role_id
+        JOIN company c ON c.id = cur.company_id
+        LEFT JOIN LATERAL (
+            SELECT suspension_reason, created_at
+            FROM user_suspension_history
+            WHERE user_id = u.id
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) h ON true
+        WHERE u.is_user_suspended IS TRUE AND u.is_deleted IS NOT TRUE`,
         {
             type: QueryTypes.SELECT
         }
@@ -109,10 +142,73 @@ const getUserKycDocs = async () => {
     );
 };
 
+const searchUsers = async (searchQuery, searchableRoles = []) => {
+    const words = [...new Set(searchQuery.trim().split(/\s+/).filter(Boolean))];
+
+    const replacements = {};
+    const wordConditions = words.map((word, index) => {
+        const key = `word${index}`;
+        replacements[key] = `%${word.replace(/[%_\\]/g, '\\$&')}%`;
+        return `(c.company_email ILIKE :${key} ESCAPE '\\' OR u.first_name ILIKE :${key} ESCAPE '\\' OR u.last_name ILIKE :${key} ESCAPE '\\' OR c.company_name ILIKE :${key} ESCAPE '\\')`;
+    }).join(' OR ');
+
+    let roleFilter = '';
+    if (Array.isArray(searchableRoles) && searchableRoles.length > 0) {
+        replacements.searchableRoles = searchableRoles;
+        roleFilter = 'AND crm.role_code IN (:searchableRoles)';
+    }
+
+    return await sequelize.query(
+        `SELECT
+            u.id AS user_id,
+            cur.role_id,
+            c.id AS company_id,
+            u.first_name,
+            u.last_name,
+            c.company_name,
+            c.company_email AS email,
+            c.mobile_number,
+            u.country,
+            u.continent
+        FROM "user" u
+        JOIN company c ON u.company_email = c.company_email
+        JOIN company_user_role cur ON cur.company_id = c.id AND cur.user_id = u.id AND cur.is_default_role IS TRUE
+        JOIN company_role_master crm ON crm.id = cur.role_id
+        WHERE u.is_deleted IS NOT TRUE
+            AND c.is_deleted IS NOT TRUE
+            AND cur.is_deleted IS NOT TRUE
+            AND (${wordConditions})
+            ${roleFilter}
+        ORDER BY u.first_name ASC`,
+        {
+            replacements,
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
 const getUserById = async (userId) => {
     return await User.findOne({
         where: { id: userId, is_deleted: false }
     });
+};
+
+const getUserCompanyRole = async (userId, companyId, roleId) => {
+    const rows = await sequelize.query(
+        `SELECT cur.role_id, cur.company_id, crm.role_name, crm.role_code
+        FROM company_user_role cur
+        JOIN company_role_master crm ON crm.id = cur.role_id
+        WHERE cur.user_id = :userId
+            AND cur.company_id = :companyId
+            AND cur.role_id = :roleId
+            AND cur.is_deleted IS NOT TRUE
+        LIMIT 1`,
+        {
+            replacements: { userId, companyId, roleId },
+            type: QueryTypes.SELECT
+        }
+    );
+    return rows[0] || null;
 };
 
 const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}) => {
@@ -136,8 +232,11 @@ module.exports = {
     findByEmail,
     getCompanyUser_role,
     getUserList,
+    getSuspendedUsersWithRoleAndCompany,
     getUserKycDocs,
+    searchUsers,
     getUserById,
+    getUserCompanyRole,
     getUserProfileFieldsConfig,
     updatePasswordByEmail
 };

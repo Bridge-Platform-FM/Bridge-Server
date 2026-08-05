@@ -16,8 +16,14 @@ const getCompanyByEmail = async (email) => {
         return ServiceResponse.success({data:existingEmailUser});
     }
     catch (error) {
-        return ServiceResponse.error({message:'Error occured while checking email.', data:[], statusCode:500});
-    }
+    console.error('getUserByEmail ERROR:', error);
+
+    return ServiceResponse.error({
+        message:'Error occured while checking company email.',
+        data:[error.message],
+        statusCode:500
+    });
+}
 }
 
 const getUserByEmail = async (email) => {
@@ -26,8 +32,14 @@ const getUserByEmail = async (email) => {
         return ServiceResponse.success({data:existingEmailUser});
     }
     catch (error) {
-        return ServiceResponse.error({message:'Error occured while checking email.', data:[], statusCode:500});
-    }
+    console.error('getUserByEmail ERROR:', error);
+
+    return ServiceResponse.error({
+        message:'Error occured while checking user email.',
+        data:[error.message],
+        statusCode:500
+    });
+}
 }
 
 
@@ -109,6 +121,7 @@ const updateChannelVerifiedStatus = async (channel, company_id) => {
     }
 };
 
+
 const checkPassword = async (password, hashedPassword) => {
     try {
         const isPasswordValid = await bcrypt.compare(password, hashedPassword);
@@ -123,15 +136,18 @@ const checkPassword = async (password, hashedPassword) => {
     }
 }
 
-
 const getCompanyUser_role = async (company_id, user_id) => {
     try {
         const result = await userRepository.getCompanyUser_role(company_id, user_id);
         return ServiceResponse.success({data: result[0]})
     } catch (error) {
         errorLogger.error(error);
-        return ServiceResponse.error({data: result[0]});
-    }
+
+        return ServiceResponse.error({
+            message: error.message,
+            statusCode: 500
+    });
+}
 }
 
 

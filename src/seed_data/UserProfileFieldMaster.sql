@@ -2,8 +2,6 @@
 INSERT INTO public.user_profile_field_master (role_id, source_table, field_name, display_name, is_editable, type, created_at) VALUES
 ((select id from company_role_master where role_code = 'STARTUP'), 'company', 'company_name', 'Company Name', false, 'string', now()),
 ((select id from company_role_master where role_code = 'STARTUP'), 'company', 'company_email', 'Company Email', false, 'string', now()),
-((select id from company_role_master where role_code = 'STARTUP'), 'company', 'gst_number', 'GST Number', false, 'string', now()),
-((select id from company_role_master where role_code = 'STARTUP'), 'company', 'cin_number', 'CIN Number', false, 'string', now()),
 ((select id from company_role_master where role_code = 'STARTUP'), 'company', 'mobile_number', 'Mobile Number', true, 'string', now()),
 ((select id from company_role_master where role_code = 'STARTUP'), 'company', 'country_code', 'Country Code', true, 'string', now()),
 ((select id from company_role_master where role_code = 'STARTUP'), 'user', 'first_name', 'First Name', true, 'string', now()),
@@ -36,8 +34,6 @@ INSERT INTO public.user_profile_field_master (role_id, source_table, field_name,
 INSERT INTO public.user_profile_field_master (role_id, source_table, field_name, display_name, is_editable, type, created_at) VALUES
 ((select id from company_role_master where role_code = 'INVESTOR'), 'company', 'company_name', 'Company Name', false, 'string', now()),
 ((select id from company_role_master where role_code = 'INVESTOR'), 'company', 'company_email', 'Company Email', false, 'string', now()),
-((select id from company_role_master where role_code = 'INVESTOR'), 'company', 'gst_number', 'GST Number', false, 'string', now()),
-((select id from company_role_master where role_code = 'INVESTOR'), 'company', 'cin_number', 'CIN Number', false, 'string', now()),
 ((select id from company_role_master where role_code = 'INVESTOR'), 'company', 'mobile_number', 'Mobile Number', true, 'string', now()),
 ((select id from company_role_master where role_code = 'INVESTOR'), 'company', 'country_code', 'Country Code', true, 'string', now()),
 ((select id from company_role_master where role_code = 'INVESTOR'), 'user', 'first_name', 'First Name', true, 'string', now()),

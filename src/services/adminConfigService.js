@@ -4,7 +4,7 @@ const adminConfigRepository = require('../repositories/AdminConfigRepository');
 const redis = require('../configs/redis');
 const { errorLogger, applicationLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS } = require('../utils/constant');
+const { ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, TRIAL_CONFIG_LOOKUP_KEYS } = require('../utils/constant');
 const { formatValue } = require('../utils/Helper');
 
 const OTP_CONFIG_CACHE_KEY = REDIS_BASE_KEYS.CONFIG_OTP_CONFIG;
@@ -209,4 +209,12 @@ const getTrialConfigValue = async (lookup, fallback) => {
     return fallback;
 };
 
-module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue, getTrialConfig, updateTrialConfig, cacheTrialConfig, getTrialConfigValue, resetOtpConfig };
+const isAwsServiceEnabled = async () => {
+    const value = await getTrialConfigValue(
+        TRIAL_CONFIG_LOOKUP_KEYS.AWS_SERVICE_ENABLED,
+        process.env.IS_AWS_SERVICE_ACTIVE === 'true'
+    );
+    return value === true || String(value).toLowerCase() === 'true';
+};
+
+module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue, getTrialConfig, updateTrialConfig, cacheTrialConfig, getTrialConfigValue, isAwsServiceEnabled, resetOtpConfig };

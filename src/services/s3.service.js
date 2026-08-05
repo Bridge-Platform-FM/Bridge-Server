@@ -4,6 +4,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { s3 } = require('../configs/aws');
 const { BlobSASPermissions } = require('@azure/storage-blob');
 const { blobClient } = require('../configs/azureBlob');
+const { isAwsServiceEnabled } = require('./adminConfigService');
 
 async function uploadToBucket(
     fileType,
@@ -13,8 +14,10 @@ async function uploadToBucket(
     companyId,
     userId,
     s3Key
-) {    
-    if (process.env.IS_AWS_SERVICE_ACTIVE === 'true') {
+) {
+    const useAws = await isAwsServiceEnabled();
+
+    if (useAws) {
         await s3.send(
             new PutObjectCommand({
                 Bucket: process.env.AWS_S3_BUCKET,
@@ -37,8 +40,9 @@ async function uploadToBucket(
 }
 
 async function getFileCollection(prefix) {
+    const useAws = await isAwsServiceEnabled();
 
-    if (process.env.IS_AWS_SERVICE_ACTIVE === 'true') {
+    if (useAws) {
         const response = await s3.send(
             new ListObjectsV2Command({
                 Bucket: process.env.AWS_S3_BUCKET,
@@ -71,8 +75,9 @@ async function getFileCollection(prefix) {
 }
 
 async function getFileUrl(key) {
+    const useAws = await isAwsServiceEnabled();
 
-    if (process.env.IS_AWS_SERVICE_ACTIVE === 'true') {
+    if (useAws) {
         const command = new GetObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET,
             Key: key
@@ -98,8 +103,9 @@ async function getFileUrl(key) {
 }
 
 async function getFileBuffer(key) {
+    const useAws = await isAwsServiceEnabled();
 
-    if (process.env.IS_AWS_SERVICE_ACTIVE === 'true') {
+    if (useAws) {
         const response = await s3.send(
             new GetObjectCommand({
                 Bucket: process.env.AWS_S3_BUCKET,
@@ -122,8 +128,9 @@ async function getFileBuffer(key) {
 }
 
 async function getFileStream(key) {
+    const useAws = await isAwsServiceEnabled();
 
-    if (process.env.IS_AWS_SERVICE_ACTIVE === 'true') {
+    if (useAws) {
         const response = await s3.send(
             new GetObjectCommand({
                 Bucket: process.env.AWS_S3_BUCKET,

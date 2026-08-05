@@ -121,6 +121,8 @@ const authMiddleware = async (req, res, next) => {
         req.jti = decoded?.jti; // lets controllers flag the current session
 
         // Per-request suspension check — runs for every decoded token, regardless of user type.
+        // Must run BEFORE session validation so a suspended user gets kicked out immediately
+        // even if their session JTI is still valid in the DB/cache.
         const suspension = await checkUserSuspension(decoded.userId);
 
         if (suspension) {

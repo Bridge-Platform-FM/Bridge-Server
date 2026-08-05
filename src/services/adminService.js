@@ -44,7 +44,6 @@ const login = async (email, password) => {
         };
 
         const mfaToken = generateAccessToken(payload, TOKEN_TYPES.MFA_ACCESS_TOKEN);
-        // const refreshToken = generateRefreshToken(payload, TOKEN_TYPES.AUTH_REFRESH_ACCESS_TOKEN);
 
         const maskedMobile = maskPhone(admin.country_code + admin.mobile_number);
         const maskedEmail = maskEmail(admin.email);
@@ -158,7 +157,6 @@ const updateUserLimitConfig = async ({ userId, adminId, userType, payload }) => 
     }
 };
 
-
 const updateUserSuspension = async (userId, companyId, adminId, role, is_suspended, suspension_reason ) => {
     const transaction = await sequelize.transaction();
     try {
@@ -201,12 +199,9 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
         // admin's request — worst case it self-heals on the
         // next startup load.
         if (is_suspended) {
-            // const userRole = await userRepository.getCompanyUser_role(companyId, userId);
             await suspensionCacheRepository.cacheSuspension(userId, {
                 reason: suspension_reason,
                 companyId,
-                // roleId: userRole?.[0]?.id ?? null,
-                // role: userRole?.[0]?.role_code ?? null,
                 suspendedAt: history.created_at
             });
             // Drop the cached active-jti set too, so isSessionJtiValid can't

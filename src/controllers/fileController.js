@@ -1,5 +1,5 @@
 const { errorLogger } = require("../configs/logger");
-const { uploadToS3, getFileBuffer, getFileUrl } = require("../services/s3.service");
+const { uploadToBucket, getFileBuffer, getFileUrl } = require("../services/s3.service");
 const { scanUploadedFile } = require("../services/scan.service");
 const { addPdfWatermark, addImageWatermark } = require("../services/watermark.service");
 const kycService = require('../services/kycService');
@@ -43,17 +43,17 @@ const scanFile = async (req, res, next) => {
             s3_file_type = S3_FILE_TYPE.KYC
         }
 
-        // Upload to S3
+        // Upload to Bucket
         const s3KeyToUpload = `company/${companyId}/${userId}/${s3_file_type}/${Date.now()}-${req.file.originalname}`;
-        // const s3Key = await uploadToS3(
-        //     s3_file_type,
-        //     fileBuffer,
-        //     req.file.originalname,
-        //     req.file.mimetype,
-        //     companyName,
-        //     userId,
-        //     s3KeyToUpload
-        // )
+        const s3Key = await uploadToBucket(
+            s3_file_type,
+            fileBuffer,
+            req.file.originalname,
+            req.file.mimetype,
+            companyName,
+            userId,
+            s3KeyToUpload
+        )
         // console.log("s3Key", s3Key)
 
         return HttpResponse.success(res, {
@@ -62,7 +62,7 @@ const scanFile = async (req, res, next) => {
                 fileName: req.file.originalname,
                 fileSize: req.file.size,
                 mimeType: req.file.mimetype,
-                s3Key: s3KeyToUpload,
+                s3Key: s3Key,
                 side: side,
                 docType: docType
             },

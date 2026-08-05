@@ -40,6 +40,22 @@ const validateRevokeSelectedSessions = (req, res, next) => {
     next();
 };
 
+/**
+ * Validates that :sessionId route param is a well-formed UUID before it
+ * reaches the service/repository layer. Prevents Sequelize from throwing a
+ * cast error on malformed input and returns a clean 400 instead of a 500.
+ */
+const validateSessionIdParam = (req, res, next) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(req.params.sessionId)) {
+        return res.status(400).json({
+            message: 'sessionId must be a valid UUID',
+            statusCode: 400
+        });
+    }
+    next();
+};
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 router.post('/auth/login', adminController.login);
@@ -80,7 +96,7 @@ router.post('/sessions/logout-all', adminMiddleware, adminSessionController.logo
 router.post('/sessions/revoke-selected', adminMiddleware, validateRevokeSelectedSessions, adminSessionController.revokeSelectedSessions);
 
 // DELETE /api/v1/admin/sessions/:sessionId  — revoke one specific session by id
-router.delete('/sessions/:sessionId', adminMiddleware, adminSessionController.revokeOneSession);
+router.delete('/sessions/:sessionId', adminMiddleware, validateSessionIdParam, adminSessionController.revokeOneSession);
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 

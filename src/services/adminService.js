@@ -105,7 +105,7 @@ const getUserLimitConfig = async ({ userId, userType }) => {
             data = {
                 user_id: userId,
                 allowed_premium_days: config?.allowed_premium_days ?? subscription.validity_days,
-                is_custom: !!config,
+                is_custom: !!config?.updated_by,
                 has_subscription: hasSubscription,
                 is_subscription_expired: isSubscriptionExpired
             };
@@ -115,7 +115,7 @@ const getUserLimitConfig = async ({ userId, userType }) => {
                 user_id: userId,
                 allowed_connections: config?.allowed_connections,
                 allowed_free_trial_days: config?.allowed_free_trial_days,
-                is_custom: !!config,
+                is_custom: !!config?.updated_by,
                 has_subscription: hasSubscription
             };
         }

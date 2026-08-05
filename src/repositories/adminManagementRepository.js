@@ -127,33 +127,69 @@ const getAdminPermissions = async (adminId) => {
 };
 
 /**
- * Full-replace upsert: soft-deletes all current active permission rows for the
- * admin, then bulk-inserts the new set — all inside the caller's transaction.
+ * Updates permissions in-place to avoid unique constraint conflicts.
+ *
+ * Strategy:
+ *  - Existing active permission still in incoming list → UPDATE is_allowed in-place
+ *  - Existing active permission NOT in incoming list   → soft-delete
+ *  - Incoming permission with no existing active row   → INSERT new row
+ *
+ * This replaces the old soft-delete + bulkCreate pattern which caused a unique
+ * constraint violation when re-inserting the same (admin_id, permission_key)
+ * on a subsequent update.
  */
 const replaceAdminPermissions = async (adminId, permissions, performedBy, options = {}) => {
-    await AdminPermission.update(
-        {
-            is_deleted: true,
-            deleted_at: new Date(),
-            deleted_by: performedBy
-        },
-        {
-            where: { admin_id: adminId, is_deleted: false },
-            transaction: options.transaction || null
+    const txn = options.transaction;
+
+    // Fetch all currently active permissions for this admin
+    const existingPermissions = await AdminPermission.findAll({
+        where: { admin_id: adminId, is_deleted: false },
+        transaction: txn
+    });
+
+    const existingMap = new Map(existingPermissions.map(p => [p.permission_key, p]));
+    const incomingKeys = new Set(permissions.map(p => p.permission_key));
+
+    // Update or soft-delete existing permission rows
+    for (const existing of existingPermissions) {
+        if (incomingKeys.has(existing.permission_key)) {
+            // Still in the list — update is_allowed in-place
+            const incoming = permissions.find(p => p.permission_key === existing.permission_key);
+            await existing.update(
+                {
+                    is_allowed: incoming.is_allowed,
+                    updated_by: performedBy,
+                    updated_at: new Date()
+                },
+                { transaction: txn }
+            );
+        } else {
+            // No longer in the list — soft-delete
+            await existing.update(
+                {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: performedBy
+                },
+                { transaction: txn }
+            );
         }
-    );
+    }
 
-    if (permissions.length === 0) return [];
-
-    return await AdminPermission.bulkCreate(
-        permissions.map(p => ({
-            admin_id: adminId,
-            permission_key: p.permission_key,
-            is_allowed: p.is_allowed,
-            created_by: performedBy
-        })),
-        { transaction: options.transaction || null }
-    );
+    // Create rows for permission keys that did not previously exist
+    for (const perm of permissions) {
+        if (!existingMap.has(perm.permission_key)) {
+            await AdminPermission.create(
+                {
+                    admin_id: adminId,
+                    permission_key: perm.permission_key,
+                    is_allowed: perm.is_allowed,
+                    created_by: performedBy
+                },
+                { transaction: txn }
+            );
+        }
+    }
 };
 
 module.exports = {

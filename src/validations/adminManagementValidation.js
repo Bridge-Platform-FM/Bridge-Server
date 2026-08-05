@@ -41,14 +41,16 @@ const createAdminSchema = Joi.object({
         'any.only': 'role must be ADMIN',
         'any.required': 'role is required'
     }),
-    permissions: Joi.array().items(permissionItemSchema).optional().messages({
-        'array.base': 'permissions must be an array'
-    })
+    permissions: Joi.array()
+        .items(permissionItemSchema)
+        .unique('permission_key')
+        .optional()
+        .messages({
+            'array.base': 'permissions must be an array',
+            'array.unique': 'permissions contains duplicate permission_key: {#dupeValue.permission_key}'
+        })
 });
 
-// permissions is included here so the update screen can send profile fields
-// and permission checkboxes in a single request.
-// At least one of the listed fields must be present.
 const updateAdminSchema = Joi.object({
     name: Joi.string().min(2).max(100).optional().messages({
         'string.min': 'name must be at least 2 characters long',
@@ -60,9 +62,14 @@ const updateAdminSchema = Joi.object({
     mobile_number: Joi.string().pattern(/^\d{10}$/).optional().allow(null, '').messages({
         'string.pattern.base': 'mobile_number must be a valid 10-digit number'
     }),
-    permissions: Joi.array().items(permissionItemSchema).optional().messages({
-        'array.base': 'permissions must be an array'
-    })
+    permissions: Joi.array()
+        .items(permissionItemSchema)
+        .unique('permission_key')
+        .optional()
+        .messages({
+            'array.base': 'permissions must be an array',
+            'array.unique': 'permissions contains duplicate permission_key: {#dupeValue.permission_key}'
+        })
 }).or('name', 'country_code', 'mobile_number', 'permissions').messages({
     'object.missing': 'At least one field must be provided for update'
 });

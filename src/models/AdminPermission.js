@@ -58,15 +58,7 @@ module.exports = (sequelize) => {
         tableName: 'admin_permission',
         timestamps: true,
         createdAt: 'created_at',
-        updatedAt: 'updated_at',
-        indexes: [
-            {
-                name: 'admin_permission_admin_id_permission_key_active',
-                unique: true,
-                fields: ['admin_id', 'permission_key'],
-                where: { is_deleted: false }
-            }
-        ]
+        updatedAt: 'updated_at'
     });
 
     AdminPermission.associate = (models) => {

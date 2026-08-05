@@ -24,14 +24,21 @@ const cacheKey = (adminId) => `session:admin:jti:${adminId}`;
  * @param {string[]} jtis    - Array of active JTIs (may be empty)
  */
 const cacheActiveJtis = async (adminId, jtis) => {
-    const key = cacheKey(adminId);
-    const pipeline = redisClient.pipeline();
-    pipeline.del(key);
-    if (jtis.length > 0) {
-        pipeline.sadd(key, ...jtis);
+    try {
+        const key = cacheKey(adminId);
+        const pipeline = redisClient.pipeline();
+        pipeline.del(key);
+        if (jtis.length > 0) {
+            pipeline.sadd(key, ...jtis);
+        }
+        pipeline.expire(key, SESSION_CACHE_TTL_SECONDS);
+        await pipeline.exec();
+    } catch (error) {
+        // Best-effort: a Redis failure on cache-prime is non-fatal. The session row
+        // exists in Postgres and adminMiddleware rebuilds the cache on the next MISS.
+        // Matches the user-side sessionCacheRepository.cacheActiveJtis behaviour.
+        errorLogger.error('[adminSessionCacheRepository.cacheActiveJtis] Redis error:', error.message);
     }
-    pipeline.expire(key, SESSION_CACHE_TTL_SECONDS);
-    await pipeline.exec();
 };
 
 /**

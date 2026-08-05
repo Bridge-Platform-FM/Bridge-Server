@@ -245,11 +245,47 @@ const revokeSelectedSessions = async (adminId, sessionIds, maxSessions) => {
     }
 };
 
+/**
+ * Create a new admin session row and prime the Redis JTI cache.
+ * Called from adminController.verifyMfaOtp after tokens are issued.
+ *
+ * NOTE: createSession (Postgres write) and cacheActiveJtis (Redis write) are
+ * sequential awaits with no cross-store transaction. If cache priming fails
+ * after the DB write succeeds, the session row is correct in Postgres and will
+ * be rebuilt into cache on the next MISS in adminMiddleware — accepted risk,
+ * consistent with the equivalent user-session flow in tokenService.
+ *
+ * Always returns a ServiceResponse so the controller never needs to try/catch —
+ * a failure here must never block admin login.
+ */
+const createAndCacheSession = async (admin, jti, deviceInfo, ipAddress, expiresAt) => {
+    try {
+        await adminSessionRepository.createSession(admin, jti, deviceInfo, ipAddress, expiresAt);
+
+        // Prime Redis so the very next authenticated request hits cache, not Postgres.
+        const activeSessions = await adminSessionRepository.getActiveSessionsByAdmin(admin.id);
+        const activeJtis = activeSessions.map((s) => s.token_jti);
+        await adminSessionCacheRepository.cacheActiveJtis(admin.id, activeJtis);
+
+        return ServiceResponse.success({
+            message: SESSION_MESSAGES.SESSION_CREATE_SUCCESS,
+            statusCode: 201
+        });
+    } catch (error) {
+        errorLogger.error('[adminSessionService.createAndCacheSession]', error);
+        return ServiceResponse.error({
+            message: SESSION_MESSAGES.SESSION_CREATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
 module.exports = {
     getActiveSessions,
     getSessionLimitStatus,
     revokeSession,
     logoutAllSessions,
     logoutCurrentSession,
-    revokeSelectedSessions
+    revokeSelectedSessions,
+    createAndCacheSession
 };

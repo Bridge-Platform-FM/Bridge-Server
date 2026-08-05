@@ -11,8 +11,6 @@ const kycService = require('../services/kycService');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions, generateAccessToken, generateRefreshToken } = require('../utils/token');
 const env = require('../configs/env_configs');
 const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
-const adminSessionRepository = require('../repositories/adminSessionRepository');
-const adminSessionCacheRepository = require('../repositories/adminSessionCacheRepository');
 const adminSessionService = require('../services/adminSessionService');
 const { parseDeviceInfo } = require('../utils/deviceInfo');
 
@@ -130,20 +128,17 @@ const verifyMfaOtp = async (req, res, next) => {
         res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
 
         // Create admin session row and prime the Redis cache.
-        // Wrapped in its own try/catch so a session-tracking failure never
-        // prevents the admin from logging in.
+        // Best-effort session creation — routed through the service layer so
+        // no repository is called directly from the controller. Failure is
+        // logged but never blocks login (the service swallows it internally).
         if (SESSION_LIMIT_ENABLED) {
-            try {
-                const deviceInfo = parseDeviceInfo(req.headers);
-                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days, mirrors refresh token
-                await adminSessionRepository.createSession({ id: admin.id }, jti, deviceInfo, req.ip, expiresAt);
-
-                // Prime Redis so the very next request hits cache, not Postgres
-                const activeSessions = await adminSessionRepository.getActiveSessionsByAdmin(admin.id);
-                const activeJtis = activeSessions.map((s) => s.token_jti);
-                await adminSessionCacheRepository.cacheActiveJtis(admin.id, activeJtis);
-            } catch (sessionError) {
-                errorLogger.error('[adminController.verifyMfaOtp] Failed to create admin session:', sessionError);
+            const deviceInfo = parseDeviceInfo(req.headers);
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days, mirrors refresh token
+            const sessionResult = await adminSessionService.createAndCacheSession(
+                { id: admin.id }, jti, deviceInfo, req.ip, expiresAt
+            );
+            if (!sessionResult.success) {
+                errorLogger.error('[adminController.verifyMfaOtp] Session creation failed:', sessionResult.message);
             }
         }
 

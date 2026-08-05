@@ -8,6 +8,7 @@ const { ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS } = require('../utils/constant');
 const { formatValue } = require('../utils/Helper');
 
 const OTP_CONFIG_CACHE_KEY = REDIS_BASE_KEYS.CONFIG_OTP_CONFIG;
+const TRIAL_CONFIG_CACHE_KEY = REDIS_BASE_KEYS.CONFIG_TRIAL_CONFIG;
 
 const getOtpConfig = async () => {
     try {
@@ -150,6 +151,8 @@ const updateTrialConfig = async (updates, adminId) => {
 
         await transaction.commit();
 
+        await cacheTrialConfig();
+
         return ServiceResponse.success({
             message: ADMIN_CONFIG_MESSAGES.CONFIG_UPDATE_SUCCESS,
             data: updated,
@@ -165,4 +168,45 @@ const updateTrialConfig = async (updates, adminId) => {
     }
 };
 
-module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue, getTrialConfig, updateTrialConfig, resetOtpConfig };
+const cacheTrialConfig = async () => {
+    const config = await getTrialConfig();
+    if (!config.success) return;
+
+    try {
+        await redis.set(TRIAL_CONFIG_CACHE_KEY, JSON.stringify(config.data));
+        console.info(`Loaded ${config.data.length} trial config entries into Redis.`);
+    } catch (error) {
+        errorLogger.error('[AdminConfigService] Failed to cache trial config:', error.message);
+    }
+};
+
+// Read-through: cache first, DB second, caller-supplied fallback last. Swapping
+// the cache population trigger (e.g. a warmup job) is the only future change
+// needed to make this fully Redis-backed.
+const getTrialConfigValue = async (lookup, fallback) => {
+    try {
+        const cached = await redis.get(TRIAL_CONFIG_CACHE_KEY);
+        if (cached) {
+            const config = JSON.parse(cached);
+            const row = config.find((c) => c.lookup === lookup);
+            if (row) {
+                return row.formatted_value;
+            }
+        }
+    } catch (error) {
+        errorLogger.error(`[AdminConfigService] Redis read failed for ${lookup}:`, error.message);
+    }
+
+    try {
+        const row = await adminConfigRepository.getTrialConfigByLookup(lookup);
+        if (row) {
+            return formatValue(row.value, row.data_type, row.unit);
+        }
+    } catch (error) {
+        errorLogger.error(`[AdminConfigService] DB read failed for ${lookup}:`, error.message);
+    }
+
+    return fallback;
+};
+
+module.exports = { getOtpConfig, updateOtpConfig, cacheOtpConfig, getOtpConfigValue, getTrialConfig, updateTrialConfig, cacheTrialConfig, getTrialConfigValue, resetOtpConfig };

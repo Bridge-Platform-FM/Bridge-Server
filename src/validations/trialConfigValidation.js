@@ -17,6 +17,12 @@ const updateTrialConfigSchema = Joi.object({
             'number.min': 'free_trial_connection_limit must be at least 0',
             'number.max': 'free_trial_connection_limit must not exceed 1000'
         }),
+        premium_connection_limit: Joi.number().integer().min(0).max(1000).messages({
+            'number.base': 'premium_connection_limit must be a number',
+            'number.integer': 'premium_connection_limit must be an integer',
+            'number.min': 'premium_connection_limit must be at least 0',
+            'number.max': 'premium_connection_limit must not exceed 1000'
+        }),
         manual_extension: Joi.boolean().messages({
             'boolean.base': 'manual_extension must be a boolean'
         }),

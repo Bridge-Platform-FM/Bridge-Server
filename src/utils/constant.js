@@ -412,7 +412,8 @@ const TRIAL_DAYS_LIMITS = {
 const TRIAL_CONFIG_LOOKUP_KEYS = {
     FREE_CONNECTION_LIMIT: 'free_trial_connection_limit',
     PREMIUM_CONNECTION_LIMIT: 'premium_connection_limit',
-    AWS_SERVICE_ENABLED: 'aws_service_enabled'
+    AWS_SERVICE_ENABLED: 'aws_service_enabled',
+    FREE_TRIAL_DAY: 'free_trial_day'
 };
 
 const CONNECTION_MESSAGES = {

@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const adminRepository = require('../repositories/adminRepository');
 const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
+const companyRepository = require('../repositories/companyRepository');
+const subscriptionRepository = require('../repositories/subscriptionRepository');
 const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
 const suspensionCacheRepository = require('../repositories/suspensionCacheRepository');
 const userSessionRepository = require('../repositories/userSessionRepository');
@@ -87,13 +89,37 @@ const getUserLimitConfig = async ({ userId, userType }) => {
 
         const config = await userLimitConfigRepository.findByUserId(userId);
 
-        const data = {
-            user_id: userId,
-            allowed_connections: config?.allowed_connections ?? USER_LIMIT_DEFAULTS.ALLOWED_CONNECTIONS,
-            allowed_free_trial_days: config?.allowed_free_trial_days ?? USER_LIMIT_DEFAULTS.ALLOWED_FREE_TRIAL_DAYS,
-            allowed_premium_days: config?.allowed_premium_days ?? USER_LIMIT_DEFAULTS.ALLOWED_PREMIUM_DAYS,
-            is_custom: !!config
-        };
+        const companyId = await companyRepository.getDefaultCompanyIdByUserId(userId);
+        const subscription = companyId
+            ? await subscriptionRepository.getActiveSubscription(userId, companyId)
+            : null;
+
+        const hasSubscription = !!subscription;
+        const isSubscriptionExpired = hasSubscription
+            ? new Date(subscription.end_date) < new Date()
+            : false;
+
+        let data = {};
+
+        if (hasSubscription && !isSubscriptionExpired) {
+            data = {
+                user_id: userId,
+                allowed_premium_days: config?.allowed_premium_days ?? subscription.validity_days,
+                is_custom: !!config?.updated_by,
+                has_subscription: hasSubscription,
+                is_subscription_expired: isSubscriptionExpired
+            };
+        }
+        else {
+            data = {
+                user_id: userId,
+                allowed_connections: config?.allowed_connections,
+                allowed_free_trial_days: config?.allowed_free_trial_days,
+                is_custom: !!config?.updated_by,
+                has_subscription: hasSubscription
+            };
+        }
+
 
         return ServiceResponse.success({
             message: USER_LIMIT_CONFIG_MESSAGES.FETCH_SUCCESS,

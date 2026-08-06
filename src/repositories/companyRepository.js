@@ -87,6 +87,13 @@ const getCompanyById = async (companyId) => {
     });
 };
 
+const getDefaultCompanyIdByUserId = async (userId) => {
+    const companyUserRole = await CompanyUserRole.findOne({
+        where: { user_id: userId, is_default_role: true, is_deleted: false }
+    });
+    return companyUserRole?.company_id ?? null;
+};
+
 const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}) => {
     const [, [updatedCompany]] = await Company.update(
         { password: hashedPassword },
@@ -106,5 +113,6 @@ module.exports = {
     updateKycStatus,
     getCompanyById,
     updatePasswordByEmail,
-    getCompanyUser
+    getCompanyUser,
+    getDefaultCompanyIdByUserId
 };

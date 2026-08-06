@@ -44,6 +44,8 @@ const getUserDashboardProfile = async (userId) => {
  *   StartupView  → "Investor Matches" (connectionsReceived) + "Connections" (connectionsAccepted)
  *   InvestorView → "Portfolio Cos."  (connectionsAccepted)
  *   B2BView      → "Marketplace Leads" (connectionsReceived) + "Partners" (connectionsAccepted)
+ *
+ * FIXED: Added WHERE clause to filter by userId — prevents full-table scan on growing user_connection table.
  */
 const getUserConnectionStats = async (userId) => {
     const rows = await sequelize.query(
@@ -55,7 +57,8 @@ const getUserConnectionStats = async (userId) => {
                   AND status = 'Accepted'
             )                                                                           AS accepted
         FROM user_connection
-        WHERE is_deleted IS NOT TRUE`,
+        WHERE (requester_user_id = :userId OR recipient_user_id = :userId)
+          AND is_deleted IS NOT TRUE`,
         { replacements: { userId }, type: QueryTypes.SELECT }
     );
     return rows[0] || {};

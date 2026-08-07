@@ -24,11 +24,45 @@ const createKycInfo = async (records) => {
             created_at: r.created_at ?? now
         }));
 
-        const created = await kycInfoRepository.bulkCreateKycRecords(normalized, { transaction });
+        // Upsert per document type: a re-upload after a rejection has to replace the stored
+        // document in place, otherwise the user ends up with two rows of the same type and
+        // the reviewer sees a duplicate.
+        const saved = [];
+        for (const record of normalized) {
+            const existing = await kycInfoRepository.findKycRecord({
+                userId: record.user_id,
+                companyId: record.company_id,
+                roleId: record.role_id,
+                documentType: record.document_type
+            });
+
+            if (existing) {
+                saved.push(await kycInfoRepository.updateKycRecord(
+                    existing.id,
+                    { ...record, rejection_reason: null, verified_at: null, verified_by: null },
+                    { transaction }
+                ));
+            } else {
+                saved.push(await kycInfoRepository.createKycRecord(record, { transaction }));
+            }
+        }
+
+        // Clear the company-level rejection so a resubmission goes back into the review
+        // queue — without this the user stays on the "Verification Unsuccessful" screen.
+        const companyId = normalized[0].company_id;
+        const company = await companyRepository.getCompanyById(companyId);
+        if (company?.kyc_status === KYC_STATUS.REJECTED) {
+            await companyRepository.updateKycStatus(
+                companyId,
+                { isKycVerified: false, status: KYC_STATUS.PENDING, rejectionReason: null },
+                { transaction }
+            );
+        }
+
         await transaction.commit();
         return ServiceResponse.success({
             message: 'KYC documents created successfully.',
-            data: { records: created },
+            data: { records: saved },
             statusCode: 201
         });
     } catch (error) {
@@ -41,9 +75,19 @@ const createKycInfo = async (records) => {
 const getKycInfo = async ({ userId, companyId, roleId }) => {
     try {
         const records = await kycInfoRepository.findAllKycRecordsRaw({ userId, companyId, roleId });
+
+        // The review decision lives on the company, not on kyc_info — a company-level
+        // reject never touches the per-document rows. Without this the user has no way
+        // to see that they were rejected, or why.
+        const company = await companyRepository.getCompanyById(companyId);
+
         return ServiceResponse.success({
             message: KYC_MESSAGES.FETCH_SUCCESS,
-            data: records ,
+            data: {
+                records,
+                kycStatus: company?.kyc_status ?? null,
+                rejectionReason: company?.kyc_rejection_reason ?? null
+            },
             statusCode: 200
         });
     } catch (error) {

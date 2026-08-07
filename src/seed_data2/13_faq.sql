@@ -1,0 +1,11 @@
+INSERT INTO public.faq (question, answer, is_active, created_by, created_at, updated_at) VALUES
+    ('How do I register my startup on Bridge?', 'Go to the registration page, select "Startup", and complete company and profile details.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('What documents are required for KYC verification?', 'A government-issued Aadhaar or PAN card is required for KYC verification.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('How does the matching algorithm work?', 'We use a mix of rule-based filters and machine-learning scoring based on sector, stage and preferences.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Can I upgrade my subscription plan later?', 'Yes, you can upgrade from Monthly to Yearly at any time from the Subscription page.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('How many connection requests can I send on the free plan?', 'Free trial users can send up to 3 connection requests during the trial window.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('What happens when a connection request is accepted?', 'A Deal Room is automatically created for both parties to chat, share documents and negotiate.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Is my KYC information encrypted?', 'Yes, sensitive KYC identifiers are encrypted at rest using AES-256.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('How do I schedule a meeting with a connection?', 'Open the Deal Room with your connection and use the "Schedule Meeting" option.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Can B2B companies negotiate term sheets on the platform?', 'Yes, B2B deal rooms support collaborative term sheet editing with full version history.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Who can I contact for support?', 'Use the in-app support option or email support@bridgeplatform.in for assistance.', TRUE, 'e48502c5-ab8c-44b5-9328-dc576995d4bb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

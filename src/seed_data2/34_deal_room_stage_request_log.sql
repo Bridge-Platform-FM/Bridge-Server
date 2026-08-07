@@ -1,0 +1,17 @@
+INSERT INTO public.deal_room_stage_request_log (deal_room_stage_request_id, status, changed_by, created_at) VALUES
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '25f65835-2776-47e5-b92b-4f5dcb3c6ff1'), 'Pending', '09e91cf3-86f5-4afd-b00c-7e432e09eb75', '2026-07-29T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '500bbad1-2e30-418f-a760-473316f788b7'), 'Pending', '40c08b38-f069-4759-afd0-97e08fc9c7dc', '2026-07-30T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '500bbad1-2e30-418f-a760-473316f788b7'), 'Accepted', '23154469-978c-40c3-95eb-8edab209e0ec', '2026-07-31T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '769b2d0c-1d80-466b-919f-7e0afb3e0582'), 'Pending', '0f34f9e3-b474-4ba8-810f-5c93162b8ed8', '2026-07-31T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '769b2d0c-1d80-466b-919f-7e0afb3e0582'), 'Rejected', '3ebfd646-8667-48db-9671-c5d2f936cd79', '2026-08-01T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '2a125948-dabd-4352-9e48-134fd86faba6'), 'Pending', 'e6839e7b-9997-4c87-873a-88e6d429e301', '2026-08-01T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '7aa50e36-3683-4bb6-8458-cb9167cd8c34'), 'Pending', 'ab78149d-130a-4450-8cbf-6b1ba9703c76', '2026-08-02T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '7aa50e36-3683-4bb6-8458-cb9167cd8c34'), 'Accepted', 'dcbef403-481e-47c2-a99e-66d8565dce80', '2026-08-03T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = 'bdcd9d80-6e31-406c-8876-16762573c8d5'), 'Pending', 'e1ddce33-a483-4f3d-ba2a-7eb7f7515209', '2026-08-03T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = 'bdcd9d80-6e31-406c-8876-16762573c8d5'), 'Rejected', '475e2d06-e9d8-497b-8731-2962b592a626', '2026-08-04T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '60908c6f-be15-4ef7-bb52-b69c3794c13b'), 'Pending', 'aab77f89-f77b-44fb-b912-259a43555165', '2026-08-04T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '9d3f1360-478a-48b5-8207-de51c0be3942'), 'Pending', '6a704a71-ad24-4b84-8a47-fe186b26d157', '2026-08-05T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '9d3f1360-478a-48b5-8207-de51c0be3942'), 'Accepted', '548b8f00-a558-41ce-ae34-db6ad1eef005', '2026-08-06T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '40243e6d-ce91-4679-99d2-cf52e450518c'), 'Pending', '23154469-978c-40c3-95eb-8edab209e0ec', '2026-08-06T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = '40243e6d-ce91-4679-99d2-cf52e450518c'), 'Rejected', '5bdfb4d6-1e96-4f16-bf54-138fde23edf1', '2026-08-07T10:46:16.045Z'),
+    ((SELECT id FROM public.deal_room_stage_request WHERE deal_room_id = 'e1a61e8c-e42b-4d36-b1f4-9909a564dae8'), 'Pending', '3ebfd646-8667-48db-9671-c5d2f936cd79', '2026-08-07T10:46:16.045Z');

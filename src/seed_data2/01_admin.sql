@@ -1,0 +1,6 @@
+-- Password for all admin/user/company logins: Bridge@123
+INSERT INTO public.admin (id, name, email, password, role, is_admin_suspended, country_code, mobile_number, created_at, created_by, updated_at, is_deleted) VALUES
+    ('1147afd6-facc-4ad7-ad73-259cf0fdb347', 'Ananya Krishnan', 'superadmin@bridgeplatform.in', '$2b$10$S7rstDN4w9j4r79VfG74h.f8txitRwsjVhW6fa9OTVG/7PpmZmR0C', 'SUPER_ADMIN', FALSE, '+91', '9800000001', CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP, FALSE),
+    ('e48502c5-ab8c-44b5-9328-dc576995d4bb', 'Rajesh Khanna', 'admin1@bridgeplatform.in', '$2b$10$S7rstDN4w9j4r79VfG74h.f8txitRwsjVhW6fa9OTVG/7PpmZmR0C', 'ADMIN', FALSE, '+91', '9800000002', CURRENT_TIMESTAMP, '1147afd6-facc-4ad7-ad73-259cf0fdb347', CURRENT_TIMESTAMP, FALSE),
+    ('2efed5ec-49f1-4806-a1db-f97955b48112', 'Meera Iyer', 'admin2@bridgeplatform.in', '$2b$10$S7rstDN4w9j4r79VfG74h.f8txitRwsjVhW6fa9OTVG/7PpmZmR0C', 'ADMIN', FALSE, '+91', '9800000003', CURRENT_TIMESTAMP, '1147afd6-facc-4ad7-ad73-259cf0fdb347', CURRENT_TIMESTAMP, FALSE),
+    ('b1324ae1-c762-43ba-adab-d967efd50b0f', 'Vikram Chauhan', 'admin3@bridgeplatform.in', '$2b$10$S7rstDN4w9j4r79VfG74h.f8txitRwsjVhW6fa9OTVG/7PpmZmR0C', 'ADMIN', FALSE, '+91', '9800000004', CURRENT_TIMESTAMP, '1147afd6-facc-4ad7-ad73-259cf0fdb347', CURRENT_TIMESTAMP, FALSE);

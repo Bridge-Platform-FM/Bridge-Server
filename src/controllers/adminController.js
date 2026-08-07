@@ -1,7 +1,11 @@
 'use strict';
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid');
-const { ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES, USER_SUSPENSION_MESSAGES } = require('../utils/constant');
+const {
+    ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES,
+    USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES,
+    USER_SUSPENSION_MESSAGES, ADMIN_PROFILE_MESSAGES
+} = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
@@ -37,6 +41,24 @@ const updateLimitConfigSchema = Joi.object({
     allowed_premium_days: Joi.number().integer().min(0).optional()
 }).min(1).messages({
     'object.min': 'At least one limit configuration field must be provided'
+});
+
+// ── Admin Self-Service Profile — Validation Schema ────────────────────────────
+// Only editable fields are accepted: name, country_code, mobile_number.
+// Email and role are not updatable through this endpoint.
+const updateAdminProfileSchema = Joi.object({
+    name: Joi.string().min(2).max(100).optional().messages({
+        'string.min': 'name must be at least 2 characters long',
+        'string.max': 'name must not exceed 100 characters'
+    }),
+    country_code: Joi.string().max(5).optional().allow(null, '').messages({
+        'string.max': 'country_code must not exceed 5 characters'
+    }),
+    mobile_number: Joi.string().pattern(/^\d{10}$/).optional().allow(null, '').messages({
+        'string.pattern.base': 'mobile_number must be a valid 10-digit number'
+    })
+}).or('name', 'country_code', 'mobile_number').messages({
+    'object.missing': 'At least one field must be provided for update'
 });
 
 const login = async (req, res, next) => {
@@ -204,30 +226,25 @@ const getUserList = async (req, res, next) => {
         return HttpResponse.success(res, { message: userListRes.message, data: userList, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
-        return HttpResponse.error(res, { data: [], statusCode: 500 });
+        return HttpResponse.error(res, { message: 'Failed to fetch user list.', statusCode: 500 });
     }
 };
 
-
 const getUserKycDocs = async (req, res, next) => {
     try {
-        const userListRes = await userService.getUserKycDocs();
-        if (!userListRes.success) {
-            return HttpResponse.error(res, { message: userListRes.message, statusCode: userListRes.statusCode });
+        const kycDocsRes = await userService.getUserKycDocs();
+        if (!kycDocsRes.success) {
+            return HttpResponse.error(res, { message: kycDocsRes.message, statusCode: kycDocsRes.statusCode });
         }
-
-        const userList = userListRes.data;
-
-        return HttpResponse.success(res, { message: userListRes.message, data: userList, statusCode: 200 });
+        return HttpResponse.success(res, { message: kycDocsRes.message, data: kycDocsRes.data, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
-        return HttpResponse.error(res, { data: [], statusCode: 500 });
+        return HttpResponse.error(res, { message: KYC_MESSAGES.KYC_LISTING_FAILED, statusCode: 500 });
     }
 };
 
 const kycDocumentAction = async (req, res, next) => {
     try {
-        const adminId = req.adminId;
         const { kyc_id, action } = req.body;
 
         if (!kyc_id || !action) {
@@ -238,7 +255,7 @@ const kycDocumentAction = async (req, res, next) => {
             return HttpResponse.error(res, { message: 'action must be approve or reject', statusCode: 400 });
         }
 
-        const result = await kycService.updateDocumentStatus({ kycInfoId: kyc_id, action, adminId });
+        const result = await kycService.updateDocumentStatus({ kycId: kyc_id, action });
 
         if (!result.success) {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
@@ -454,4 +471,100 @@ const getMatchingEngineStats = async (req, res, next) => {
     }
 };
 
-module.exports = { login, triggerOtp, verifyMfaOtp, resendMfaOtp, getUserList, getUserKycDocs, kycDocumentAction, kycReviewAction, getUserLimitConfig, updateUserLimitConfig, updateUserSuspension, getMatchingEngineStats, logout };
+// ── Admin Self-Service Profile Controllers ────────────────────────────────────
+
+/**
+ * GET /api/v1/admin/profile
+ *
+ * Returns the signed-in admin's own profile as a structured field list.
+ * No authorize() needed — personal data, adminMiddleware JWT check is sufficient.
+ * req.adminId is set by adminMiddleware.
+ */
+const getAdminProfile = async (req, res, next) => {
+    try {
+        const adminId = req.adminId;
+
+        const result = await adminService.getAdminProfile(adminId);
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: result.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: result.message,
+            data: result.data,
+            statusCode: result.statusCode
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: ADMIN_PROFILE_MESSAGES.FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * PUT /api/v1/admin/profile
+ *
+ * Updates the signed-in admin's own editable profile fields (name, country_code,
+ * mobile_number). Email and role are not updatable here.
+ * No authorize() needed — personal data, adminMiddleware JWT check is sufficient.
+ * req.adminId is set by adminMiddleware.
+ */
+const updateAdminProfile = async (req, res, next) => {
+    try {
+        const adminId = req.adminId;
+
+        const { error: validationError, value: payload } = updateAdminProfileSchema.validate(req.body, {
+            abortEarly: false
+        });
+
+        if (validationError) {
+            return HttpResponse.error(res, {
+                message: validationError.details.map(d => d.message).join(', '),
+                statusCode: 400
+            });
+        }
+
+        const result = await adminService.updateAdminProfile(adminId, payload);
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: result.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: result.message,
+            data: result.data,
+            statusCode: result.statusCode
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, {
+            message: ADMIN_PROFILE_MESSAGES.UPDATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+module.exports = {
+    login,
+    triggerOtp,
+    verifyMfaOtp,
+    resendMfaOtp,
+    getUserList,
+    getUserKycDocs,
+    kycDocumentAction,
+    kycReviewAction,
+    getUserLimitConfig,
+    updateUserLimitConfig,
+    updateUserSuspension,
+    getMatchingEngineStats,
+    logout,
+    getAdminProfile,
+    updateAdminProfile
+};

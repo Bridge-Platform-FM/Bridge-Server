@@ -123,6 +123,16 @@ const ADMIN_MANAGEMENT_MESSAGES = {
     ACCOUNT_SUSPENDED: 'Your admin account has been suspended. Please contact a super admin.'
 };
 
+// ── Admin Profile (self-service) ──────────────────────────────────────────────
+const ADMIN_PROFILE_MESSAGES = {
+    FETCH_SUCCESS: 'Admin profile retrieved successfully',
+    FETCH_FAILED: 'Error encountered while fetching admin profile',
+    UPDATE_SUCCESS: 'Admin profile updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating admin profile',
+    NOT_FOUND: 'Admin profile not found',
+    NO_CHANGES: 'No valid fields provided for update'
+};
+
 const MATCHING_MESSAGES = {
     MATCH_SUCCESS: 'Matches retrieved successfully',
     MATCH_FAILED: 'Error encountered while retrieving matches',
@@ -738,5 +748,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES, PERMISSIONS, USER_TYPES, USER_TYPE_VALUES, ADMIN_USER_TYPES,
     SUBSCRIPTION_PLAN_MESSAGES,
     DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES,
-    ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS, DASHBOARD_MESSAGES
+    ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS, DASHBOARD_MESSAGES,
+    ADMIN_PROFILE_MESSAGES
 };

@@ -9,8 +9,6 @@ const { DASHBOARD_MESSAGES } = require('../utils/constant');
 
 const getUserDashboard = async ({ userId }) => {
     try {
-        // All queries run in parallel; each degrades gracefully to a safe default
-        // rather than letting a single transient DB error 500 the whole dashboard.
         const [
             profile,
             connectionStats,
@@ -18,13 +16,18 @@ const getUserDashboard = async ({ userId }) => {
             kycDocumentsCount,
             upcomingMeetingsCount,
         ] = await Promise.all([
-            dashboardRepository.getUserDashboardProfile(userId).catch(() => null),
-            dashboardRepository.getUserConnectionStats(userId).catch(() => ({})),
-            dashboardRepository.getUserActiveDealRoomsCount(userId).catch(() => 0),
-            dashboardRepository.getUserKycDocumentsCount(userId).catch(() => 0),
-            // Meeting table shape is assumed — catch keeps the rest of the dashboard
-            // intact if the query fails due to a schema mismatch.
-            dashboardRepository.getUserUpcomingMeetingsCount(userId).catch(() => 0),
+            dashboardRepository.getUserDashboardProfile(userId)
+                .catch((err) => { errorLogger.error(err); return null; }),
+            dashboardRepository.getUserConnectionStats(userId)
+                .catch((err) => { errorLogger.error(err); return {}; }),
+            dashboardRepository.getUserActiveDealRoomsCount(userId)
+                .catch((err) => { errorLogger.error(err); return 0; }),
+            dashboardRepository.getUserKycDocumentsCount(userId)
+                .catch((err) => { errorLogger.error(err); return 0; }),
+            // Meeting table shape is assumed rather than verified — silent fallback
+            // is intentional here so a schema mismatch doesn't fail the whole dashboard.
+            dashboardRepository.getUserUpcomingMeetingsCount(userId)
+                .catch(() => 0),
         ]);
 
         if (!profile) {
@@ -68,9 +71,12 @@ const getUserDashboard = async ({ userId }) => {
 const getAdminDashboard = async ({ adminId }) => {
     try {
         const [adminProfile, userCounts, kycCounts] = await Promise.all([
-            dashboardRepository.getAdminProfile(adminId).catch(() => null),
-            dashboardRepository.getUserCounts().catch(() => ({})),
-            dashboardRepository.getKycStatusCounts().catch(() => ({})),
+            dashboardRepository.getAdminProfile(adminId)
+                .catch((err) => { errorLogger.error(err); return null; }),
+            dashboardRepository.getUserCounts()
+                .catch((err) => { errorLogger.error(err); return {}; }),
+            dashboardRepository.getKycStatusCounts()
+                .catch((err) => { errorLogger.error(err); return {}; }),
         ]);
 
         return ServiceResponse.success({
@@ -109,16 +115,23 @@ const getSuperAdminDashboard = async ({ adminId }) => {
             activeToday,
             adminAccountCounts,
         ] = await Promise.all([
-            dashboardRepository.getAdminProfile(adminId).catch(() => null),
-            dashboardRepository.getUserCounts().catch(() => ({})),
-            dashboardRepository.getKycStatusCounts().catch(() => ({})),
-            dashboardRepository.getTotalOrganizationsCount().catch(() => 0),
-            // NOTE: activeToday is derived from user_session.last_activity_at.
-            // That column is only written when SESSION_LIMIT_ENABLED=true (defaults
-            // to false). In environments where the flag is off this will return 0.
-            // Confirm SESSION_LIMIT_ENABLED=true is set before relying on this KPI.
-            dashboardRepository.getActiveTodayCount().catch(() => 0),
-            dashboardRepository.getAdminAccountCounts().catch(() => ({})),
+            dashboardRepository.getAdminProfile(adminId)
+                .catch((err) => { errorLogger.error(err); return null; }),
+            dashboardRepository.getUserCounts()
+                .catch((err) => { errorLogger.error(err); return {}; }),
+            dashboardRepository.getKycStatusCounts()
+                .catch((err) => { errorLogger.error(err); return {}; }),
+            dashboardRepository.getTotalOrganizationsCount()
+                .catch((err) => { errorLogger.error(err); return 0; }),
+            // activeToday is derived from user_session.last_activity_at, which is
+            // only written when SESSION_LIMIT_ENABLED=true (env default: false).
+            // Silent fallback to 0 is intentional — this is a best-effort KPI,
+            // not a hard dependency. Ensure SESSION_LIMIT_ENABLED=true in every
+            // environment where this stat is expected to be non-zero.
+            dashboardRepository.getActiveTodayCount()
+                .catch(() => 0),
+            dashboardRepository.getAdminAccountCounts()
+                .catch((err) => { errorLogger.error(err); return {}; }),
         ]);
 
         return ServiceResponse.success({

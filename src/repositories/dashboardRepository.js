@@ -208,9 +208,14 @@ const getTotalOrganizationsCount = async () => {
 };
 
 /**
- * Distinct users who made at least one authenticated request today (calendar-day
- * boundary, server timezone). Derived from user_session.last_activity_at, which
- * authMiddleware updates on every request via userSessionRepository.updateLastActivity.
+ * Distinct users with a session active today (calendar-day boundary, server timezone).
+ * Derived from user_session.last_activity_at.
+ *
+ * IMPORTANT: last_activity_at is only written when SESSION_LIMIT_ENABLED=true
+ * (env default: false), and is never written for ADMIN_USER_TYPES sessions at all.
+ * In environments where the flag is off, this query will always return 0.
+ * Ensure SESSION_LIMIT_ENABLED=true is set in every environment where the
+ * "Active Today" KPI is expected to reflect real activity.
  *
  * Maps to SuperAdminView → "Active Today".
  */

@@ -34,7 +34,7 @@ const createKycInfo = async (records) => {
                 companyId: record.company_id,
                 roleId: record.role_id,
                 documentType: record.document_type
-            });
+            }, { transaction });
 
             if (existing) {
                 saved.push(await kycInfoRepository.updateKycRecord(
@@ -68,6 +68,15 @@ const createKycInfo = async (records) => {
     } catch (error) {
         await transaction.rollback();
         errorLogger.error(error);
+
+        // The loser of a concurrent double-submit: both requests read "no existing row"
+        // and both tried to insert, and the unique index rejected the second. The first
+        // one committed, so the user's document is stored — this is a conflict, not a
+        // server fault.
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return ServiceResponse.error({ message: KYC_MESSAGES.DUPLICATE_SUBMISSION, statusCode: 409 });
+        }
+
         return ServiceResponse.error({ message: 'Failed to create KYC documents.', statusCode: 500 });
     }
 };

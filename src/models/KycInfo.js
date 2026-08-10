@@ -151,7 +151,20 @@ module.exports = (sequelize) => {
         timestamps: true,
         initialAutoIncrement: 1,
         createdAt: 'created_at',
-        updatedAt: 'updated_at'
+        updatedAt: 'updated_at',
+        indexes: [
+            {
+                // One live row per document type per user/company/role. kycService.createKycInfo
+                // upserts by reading then writing; two concurrent submissions (double-click, a
+                // retried request) can both read "not found", so this constraint — not the read —
+                // is what actually prevents duplicate rows. Partial on is_deleted so a soft-deleted
+                // row never blocks a fresh upload.
+                name: 'kyc_info_user_company_role_doc_type_unique',
+                unique: true,
+                fields: ['user_id', 'company_id', 'role_id', 'document_type'],
+                where: { is_deleted: false }
+            }
+        ]
     });
 
     KycInfo.associate = (models) => {

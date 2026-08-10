@@ -2,7 +2,10 @@
 const { KycInfo, sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
 
-const findKycRecord = async ({ userId, companyId, roleId, documentType }) => {
+// `options` carries the caller's { transaction } — the insert-vs-update decision in
+// kycService.createKycInfo must read inside the same transaction it writes in, or it
+// reads a stale snapshot on a separate connection.
+const findKycRecord = async ({ userId, companyId, roleId, documentType }, options = {}) => {
     return await KycInfo.findOne({
         where: {
             user_id: userId ?? null,
@@ -10,7 +13,8 @@ const findKycRecord = async ({ userId, companyId, roleId, documentType }) => {
             role_id: roleId ?? null,
             document_type: documentType,
             is_deleted: false
-        }
+        },
+        ...options
     });
 };
 

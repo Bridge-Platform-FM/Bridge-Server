@@ -8,6 +8,7 @@ const adminMfaMiddleware = require('../middleware/adminMfaMiddleware');
 const authorize = require('../middleware/authorize');
 const adminController = require('../controllers/adminController');
 const adminSessionController = require('../controllers/adminSessionController');
+const dashboardController = require('../controllers/dashboardController');
 const faqController = require('../controllers/faqController');
 const adminManagementRoutes = require('./adminManagementRoutes');
 const { PERMISSIONS } = require('../utils/constant');
@@ -35,8 +36,6 @@ const validateRevokeSelectedSessions = (req, res, next) => {
         });
     }
 
-    // Controller reads req.body.sessionIds directly — validation above ensures
-    // it is a non-empty UUID array before execution reaches the controller.
     next();
 };
 
@@ -67,6 +66,11 @@ router.post('/auth/mfa/verify-otp', adminMfaMiddleware, authorize(PERMISSIONS.AD
 router.post('/auth/mfa/resend-otp', adminMfaMiddleware, authorize(PERMISSIONS.ADMIN_AUTH.MFA_RESEND_OTP), adminController.resendMfaOtp);
 
 router.post('/auth/logout', adminMiddleware, authorize(PERMISSIONS.SESSION.LOGOUT), adminController.logout);
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+// GET /api/v1/admin/dashboard
+router.get('/dashboard', adminMiddleware, authorize(PERMISSIONS.ADMIN_DASHBOARD.VIEW), dashboardController.getAdminDashboard);
 
 // ─── Session management (admin_session table) ─────────────────────────────────
 //

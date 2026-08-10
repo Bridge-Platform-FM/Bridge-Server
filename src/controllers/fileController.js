@@ -108,6 +108,16 @@ const filePreview = async (req, res) => {
         };
 
         const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+        // Profile pictures are avatars, not confidential documents — stamping the
+        // viewer's company/user across them would make every avatar unreadable.
+        const isProfileImage = s3Key.includes(`/${S3_FILE_TYPE.PROFILE}/`);
+        if (isProfileImage) {
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', 'inline');
+            return res.send(fileBuffer);
+        }
+
         const watermarkText = await waterMarkFunction(companyName, userId);
 
         let processedBuffer;

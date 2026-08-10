@@ -316,6 +316,7 @@ async function getMatchingEngineStats() {
                     name:     [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || '—',
                     role:     r.role_code    || '—',
                     company:  r.company_name || '—',
+                    profilePhoto: r.profile_photo ?? null,
                     joinedAt: r.created_at
                         ? (r.created_at.toISOString?.() ?? String(r.created_at))
                         : null,

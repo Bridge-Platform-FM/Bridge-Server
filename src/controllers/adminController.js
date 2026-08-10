@@ -245,6 +245,7 @@ const getUserKycDocs = async (req, res, next) => {
 
 const kycDocumentAction = async (req, res, next) => {
     try {
+        const adminId = req.adminId;
         const { kyc_id, action } = req.body;
 
         if (!kyc_id || !action) {
@@ -255,7 +256,7 @@ const kycDocumentAction = async (req, res, next) => {
             return HttpResponse.error(res, { message: 'action must be approve or reject', statusCode: 400 });
         }
 
-        const result = await kycService.updateDocumentStatus({ kycId: kyc_id, action });
+        const result = await kycService.updateDocumentStatus({ kycInfoId: kyc_id, action, adminId });
 
         if (!result.success) {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });

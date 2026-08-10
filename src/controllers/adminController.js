@@ -613,6 +613,7 @@ module.exports = {
     getUserLimitConfig,
     updateUserLimitConfig,
     updateUserSuspension,
+    updateRoleSwitchStatus,
     getMatchingEngineStats,
     logout,
     getAdminProfile,

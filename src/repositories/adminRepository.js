@@ -8,6 +8,42 @@ const findByEmail = async (email) => {
 };
 
 /**
+ * Find an admin by their UUID, excluding soft-deleted accounts and the password field.
+ */
+const findAdminById = async (adminId) => {
+    try {
+        const admin = await Admin.findByPk(adminId, {
+            attributes: { exclude: ['password'] },
+            where: { is_deleted: false }
+        });
+        return admin;
+    } catch (err) {
+        throw err;
+    }
+};
+
+/**
+ * Partial update of an admin by UUID. Automatically sets updated_at timestamp.
+ */
+const updateAdminById = async (adminId, data) => {
+    try {
+        const updateData = {
+            ...data,
+            updated_at: new Date(),
+            updated_by: adminId // The admin updating their own profile
+        };
+        
+        const [count] = await Admin.update(updateData, {
+            where: { id: adminId, is_deleted: false }
+        });
+        
+        return count > 0;
+    } catch (err) {
+        throw err;
+    }
+};
+
+/**
  * Three raw queries for the Matching Engine Dashboard KPIs.
  * Kept in the repository layer so the service stays business-logic only.
  */
@@ -144,4 +180,16 @@ const getBehavioralSignals = async () => {
     return rows;
 };
 
-module.exports = { findByEmail, getMatchingEngineKpis, getConnectionStatusBreakdown, getZeroEngagementProfiles, getMatchesGenerated, getAverageCompatibilityScore, getTopSectorsByVolume, getAlgorithmDistribution, getBehavioralSignals };
+module.exports = { 
+    findByEmail, 
+    getMatchingEngineKpis, 
+    getConnectionStatusBreakdown, 
+    getZeroEngagementProfiles, 
+    getMatchesGenerated, 
+    getAverageCompatibilityScore, 
+    getTopSectorsByVolume, 
+    getAlgorithmDistribution, 
+    getBehavioralSignals,
+    findAdminById,
+    updateAdminById
+};

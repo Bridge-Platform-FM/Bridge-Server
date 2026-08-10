@@ -102,6 +102,18 @@ router.post('/sessions/revoke-selected', adminMiddleware, validateRevokeSelected
 // DELETE /api/v1/admin/sessions/:sessionId  — revoke one specific session by id
 router.delete('/sessions/:sessionId', adminMiddleware, validateSessionIdParam, adminSessionController.revokeOneSession);
 
+// ─── Admin / Super-Admin Self-Service Profile ─────────────────────────────────
+//
+// No authorize() — profile operations are personal (every admin reads/updates only
+// their own record) so adminMiddleware's JWT + userType check is sufficient.
+// Mirrors the session-management pattern above.
+
+// GET  /api/v1/admin/profile  — fetch the signed-in admin's own profile fields
+router.get('/profile', adminMiddleware, adminController.getAdminProfile);
+
+// PUT  /api/v1/admin/profile  — update editable fields (name, country_code, mobile_number)
+router.put('/profile', adminMiddleware, adminController.updateAdminProfile);
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 router.get('/get-user-list', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.LIST), adminController.getUserList);

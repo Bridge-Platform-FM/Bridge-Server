@@ -50,6 +50,7 @@ const getZeroEngagementProfiles = async () => {
             u.id AS user_id,
             u.first_name,
             u.last_name,
+            u.profile_photo,
             u.created_at,
             crm.role_code,
             c.company_name

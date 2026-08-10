@@ -70,6 +70,7 @@ const getUserKycDocs = async () => {
                     company_id: row.cid,
                     first_name: row.first_name,
                     last_name: row.last_name,
+                    profile_photo: row.profile_photo,
                     company_email: row.company_email,
                     company_name: row.company_name,
                     country_code: row.country_code,

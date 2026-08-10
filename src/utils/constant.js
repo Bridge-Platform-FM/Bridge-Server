@@ -81,6 +81,7 @@ const KYC_MESSAGES = {
     REVIEW_ACTION_SUCCESS: 'KYC review status updated successfully',
     REVIEW_ACTION_FAILED: 'Error encountered while updating KYC review status',
     DOCUMENT_NOT_FOUND: 'KYC document not found',
+    DUPLICATE_SUBMISSION: 'This document was already submitted. Please refresh and try again.',
 }
 
 const ENCRYPT_DECRYPT_MESSAGES = {

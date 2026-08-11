@@ -11,11 +11,11 @@ module.exports = {
         dialect: process.env.DB_DILECT, 
         port: process.env.DB_PORT,
         // UAT
-        dialectOptions: {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            }
-        }
+        // dialectOptions: {
+        //     ssl: {
+        //         require: true,
+        //         rejectUnauthorized: false
+        //     }
+        // }
     }
 };

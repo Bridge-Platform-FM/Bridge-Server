@@ -10,18 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to EC2
+      - name: Deploy to Azure VM
         uses: appleboy/ssh-action@v1.0.3
 
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.AZURE_VM_HOST }}
+          username: ${{ secrets.AZURE_VM_USERNAME }}
+          key: ${{ secrets.AZURE_VM_SSH_KEY }}
+          port: 22
 
           script: |
-            export PATH="/home/ubuntu/.nvm/versions/node/v22.22.3/bin:$PATH"
+            export PATH="/home/azureuser/.nvm/versions/node/v22.22.3/bin:$PATH"
 
-            cd /home/ubuntu/Bridge-Server
+            cd /home/azureuser/Bridge-Server
 
             git pull origin uat
 

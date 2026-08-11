@@ -26,7 +26,7 @@ let sequelize;
 // local
 sequelize = new Sequelize(env_config.DB.DB_NAME, env_config.DB.DB_USER, env_config.DB.DB_PASSWORD, {host: env_config.DB.DB_HOST, dialect: env_config.DB.DB_DILECT, logging: false});
 
-// uat
+// UAT
 // sequelize = new Sequelize(
 //     env_config.DB.DB_NAME, 
 //     env_config.DB.DB_USER, 
@@ -38,8 +38,8 @@ sequelize = new Sequelize(env_config.DB.DB_NAME, env_config.DB.DB_USER, env_conf
 //         ssl: true,
 //         dialectOptions: {
 //             ssl: {
-//             require: true,
-//             rejectUnauthorized: false
+//                 require: true,
+//                 rejectUnauthorized: false
 //             }
 //         }
 //     }

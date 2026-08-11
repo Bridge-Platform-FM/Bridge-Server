@@ -20,9 +20,9 @@ jobs:
           port: 22
 
           script: |
-            export PATH="/home/azureuser/.nvm/versions/node/v22.22.3/bin:$PATH"
+            export PATH="/home/bridge/.nvm/versions/node/v22.22.3/bin:$PATH"
 
-            cd /home/azureuser/Bridge-Server
+            cd /home/bridge/Bridge-Server
 
             git pull origin uat
 

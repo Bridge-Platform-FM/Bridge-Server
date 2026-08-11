@@ -8,6 +8,7 @@ const adminMfaMiddleware = require('../middleware/adminMfaMiddleware');
 const authorize = require('../middleware/authorize');
 const adminController = require('../controllers/adminController');
 const adminSessionController = require('../controllers/adminSessionController');
+const dashboardController = require('../controllers/dashboardController');
 const faqController = require('../controllers/faqController');
 const adminManagementRoutes = require('./adminManagementRoutes');
 const { PERMISSIONS } = require('../utils/constant');
@@ -35,8 +36,6 @@ const validateRevokeSelectedSessions = (req, res, next) => {
         });
     }
 
-    // Controller reads req.body.sessionIds directly — validation above ensures
-    // it is a non-empty UUID array before execution reaches the controller.
     next();
 };
 
@@ -68,6 +67,11 @@ router.post('/auth/mfa/resend-otp', adminMfaMiddleware, authorize(PERMISSIONS.AD
 
 router.post('/auth/logout', adminMiddleware, authorize(PERMISSIONS.SESSION.LOGOUT), adminController.logout);
 
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+// GET /api/v1/admin/dashboard
+router.get('/dashboard', adminMiddleware, authorize(PERMISSIONS.ADMIN_DASHBOARD.VIEW), dashboardController.getAdminDashboard);
+
 // ─── Session management (admin_session table) ─────────────────────────────────
 //
 // No authorize() here — session operations are personal (every admin manages only
@@ -97,6 +101,18 @@ router.post('/sessions/revoke-selected', adminMiddleware, validateRevokeSelected
 
 // DELETE /api/v1/admin/sessions/:sessionId  — revoke one specific session by id
 router.delete('/sessions/:sessionId', adminMiddleware, validateSessionIdParam, adminSessionController.revokeOneSession);
+
+// ─── Admin / Super-Admin Self-Service Profile ─────────────────────────────────
+//
+// No authorize() — profile operations are personal (every admin reads/updates only
+// their own record) so adminMiddleware's JWT + userType check is sufficient.
+// Mirrors the session-management pattern above.
+
+// GET  /api/v1/admin/profile  — fetch the signed-in admin's own profile fields
+router.get('/profile', adminMiddleware, adminController.getAdminProfile);
+
+// PUT  /api/v1/admin/profile  — update editable fields (name, country_code, mobile_number)
+router.put('/profile', adminMiddleware, adminController.updateAdminProfile);
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 

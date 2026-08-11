@@ -31,6 +31,9 @@ const updateTrialConfigSchema = Joi.object({
         }),
         expiry_notification: Joi.boolean().messages({
             'boolean.base': 'expiry_notification must be a boolean'
+        }),
+        aws_service_enabled: Joi.boolean().messages({
+            'boolean.base': 'aws_service_enabled must be a boolean'
         })
     }).min(1).required().messages({
         'object.base': 'trialConfig must be an object',

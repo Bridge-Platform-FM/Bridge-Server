@@ -1,7 +1,6 @@
 'use strict';
 const bcrypt = require('bcrypt');
 const { DATA_TYPES } = require('./constant');
-require('dotenv').config();
 
 // Generates a random 4-digit OTP
 const generateOTP = () => {

@@ -1,6 +1,5 @@
 const twilio = require("twilio");
 const sgMail = require("@sendgrid/mail");
-require('dotenv').config();
 
 const smsClient = twilio(
     process.env.TWILIO_ACCOUNT_SID,

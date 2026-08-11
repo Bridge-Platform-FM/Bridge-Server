@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const adminRepository = require('../repositories/adminRepository');
 const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
+const companyRepository = require('../repositories/companyRepository');
+const subscriptionRepository = require('../repositories/subscriptionRepository');
 const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
 const suspensionCacheRepository = require('../repositories/suspensionCacheRepository');
 const userSessionRepository = require('../repositories/userSessionRepository');
@@ -10,7 +12,11 @@ const sessionCacheRepository = require('../repositories/sessionCacheRepository')
 const { generateAccessToken } = require('../utils/token');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES, ADMIN_ROLES_CODE, ADMIN_USER_TYPES, TOKEN_TYPES, USER_SUSPENSION_MESSAGES } = require('../utils/constant');
+const {
+    ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES,
+    ADMIN_ROLES_CODE, ADMIN_USER_TYPES, TOKEN_TYPES, USER_SUSPENSION_MESSAGES,
+    ADMIN_PROFILE_MESSAGES
+} = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
 const { sequelize } = require('../models');
@@ -68,6 +74,127 @@ const findByEmail = async (email) => {
     }
 };
 
+// ── Admin Self-Service Profile ────────────────────────────────────────────────
+
+/**
+ * Return the signed-in admin's own profile as a structured field list.
+ *
+ * The response mirrors the user GET /profile shape (array of ProfileField objects)
+ * so the frontend profile page can reuse the same rendering logic for all roles.
+ *
+ * Fields:
+ *   name          — editable (admin can update their display name)
+ *   email         — read-only (identity anchor, never changed here)
+ *   role          — read-only (role changes go through admin management)
+ *   country_code  — editable (folded into the phone widget on the frontend)
+ *   mobile_number — editable
+ */
+const getAdminProfile = async (adminId) => {
+    try {
+        const admin = await adminRepository.findAdminById(adminId);
+        if (!admin) {
+            return ServiceResponse.error({
+                message: ADMIN_PROFILE_MESSAGES.NOT_FOUND,
+                statusCode: 404
+            });
+        }
+
+        const adminData = admin.toJSON ? admin.toJSON() : admin;
+
+        const fields = [
+            {
+                label: 'Name',
+                columnName: 'name',
+                value: adminData.name || '',
+                isEditable: true,
+                type: 'string'
+            },
+            {
+                label: 'Email',
+                columnName: 'email',
+                value: adminData.email || '',
+                isEditable: false,
+                type: 'email'
+            },
+            {
+                label: 'Role',
+                columnName: 'role',
+                value: adminData.role || '',
+                isEditable: false,
+                type: 'string'
+            },
+            {
+                label: 'Country Code',
+                columnName: 'country_code',
+                value: adminData.country_code || '',
+                isEditable: true,
+                type: 'string'
+            },
+            {
+                label: 'Mobile Number',
+                columnName: 'mobile_number',
+                value: adminData.mobile_number || '',
+                isEditable: true,
+                type: 'string'
+            }
+        ];
+
+        return ServiceResponse.success({
+            message: ADMIN_PROFILE_MESSAGES.FETCH_SUCCESS,
+            data: fields,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: ADMIN_PROFILE_MESSAGES.FETCH_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * Update the signed-in admin's own editable profile fields.
+ *
+ * Only name, country_code, and mobile_number may be changed here.
+ * Email and role are immutable through this endpoint.
+ * At least one field must be supplied (enforced by Joi in the controller).
+ */
+const updateAdminProfile = async (adminId, payload) => {
+    try {
+        const admin = await adminRepository.findAdminById(adminId);
+        if (!admin) {
+            return ServiceResponse.error({
+                message: ADMIN_PROFILE_MESSAGES.NOT_FOUND,
+                statusCode: 404
+            });
+        }
+
+        const { name, country_code, mobile_number } = payload;
+
+        const updateData = { updated_by: adminId, updated_at: new Date() };
+        if (name !== undefined) updateData.name = name;
+        if (country_code !== undefined) updateData.country_code = country_code;
+        if (mobile_number !== undefined) updateData.mobile_number = mobile_number;
+
+        await adminRepository.updateAdminById(adminId, updateData);
+
+        return ServiceResponse.success({
+            message: ADMIN_PROFILE_MESSAGES.UPDATE_SUCCESS,
+            data: [],
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: ADMIN_PROFILE_MESSAGES.UPDATE_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+// ── User Limit Config ─────────────────────────────────────────────────────────
+
 const getUserLimitConfig = async ({ userId, userType }) => {
     try {
         if (!ADMIN_USER_TYPES.includes(userType)) {
@@ -87,13 +214,36 @@ const getUserLimitConfig = async ({ userId, userType }) => {
 
         const config = await userLimitConfigRepository.findByUserId(userId);
 
-        const data = {
-            user_id: userId,
-            allowed_connections: config?.allowed_connections ?? USER_LIMIT_DEFAULTS.ALLOWED_CONNECTIONS,
-            allowed_free_trial_days: config?.allowed_free_trial_days ?? USER_LIMIT_DEFAULTS.ALLOWED_FREE_TRIAL_DAYS,
-            allowed_premium_days: config?.allowed_premium_days ?? USER_LIMIT_DEFAULTS.ALLOWED_PREMIUM_DAYS,
-            is_custom: !!config
-        };
+        const companyId = await companyRepository.getDefaultCompanyIdByUserId(userId);
+        const subscription = companyId
+            ? await subscriptionRepository.getActiveSubscription(userId, companyId)
+            : null;
+
+        const hasSubscription = !!subscription;
+        const isSubscriptionExpired = hasSubscription
+            ? new Date(subscription.end_date) < new Date()
+            : false;
+
+        let data = {};
+
+        if (hasSubscription && !isSubscriptionExpired) {
+            data = {
+                user_id: userId,
+                allowed_premium_days: config?.allowed_premium_days ?? subscription.validity_days,
+                is_custom: !!config?.updated_by,
+                has_subscription: hasSubscription,
+                is_subscription_expired: isSubscriptionExpired
+            };
+        }
+        else {
+            data = {
+                user_id: userId,
+                allowed_connections: config?.allowed_connections,
+                allowed_free_trial_days: config?.allowed_free_trial_days,
+                is_custom: !!config?.updated_by,
+                has_subscription: hasSubscription
+            };
+        }
 
         return ServiceResponse.success({
             message: USER_LIMIT_CONFIG_MESSAGES.FETCH_SUCCESS,
@@ -223,7 +373,16 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
     }
 };
 
-module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig, updateUserSuspension, getMatchingEngineStats };
+module.exports = {
+    login,
+    findByEmail,
+    getAdminProfile,
+    updateAdminProfile,
+    getUserLimitConfig,
+    updateUserLimitConfig,
+    updateUserSuspension,
+    getMatchingEngineStats
+};
 
 
 // ─── Matching Engine Dashboard ─────────────────────────────────────────────────
@@ -290,6 +449,7 @@ async function getMatchingEngineStats() {
                     name:     [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || '—',
                     role:     r.role_code    || '—',
                     company:  r.company_name || '—',
+                    profilePhoto: r.profile_photo ?? null,
                     joinedAt: r.created_at
                         ? (r.created_at.toISOString?.() ?? String(r.created_at))
                         : null,

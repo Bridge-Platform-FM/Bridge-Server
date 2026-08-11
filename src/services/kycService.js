@@ -2,9 +2,11 @@
 const { sequelize } = require('../models');
 const kycInfoRepository = require('../repositories/kycInfoRepository');
 const companyRepository = require('../repositories/companyRepository');
+const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
+const adminConfigService = require('./adminConfigService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS } = require('../utils/constant');
+const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS, TRIAL_CONFIG_LOOKUP_KEYS, USER_LIMIT_DEFAULTS } = require('../utils/constant');
 const { decrypt } = require("../utils/encryption");
 const userService = require('./userService');
 
@@ -22,16 +24,59 @@ const createKycInfo = async (records) => {
             created_at: r.created_at ?? now
         }));
 
-        const created = await kycInfoRepository.bulkCreateKycRecords(normalized, { transaction });
+        // Upsert per document type: a re-upload after a rejection has to replace the stored
+        // document in place, otherwise the user ends up with two rows of the same type and
+        // the reviewer sees a duplicate.
+        const saved = [];
+        for (const record of normalized) {
+            const existing = await kycInfoRepository.findKycRecord({
+                userId: record.user_id,
+                companyId: record.company_id,
+                roleId: record.role_id,
+                documentType: record.document_type
+            }, { transaction });
+
+            if (existing) {
+                saved.push(await kycInfoRepository.updateKycRecord(
+                    existing.id,
+                    { ...record, rejection_reason: null, verified_at: null, verified_by: null },
+                    { transaction }
+                ));
+            } else {
+                saved.push(await kycInfoRepository.createKycRecord(record, { transaction }));
+            }
+        }
+
+        // Clear the company-level rejection so a resubmission goes back into the review
+        // queue — without this the user stays on the "Verification Unsuccessful" screen.
+        const companyId = normalized[0].company_id;
+        const company = await companyRepository.getCompanyById(companyId);
+        if (company?.kyc_status === KYC_STATUS.REJECTED) {
+            await companyRepository.updateKycStatus(
+                companyId,
+                { isKycVerified: false, status: KYC_STATUS.PENDING, rejectionReason: null },
+                { transaction }
+            );
+        }
+
         await transaction.commit();
         return ServiceResponse.success({
             message: 'KYC documents created successfully.',
-            data: { records: created },
+            data: { records: saved },
             statusCode: 201
         });
     } catch (error) {
         await transaction.rollback();
         errorLogger.error(error);
+
+        // The loser of a concurrent double-submit: both requests read "no existing row"
+        // and both tried to insert, and the unique index rejected the second. The first
+        // one committed, so the user's document is stored — this is a conflict, not a
+        // server fault.
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return ServiceResponse.error({ message: KYC_MESSAGES.DUPLICATE_SUBMISSION, statusCode: 409 });
+        }
+
         return ServiceResponse.error({ message: 'Failed to create KYC documents.', statusCode: 500 });
     }
 };
@@ -39,9 +84,19 @@ const createKycInfo = async (records) => {
 const getKycInfo = async ({ userId, companyId, roleId }) => {
     try {
         const records = await kycInfoRepository.findAllKycRecordsRaw({ userId, companyId, roleId });
+
+        // The review decision lives on the company, not on kyc_info — a company-level
+        // reject never touches the per-document rows. Without this the user has no way
+        // to see that they were rejected, or why.
+        const company = await companyRepository.getCompanyById(companyId);
+
         return ServiceResponse.success({
             message: KYC_MESSAGES.FETCH_SUCCESS,
-            data: records ,
+            data: {
+                records,
+                kycStatus: company?.kyc_status ?? null,
+                rejectionReason: company?.kyc_rejection_reason ?? null
+            },
             statusCode: 200
         });
     } catch (error) {
@@ -142,6 +197,18 @@ const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId 
             if (!updateUserRes.success) {
                 return ServiceResponse.error({ message: updateUserRes.message, statusCode: updateUserRes.statusCode });
             }
+
+            const [allowedConnections, allowedFreeTrialDays] = await Promise.all([
+                adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_CONNECTION_LIMIT, USER_LIMIT_DEFAULTS.ALLOWED_CONNECTIONS),
+                adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_TRIAL_DAY, USER_LIMIT_DEFAULTS.ALLOWED_FREE_TRIAL_DAYS)
+            ]);
+
+            await userLimitConfigRepository.createDefaultUserLimitConfig(
+                userId,
+                { allowed_connections: allowedConnections, allowed_free_trial_days: allowedFreeTrialDays },
+                adminId,
+                { transaction }
+            );
         }
 
         await transaction.commit();

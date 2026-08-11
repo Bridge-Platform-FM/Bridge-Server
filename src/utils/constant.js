@@ -81,6 +81,7 @@ const KYC_MESSAGES = {
     REVIEW_ACTION_SUCCESS: 'KYC review status updated successfully',
     REVIEW_ACTION_FAILED: 'Error encountered while updating KYC review status',
     DOCUMENT_NOT_FOUND: 'KYC document not found',
+    DUPLICATE_SUBMISSION: 'This document was already submitted. Please refresh and try again.',
 }
 
 const ENCRYPT_DECRYPT_MESSAGES = {
@@ -122,6 +123,16 @@ const ADMIN_MANAGEMENT_MESSAGES = {
     ACCOUNT_SUSPENDED: 'Your admin account has been suspended. Please contact a super admin.'
 };
 
+// ── Admin Profile (self-service) ──────────────────────────────────────────────
+const ADMIN_PROFILE_MESSAGES = {
+    FETCH_SUCCESS: 'Admin profile retrieved successfully',
+    FETCH_FAILED: 'Error encountered while fetching admin profile',
+    UPDATE_SUCCESS: 'Admin profile updated successfully',
+    UPDATE_FAILED: 'Error encountered while updating admin profile',
+    NOT_FOUND: 'Admin profile not found',
+    NO_CHANGES: 'No valid fields provided for update'
+};
+
 const MATCHING_MESSAGES = {
     MATCH_SUCCESS: 'Matches retrieved successfully',
     MATCH_FAILED: 'Error encountered while retrieving matches',
@@ -154,6 +165,13 @@ const ADMIN_CONFIG_MESSAGES = {
     CONFIG_RESET_SUCCESS: 'OTP configuration reset to defaults successfully',
     CONFIG_RESET_FAILED: 'Error encountered while resetting OTP configuration'
 };
+
+const DASHBOARD_MESSAGES = {
+    FETCH_SUCCESS: 'Dashboard data fetched successfully',
+    FETCH_FAILED: 'Error encountered while fetching dashboard data',
+    USER_NOT_FOUND: 'User dashboard profile not found'
+};
+
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
     KYC: 'kyc',
@@ -262,7 +280,8 @@ const PERMISSIONS = {
         VIEW_PROFILE: 'USER.VIEW_PROFILE',
         UPDATE_PROFILE: 'USER.UPDATE_PROFILE',
         SEARCH: 'USER.SEARCH',
-        VIEW_ROLE_DETAILS: 'USER.VIEW_ROLE_DETAILS'
+        VIEW_ROLE_DETAILS: 'USER.VIEW_ROLE_DETAILS',
+        VIEW_DASHBOARD: 'USER.VIEW_DASHBOARD'
     },
     FILE: {
         SCAN_IMAGE: 'FILE.SCAN_IMAGE',
@@ -364,6 +383,12 @@ const PERMISSIONS = {
         DELETE: 'ADMIN_MANAGEMENT.DELETE',
         SUSPEND: 'ADMIN_MANAGEMENT.SUSPEND',
         ACTIVATE: 'ADMIN_MANAGEMENT.ACTIVATE'
+    },
+    ADMIN_DASHBOARD: {
+        VIEW: 'ADMIN_DASHBOARD.VIEW'
+    },
+    SUPER_ADMIN_DASHBOARD: {
+        VIEW: 'SUPER_ADMIN_DASHBOARD.VIEW'
     }
 };
 
@@ -411,7 +436,9 @@ const TRIAL_DAYS_LIMITS = {
 
 const TRIAL_CONFIG_LOOKUP_KEYS = {
     FREE_CONNECTION_LIMIT: 'free_trial_connection_limit',
-    PREMIUM_CONNECTION_LIMIT: 'premium_connection_limit'
+    PREMIUM_CONNECTION_LIMIT: 'premium_connection_limit',
+    AWS_SERVICE_ENABLED: 'aws_service_enabled',
+    FREE_TRIAL_DAY: 'free_trial_day'
 };
 
 const CONNECTION_MESSAGES = {
@@ -721,5 +748,6 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     DEAL_ROOM_TERM_SHEET_MESSAGES, FAQ_MESSAGES, PERMISSIONS, USER_TYPES, USER_TYPE_VALUES, ADMIN_USER_TYPES,
     SUBSCRIPTION_PLAN_MESSAGES,
     DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES,
-    ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS 
+    ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS, DASHBOARD_MESSAGES,
+    ADMIN_PROFILE_MESSAGES
 };

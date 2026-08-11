@@ -12,9 +12,9 @@ async function initScanner() {
 
     scanner = await new NodeClam().init({
         clamdscan: {
-            host: "localhost",
-            port: 3310,
-        },
+            host: process.env.CLAMAV_HOST,
+            port: process.env.CLAMAV_PORT
+        }
     });
 
     return scanner;

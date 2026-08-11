@@ -9,8 +9,6 @@ const { errorLogger } = require("../configs/logger.js");
 const { CHANNEL_TYPE } = require("../utils/constant.js")
 const adminConfigService = require("./adminConfigService.js");
 
-require('dotenv').config();
-
 const sendOtpToPhone = async (phone, otp) => {
     try {
         const id = await smsClient.messages.create({

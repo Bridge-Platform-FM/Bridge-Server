@@ -1,5 +1,5 @@
 const { errorLogger } = require("../configs/logger");
-const { uploadToS3, getFileBuffer, getFileUrl } = require("../services/s3.service");
+const { uploadToBucket, getFileBuffer, getFileUrl } = require("../services/s3.service");
 const { scanUploadedFile } = require("../services/scan.service");
 const { addPdfWatermark, addImageWatermark } = require("../services/watermark.service");
 const kycService = require('../services/kycService');
@@ -30,30 +30,30 @@ const scanFile = async (req, res, next) => {
         // req.file.buffer
         const fileBuffer = req.file.buffer;
         // Virus Scan
-        // const scanResult = await scanUploadedFile(fileBuffer);
-        // if (!scanResult.success) {
-        //     return HttpResponse.error(res, {
-        //         message: scanResult.message,
-        //         statusCode: 400
-        //     });
-        // }
+        const scanResult = await scanUploadedFile(fileBuffer);
+        if (!scanResult.success) {
+            return HttpResponse.error(res, {
+                message: scanResult.message,
+                statusCode: 400
+            });
+        }
 
         let s3_file_type = S3_FILE_TYPE.PROFILE
         if (KYC_DOC_TYPES.includes(docType)) {
             s3_file_type = S3_FILE_TYPE.KYC
         }
 
-        // Upload to S3
+        // Upload to Bucket
         const s3KeyToUpload = `company/${companyId}/${userId}/${s3_file_type}/${Date.now()}-${req.file.originalname}`;
-        // const s3Key = await uploadToS3(
-        //     s3_file_type,
-        //     fileBuffer,
-        //     req.file.originalname,
-        //     req.file.mimetype,
-        //     companyName,
-        //     userId,
-        //     s3KeyToUpload
-        // )
+        const s3Key = await uploadToBucket(
+            s3_file_type,
+            fileBuffer,
+            req.file.originalname,
+            req.file.mimetype,
+            companyName,
+            userId,
+            s3KeyToUpload
+        )
         // console.log("s3Key", s3Key)
 
         return HttpResponse.success(res, {
@@ -62,7 +62,7 @@ const scanFile = async (req, res, next) => {
                 fileName: req.file.originalname,
                 fileSize: req.file.size,
                 mimeType: req.file.mimetype,
-                s3Key: s3KeyToUpload,
+                s3Key: s3Key,
                 side: side,
                 docType: docType
             },
@@ -108,6 +108,16 @@ const filePreview = async (req, res) => {
         };
 
         const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+        // Profile pictures are avatars, not confidential documents — stamping the
+        // viewer's company/user across them would make every avatar unreadable.
+        const isProfileImage = s3Key.includes(`/${S3_FILE_TYPE.PROFILE}/`);
+        if (isProfileImage) {
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', 'inline');
+            return res.send(fileBuffer);
+        }
+
         const watermarkText = await waterMarkFunction(companyName, userId);
 
         let processedBuffer;
@@ -213,7 +223,7 @@ const getKycDocs = async (req, res) => {
             return HttpResponse.error(res, { message: getKycInfoServiceRes.message, statusCode: getKycInfoServiceRes.statusCode });
         }
 
-        const kycInfo = getKycInfoServiceRes.data
+        const { records: kycInfo, kycStatus, rejectionReason } = getKycInfoServiceRes.data;
 
         const decrypedRecords = kycInfo.map(record => {
             
@@ -245,7 +255,7 @@ const getKycDocs = async (req, res) => {
 
         return HttpResponse.success(res, {
             message: getKycInfoServiceRes.message,
-            data: { docDetails: preparedRes, submissionTime: submissionTime, expiryTime: expiryTime },
+            data: { docDetails: preparedRes, submissionTime: submissionTime, expiryTime: expiryTime, kycStatus, rejectionReason },
             statusCode: 200
         });
 

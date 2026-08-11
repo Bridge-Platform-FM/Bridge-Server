@@ -3,16 +3,6 @@ const NodeClam = require("clamscan");
 const fs = require("fs/promises");
 const path = require("path");
 const os = require("os");
-require('dotenv').config();
-
-let host, port;
-if (process.env.APP_ENV === 'uat') {
-    host = process.env.CLAMAV_UAT_HOST;
-    port = process.env.CLAMAV_UAT_PORT;
-} else {
-    host = process.env.CLAMAV_HOST;
-    port = process.env.CLAMAV_PORT;
-}
 
 let scanner;
 async function initScanner() {
@@ -22,8 +12,8 @@ async function initScanner() {
 
     scanner = await new NodeClam().init({
         clamdscan: {
-            host: host,
-            port: port
+            host: process.env.CLAMAV_HOST,
+            port: process.env.CLAMAV_PORT
         }
     });
 

@@ -1,9 +1,4 @@
 const express = require('express');
-// uat
-// require('dotenv').config({
-//   path: '.env.uat'
-// });
-// local
 require('dotenv').config()
 const http = require('http');
 const { Server } = require('socket.io');

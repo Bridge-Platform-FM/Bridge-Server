@@ -76,7 +76,7 @@ app.use('/api/v1/subscriptions', subscriptionRoutes);
 
 app.get('/', (req, res) => {
     return HttpResponse.success(res, {
-        message: 'Hello World!'
+        message: 'Hello World from Server!'
     });
 });
 

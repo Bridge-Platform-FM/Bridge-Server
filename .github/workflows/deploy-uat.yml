@@ -42,6 +42,6 @@ jobs:
             npm ci
 
             echo "Restarting backend..."
-            pm2 restart backend
+            pm2 restart my-api
 
             echo "Deployment completed successfully!"

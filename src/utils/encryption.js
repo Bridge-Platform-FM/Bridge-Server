@@ -1,5 +1,4 @@
 const crypto = require("crypto");
-require('dotenv').config();
 
 const ALGORITHM = "aes-256-gcm";
 

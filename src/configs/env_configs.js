@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const env = {
     SERVER_PORT: process.env.SERVER_PORT,
     SKIP_VIRUS_SCAN: process.env.SKIP_VIRUS_SCAN === 'true',

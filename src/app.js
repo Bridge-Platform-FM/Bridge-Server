@@ -1,10 +1,10 @@
 const express = require('express');
-// uat
-// require('dotenv').config({
-//   path: '.env.uat'
-// });
-// local
-require('dotenv').config()
+// env config
+const dotenv = require('dotenv');
+const env = process.env.APP_ENV || 'local';
+dotenv.config({
+    path: env === 'uat' ? '.env.uat' : '.env'
+});
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');

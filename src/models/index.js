@@ -24,26 +24,26 @@ let sequelize;
 // }
 
 // local
-sequelize = new Sequelize(env_config.DB.DB_NAME, env_config.DB.DB_USER, env_config.DB.DB_PASSWORD, {host: env_config.DB.DB_HOST, dialect: env_config.DB.DB_DILECT, logging: false});
+// sequelize = new Sequelize(env_config.DB.DB_NAME, env_config.DB.DB_USER, env_config.DB.DB_PASSWORD, {host: env_config.DB.DB_HOST, dialect: env_config.DB.DB_DILECT, logging: false});
 
 // uat
-// sequelize = new Sequelize(
-//     env_config.DB.DB_NAME, 
-//     env_config.DB.DB_USER, 
-//     env_config.DB.DB_PASSWORD, 
-//     {
-//         host: env_config.DB.DB_HOST, 
-//         dialect: env_config.DB.DB_DILECT, 
-//         logging: false,
-//         ssl: true,
-//         dialectOptions: {
-//             ssl: {
-//             require: true,
-//             rejectUnauthorized: false
-//             }
-//         }
-//     }
-// );
+sequelize = new Sequelize(
+    env_config.DB.DB_NAME, 
+    env_config.DB.DB_USER, 
+    env_config.DB.DB_PASSWORD, 
+    {
+        host: env_config.DB.DB_HOST, 
+        dialect: env_config.DB.DB_DILECT, 
+        logging: false,
+        ssl: true,
+        dialectOptions: {
+            ssl: {
+                require: true,
+                rejectUnauthorized: false
+            }
+        }
+    }
+);
 
 fs.readdirSync(__dirname)
     .filter(file => {

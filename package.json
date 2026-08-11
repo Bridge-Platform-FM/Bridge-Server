@@ -4,7 +4,7 @@
     "private": true,
     "type": "commonjs",
     "scripts": {
-        "start": "cross-env APP_ENV=local node src/app.js",
+        "start": "node src/app.js",
         "dev": "cross-env APP_ENV=local node --watch-path=./src src/app.js",
         "uat": "cross-env APP_ENV=uat node --watch-path=./src src/app.js",
         "debug": "node --inspect src/app.js",

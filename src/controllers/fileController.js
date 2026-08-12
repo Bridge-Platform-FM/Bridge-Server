@@ -94,7 +94,16 @@ const filePreview = async (req, res) => {
             });
         }
 
-        const fileBuffer = await getFileBuffer(s3Key);
+        const isProfileImage = s3Key.includes(`/${S3_FILE_TYPE.PROFILE}/`);
+
+        let fileBuffer;
+        try {
+            fileBuffer = await getFileBuffer(s3Key);
+        } catch (error) {
+            if (!isProfileImage) throw error;
+            return res.status(204).end();
+        }
+
         const ext = s3Key.split('.').pop().toLowerCase();
 
         const mimeTypes = {
@@ -109,9 +118,7 @@ const filePreview = async (req, res) => {
 
         const contentType = mimeTypes[ext] || 'application/octet-stream';
 
-        // Profile pictures are avatars, not confidential documents — stamping the
-        // viewer's company/user across them would make every avatar unreadable.
-        const isProfileImage = s3Key.includes(`/${S3_FILE_TYPE.PROFILE}/`);
+        // Stamping the viewer's company/user across an avatar would make it unreadable.
         if (isProfileImage) {
             res.setHeader('Content-Type', contentType);
             res.setHeader('Content-Disposition', 'inline');

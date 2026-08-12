@@ -83,7 +83,7 @@ const getUserList = async () => {
 // original default one.
 const getUsersWithSwitchedRoles = async () => {
     return await sequelize.query(
-        `SELECT user_id, first_name, last_name, company_id, company_email, company_name,
+        `SELECT user_id, first_name, last_name, profile_photo, company_id, company_email, company_name,
             company_user_role_id, role_id, role_code, role_name, is_default_role,
             status, is_profile_completed, rejection_reason, switched_at, approved_at
         FROM (
@@ -91,6 +91,7 @@ const getUsersWithSwitchedRoles = async () => {
                 u.id AS user_id,
                 u.first_name,
                 u.last_name,
+                u.profile_photo,
                 c.id AS company_id,
                 c.company_email,
                 c.company_name,

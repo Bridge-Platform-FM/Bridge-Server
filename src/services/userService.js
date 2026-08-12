@@ -253,4 +253,18 @@ const getUserRoleDetails = async (targetUserId, companyId, roleId) => {
     }
 };
 
-module.exports = { createUserProfile, getUserList, getSwitchedRoleUsers, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails };
+const getRoleSwitchUserDetails = async ({ companyId, userId, roleId }) => {
+    try {
+        const roleInfo = await userRepository.getUserCompanyRole(userId, companyId, roleId);
+        if (!roleInfo) {
+            return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 404 });
+        }
+
+        return await getUserProfile({ companyId, userId, roleId });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.ROLE_DETAILS_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { createUserProfile, getUserList, getSwitchedRoleUsers, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails, getRoleSwitchUserDetails };

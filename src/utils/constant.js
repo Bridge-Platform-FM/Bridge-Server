@@ -63,8 +63,8 @@ const USER_MESSAGES = {
     SEARCH_QUERY_REQUIRED: 'q query parameter is required and must be a non-empty string',
     SEARCH_SUCCESS: 'User search results fetched successfully',
     SEARCH_FAILED: 'Error encountered while searching users',
-    USER_ID_REQUIRED: 'userId query parameter is required and must be a positive integer',
-    COMPANY_ID_REQUIRED: 'companyId query parameter is required and must be a positive integer',
+    USER_ID_REQUIRED: 'userId query parameter is required and must be a valid UUID',
+    COMPANY_ID_REQUIRED: 'companyId query parameter is required and must be a valid UUID',
     ROLE_ID_REQUIRED: 'roleId query parameter is required and must be a positive integer',
     ROLE_DETAILS_SUCCESS: 'User role details fetched successfully',
     ROLE_DETAILS_FAILED: 'Error encountered while fetching user role details'

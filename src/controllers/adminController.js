@@ -97,7 +97,7 @@ const triggerOtp = async (req, res, next) => {
             return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
         }
 
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_SEND_SUCCESS, statusCode: 200 });
+        return HttpResponse.success(res, { message: result.message, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_GENERATION_FAILED, statusCode: 500 });
@@ -202,7 +202,7 @@ const resendMfaOtp = async (req, res, next) => {
         }
 
         return HttpResponse.success(res, {
-            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            message: result.message,
             statusCode: 200
         });
     } catch (error) {

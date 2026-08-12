@@ -90,7 +90,9 @@ const companyRegistration = async (req, res, next) => {
 
         // setAuthCookies(res, accessToken, refreshToken);
         return HttpResponse.success(res, {
-            message: OTP_MESSAGES.SUCCESS,
+            // TODO:- Remove OTP from Response
+            // message: OTP_MESSAGES.SUCCESS,
+            message: `Email ${emailOtpRes.message} | Phone ${phoneOtpRes.message}`,
             statusCode: 200
         });
 
@@ -207,7 +209,9 @@ const resendOtp = async (req, res, next) => {
         }
 
         return HttpResponse.success(res, {
-            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            // TODO:- Remove OTP from Response
+            // message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            message: result.message,
             statusCode: 200
         });
     } catch (error) {
@@ -431,7 +435,9 @@ const resendMfaOtp = async (req, res, next) => {
         }
 
         return HttpResponse.success(res, {
-            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            // TODO:- Remove OTP from Response
+            // message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            message: result.message,
             statusCode: 200
         });
     } catch (error) {
@@ -471,7 +477,9 @@ const resetPasswordTriggerOtp = async (req, res, next) => {
         }
 
         return HttpResponse.success(res, {
-            message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            // TODO:- Remove OTP from Response
+            // message: OTP_MESSAGES.OTP_SEND_SUCCESS,
+            message: result.message,
             statusCode: 200
         });
 

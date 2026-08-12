@@ -1,5 +1,6 @@
 'use strict';
 const bcrypt = require('bcrypt');
+const { UniqueConstraintError } = require('sequelize');
 const { sequelize } = require('../models');
 const companyRepository = require('../repositories/companyRepository');
 const userRepository = require('../repositories/userRepository');
@@ -194,6 +195,19 @@ const allocateUserCompanyRole = async (userId, companyId, roleCode) => {
         });
     } catch (error) {
         await transaction.rollback();
+
+        // A concurrent request can win the insert race between the existence
+        // check in switchRole and this insert; the unique index on
+        // (user_id, company_id, role_id) turns that into a constraint error
+        // here instead of a duplicate row. Treat it as "already allocated"
+        // and hand back the row the other request created.
+        if (error instanceof UniqueConstraintError) {
+            const existing = await userRepository.getUserCompanyRoleByCode(userId, companyId, roleCode);
+            if (existing) {
+                return ServiceResponse.success({ data: existing, statusCode: 200 });
+            }
+        }
+
         errorLogger.error(error);
         return ServiceResponse.error({ message: error.message, statusCode: 500 });
     }

@@ -397,7 +397,10 @@ const updateRoleSwitchStatus = async ({ companyUserRoleId, action, rejectionReas
     }
 };
 
-module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig, updateUserSuspension, updateRoleSwitchStatus, getMatchingEngineStats };
+module.exports = {
+    login, findByEmail, getAdminProfile, updateAdminProfile, getUserLimitConfig,
+    updateUserLimitConfig, updateUserSuspension, updateRoleSwitchStatus, getMatchingEngineStats
+};
 
 
 // ─── Matching Engine Dashboard ─────────────────────────────────────────────────

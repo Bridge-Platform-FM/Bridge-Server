@@ -4,7 +4,7 @@ const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
 const userRepository = require('../repositories/userRepository');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES, KYC_STATUS } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES, KYC_STATUS, ROLE_SWITCH_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
@@ -641,7 +641,7 @@ const switchRole = async (req, res, next) => {
         });
     } catch (error) {
         errorLogger.error(error);
-        return HttpResponse.error(res, { message: AUTH_MESSAGES.UNAUTHORIZED, statusCode: 500 });
+        return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.SWITCH_FAILED, statusCode: 500 });
     }
 };
 

@@ -105,7 +105,7 @@ const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}
 const updateCompanyUserRoleStatus = async (id, data, { transaction } = {}) => {
     const [updatedCount, updatedRows] = await CompanyUserRole.update(
         { ...data, updated_at: new Date() },
-        { where: { id, is_deleted: false }, returning: true, transaction }
+        { where: { id, is_deleted: false, is_default_role: false }, returning: true, transaction }
     );
 
     if (updatedCount === 0) {

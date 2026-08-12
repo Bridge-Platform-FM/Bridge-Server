@@ -609,7 +609,6 @@ const switchRole = async (req, res, next) => {
                 data: profileFieldsRes.data
             });
         }
-        const { requiredFields, availableFields } = profileFieldsRes.data;
 
         if (roleInfo.status === KYC_STATUS.REJECTED) {
             return HttpResponse.error(res, {
@@ -638,7 +637,7 @@ const switchRole = async (req, res, next) => {
 
         return HttpResponse.success(res, {
             message: 'Role switched successfully.',
-            data: { roleId: role.id, role: role.role_code, requiredFields, availableFields }
+            data: { roleId: role.id, role: role.role_code }
         });
     } catch (error) {
         errorLogger.error(error);

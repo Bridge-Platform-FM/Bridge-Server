@@ -231,36 +231,26 @@ const getProfileFieldsConfig = async (roleId) => {
  * has a value in those tables. Fails if any is_required field has no value yet.
  */
 const validateAvailableProfileFields = (fieldsConfig, user, company) => {
-    const resolvedFields = fieldsConfig.map((config) => {
-        let value;
-        if (config.source_table === 'user') {
-            value = user?.[config.field_name];
-        } else if (config.source_table === 'company') {
-            value = company?.[config.field_name];
-        }
-
-        return {
+    const isFilled = (value) => value !== null && value !== undefined && value !== '';
+ 
+    // Only is_required fields with no value yet. `fieldName` + `sourceTable` are what
+    // the client updates against; `value` is deliberately absent (there isn't one).
+    const missingFields = fieldsConfig
+        .filter((config) => config.is_required)
+        .filter((config) => {
+            if (config.source_table === 'user') return !isFilled(user?.[config.field_name]);
+            if (config.source_table === 'company') return !isFilled(company?.[config.field_name]);
+            return false;
+        })
+        .map((config) => ({
             fieldName: config.field_name,
             label: config.display_name,
             sourceTable: config.source_table,
             type: config.type,
             isEditable: config.is_editable,
-            isRequired: config.is_required,
-            value
-        };
-    });
-
-    const requiredFields = resolvedFields.map(({ fieldName, label, sourceTable, type, isEditable, isRequired }) => ({ fieldName, label, sourceTable, type, isEditable, isRequired }));
-    const isFilled = (field) => field.value !== null && field.value !== undefined && field.value !== '';
-    // availableFields keeps the same shape (including fieldName + sourceTable as the
-    // update lookup, and value) so the client can bind a single field schema for both.
-    const availableFields = resolvedFields.filter(isFilled);
-    // missingFields is only fields flagged is_required that aren't filled yet; unfilled
-    // optional fields don't block completion and are stripped of `value`.
-    const missingFields = resolvedFields
-        .filter((field) => field.isRequired && !isFilled(field))
-        .map(({ fieldName, label, sourceTable, type, isEditable, isRequired }) => ({ fieldName, label, sourceTable, type, isEditable, isRequired }));
-
+            isRequired: config.is_required
+        }));
+ 
     if (missingFields.length > 0) {
         return ServiceResponse.error({
             message: USER_MESSAGES.PROFILE_NOT_COMPLETED,
@@ -268,8 +258,8 @@ const validateAvailableProfileFields = (fieldsConfig, user, company) => {
             statusCode: 400
         });
     }
-
-    return ServiceResponse.success({ data: { requiredFields, availableFields } });
+ 
+    return ServiceResponse.success({});
 };
 
 const resetPassword = async (email, newPassword) => {

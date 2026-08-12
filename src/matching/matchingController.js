@@ -13,8 +13,9 @@ const { errorLogger }      = require('../configs/logger');
 const getMatches = async (req, res) => {
     try {
         const userId = req.userId;
+        const userRole = req.role;
 
-        const result = await matchingService.getMatches(userId);
+        const result = await matchingService.getMatches(userId, userRole);
 
         if (!result.success) {
             return HttpResponse.error(res, {

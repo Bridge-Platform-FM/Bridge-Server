@@ -51,9 +51,14 @@ const USER_MESSAGES = {
     UPDATE_FAILED: 'Error encountered while updating user profile',
     EMAIL_ALREADY_EXISTS: 'A user with this email already exists',
     ROLE_NOT_FOUND: 'Company role not found for this account',
+    PROFILE_NOT_COMPLETED: 'Profile for the switching role is not completed.',
+    PROFILE_PENDING_APPROVAL: 'Profile for the switching role is still pending approval.',
+    PROFILE_REJECTED: 'Profile for the switching role has been rejected.',
     VALIDATION_FAILED: 'Validation failed for the submitted fields',
     USER_LISTING_FAILURE: 'Error encountered while fetching user list',
     USER_LISTING_SUCCESS: 'User list fetched successfully',
+    SWITCHED_ROLE_LISTING_SUCCESS: 'Users with switched roles fetched successfully',
+    SWITCHED_ROLE_LISTING_FAILURE: 'Error encountered while fetching users with switched roles',
     USER_NOT_FOUND: 'User not found',
     SEARCH_QUERY_REQUIRED: 'q query parameter is required and must be a non-empty string',
     SEARCH_SUCCESS: 'User search results fetched successfully',
@@ -273,7 +278,8 @@ const PERMISSIONS = {
         RESEND_OTP: 'AUTH.RESEND_OTP',
         MFA_TRIGGER_OTP: 'AUTH.MFA_TRIGGER_OTP',
         MFA_VERIFY_OTP: 'AUTH.MFA_VERIFY_OTP',
-        MFA_RESEND_OTP: 'AUTH.MFA_RESEND_OTP'
+        MFA_RESEND_OTP: 'AUTH.MFA_RESEND_OTP',
+        SWITCH_ROLE: 'AUTH.SWITCH_ROLE'
     },
     USER: {
         BUILD_PROFILE: 'USER.BUILD_PROFILE',
@@ -355,7 +361,9 @@ const PERMISSIONS = {
     ADMIN_USER: {
         LIST: 'ADMIN_USER.LIST',
         VIEW_KYC_DOCS: 'ADMIN_USER.VIEW_KYC_DOCS',
-        SUSPENSION_ACTION: 'ADMIN_USER.SUSPENSION_ACTION'
+        SUSPENSION_ACTION: 'ADMIN_USER.SUSPENSION_ACTION',
+        SWITCH_ROLE_ACTION: 'ADMIN_USER.SWITCH_ROLE_ACTION',
+        SWITCHED_ROLE_LIST: 'ADMIN_USER.SWITCHED_ROLE_LIST'
     },
     ADMIN_KYC: {
         DOCUMENT_ACTION: 'ADMIN_KYC.DOCUMENT_ACTION',
@@ -675,6 +683,16 @@ const USER_SUSPENSION_MESSAGES = {
     ACCOUNT_SUSPENDED: 'Your account has been suspended. Please contact support.'
 };
 
+const ROLE_SWITCH_MESSAGES = {
+    COMPANY_USER_ROLE_ID_REQUIRED: 'companyUserRoleId is required',
+    ACTION_REQUIRED: 'action is required',
+    INVALID_ACTION: 'action must be approve or reject',
+    REJECTION_REASON_REQUIRED: 'rejectionReason is required when rejecting',
+    NOT_FOUND: 'Role switch request not found',
+    REVIEW_ACTION_SUCCESS: 'Role switch status updated successfully.',
+    REVIEW_ACTION_FAILED: 'Error encountered while updating role switch status.'
+};
+
 const PREMIUM_DAYS_LIMIT_DEFAULT = 30;
 
 const USER_LIMIT_DEFAULTS = {
@@ -749,5 +767,5 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     SUBSCRIPTION_PLAN_MESSAGES,
     DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES,
     ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS, DASHBOARD_MESSAGES,
-    ADMIN_PROFILE_MESSAGES
+    ADMIN_PROFILE_MESSAGES, ROLE_SWITCH_MESSAGES
 };

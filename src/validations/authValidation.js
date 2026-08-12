@@ -127,6 +127,13 @@ const validate = (schema) => {
     };
 };
 
+const switchRoleSchema = Joi.object({
+    roleCode: Joi.string().valid('INVESTOR', 'B2B', 'STARTUP').required().messages({
+        'any.only': 'roleCode must be one of: INVESTOR, B2B, STARTUP',
+        'any.required': 'roleCode is required'
+    })
+});
+
 const resetPasswordSchema = Joi.object({
     newPassword: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/).required().messages({
         'string.min': 'newPassword must be at least 8 characters long',
@@ -142,5 +149,6 @@ module.exports = {
     resendOtpSchema,
     refreshTokenSchema,
     loginSchema,
-    resetPasswordSchema
+    resetPasswordSchema,
+    switchRoleSchema
 };

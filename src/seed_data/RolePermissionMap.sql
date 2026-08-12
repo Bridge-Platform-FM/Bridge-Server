@@ -15,6 +15,9 @@ INSERT INTO role_permission_map
 VALUES('USER', (SELECT id FROM permission_master WHERE permission_key = 'AUTH.MFA_RESEND_OTP'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('USER', (SELECT id FROM permission_master WHERE permission_key = 'AUTH.SWITCH_ROLE'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES('USER', (SELECT id FROM permission_master WHERE permission_key = 'USER.BUILD_PROFILE'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
@@ -181,6 +184,18 @@ VALUES('ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.SUSPENSION_ACTION'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.SWITCH_ROLE_ACTION'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.SWITCH_ROLE_ACTION'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.SWITCHED_ROLE_LIST'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.SWITCHED_ROLE_LIST'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES('ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_KYC.DOCUMENT_ACTION'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);

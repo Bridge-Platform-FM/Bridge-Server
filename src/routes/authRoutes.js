@@ -9,7 +9,8 @@ const {
     resendOtpSchema,
     refreshTokenSchema,
     loginSchema,
-    resetPasswordSchema
+    resetPasswordSchema,
+    switchRoleSchema
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
 const mfaMiddleware = require('../middleware/mfaMiddleware');
@@ -45,5 +46,8 @@ router.post('/reset-password/trigger-otp', authController.resetPasswordTriggerOt
 router.post('/reset-password/verify-otp', authController.resetPasswordVerifyOtp);
 
 router.post('/reset-password', resetPasswordMiddleware, validate(resetPasswordSchema), authController.resetPassword);
+
+// Route for switching the active role within the current company
+router.post('/switch-role', authMiddleware, authorize(PERMISSIONS.AUTH.SWITCH_ROLE), validate(switchRoleSchema), authController.switchRole);
 
 module.exports = router;

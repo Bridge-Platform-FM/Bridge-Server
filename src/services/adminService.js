@@ -15,7 +15,7 @@ const ServiceResponse = require('../utils/ServiceResponse');
 const {
     ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES,
     ADMIN_ROLES_CODE, ADMIN_USER_TYPES, TOKEN_TYPES, USER_SUSPENSION_MESSAGES,
-    ADMIN_PROFILE_MESSAGES
+    ADMIN_PROFILE_MESSAGES, ROLE_SWITCH_MESSAGES, KYC_STATUS 
 } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
@@ -373,16 +373,31 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
     }
 };
 
-module.exports = {
-    login,
-    findByEmail,
-    getAdminProfile,
-    updateAdminProfile,
-    getUserLimitConfig,
-    updateUserLimitConfig,
-    updateUserSuspension,
-    getMatchingEngineStats
+const updateRoleSwitchStatus = async ({ companyUserRoleId, action, rejectionReason, adminId }) => {
+    try {
+        const status = action === 'approve' ? KYC_STATUS.APPROVED : KYC_STATUS.REJECTED;
+        const reason = action === 'reject' ? (rejectionReason ?? null) : null;
+
+        const updated = await companyRepository.updateCompanyUserRoleStatus(companyUserRoleId, {
+            status,
+            rejection_reason: reason,
+            approved_by: adminId,
+            approved_at: new Date(),
+            updated_by: adminId
+        });
+
+        if (!updated) {
+            return ServiceResponse.error({ message: ROLE_SWITCH_MESSAGES.NOT_FOUND, statusCode: 404 });
+        }
+
+        return ServiceResponse.success({ message: ROLE_SWITCH_MESSAGES.REVIEW_ACTION_SUCCESS, data: updated, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: ROLE_SWITCH_MESSAGES.REVIEW_ACTION_FAILED, statusCode: 500 });
+    }
 };
+
+module.exports = { login, findByEmail, getUserLimitConfig, updateUserLimitConfig, updateUserSuspension, updateRoleSwitchStatus, getMatchingEngineStats };
 
 
 // ─── Matching Engine Dashboard ─────────────────────────────────────────────────

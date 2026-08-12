@@ -46,6 +46,37 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        status: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 'Pending'
+        },
+
+        is_profile_completed: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
+
+        rejection_reason: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        approved_by: {
+            type: DataTypes.UUID,
+            allowNull: true,
+            references: {
+                model: 'admin',
+                key: 'id'
+            }
+        },
+
+        approved_at: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

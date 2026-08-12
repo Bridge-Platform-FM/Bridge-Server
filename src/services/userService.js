@@ -37,6 +37,16 @@ const getUserList = async () => {
     }
 }
 
+const getSwitchedRoleUsers = async () => {
+    try {
+        const users = await userRepository.getUsersWithSwitchedRoles();
+        return ServiceResponse.success({ message: USER_MESSAGES.SWITCHED_ROLE_LISTING_SUCCESS, data: users, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.SWITCHED_ROLE_LISTING_FAILURE, data: [], statusCode: 500 });
+    }
+};
+
 const searchUsers = async (searchQuery, roleCode) => {
     try {
         let searchableRoles = [];
@@ -243,4 +253,4 @@ const getUserRoleDetails = async (targetUserId, companyId, roleId) => {
     }
 };
 
-module.exports = { createUserProfile, getUserList, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails };
+module.exports = { createUserProfile, getUserList, getSwitchedRoleUsers, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails };

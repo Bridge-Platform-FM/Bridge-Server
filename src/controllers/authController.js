@@ -4,7 +4,7 @@ const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
 const userRepository = require('../repositories/userRepository');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES, KYC_STATUS } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
@@ -568,6 +568,84 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
+//  POST /api/v1/auth/switch-role
+const switchRole = async (req, res, next) => {
+    try {
+        const { roleCode } = req.body;
+
+        const roleRes = await authService.getUserCompanyRoleByCode(req.userId, req.companyId, roleCode);
+        if (!roleRes.success) {
+            return HttpResponse.error(res, { message: roleRes.message, statusCode: roleRes.statusCode });
+        }
+
+        let roleInfo = roleRes.data;
+        if (!roleInfo) {
+            const allocateRes = await authService.allocateUserCompanyRole(req.userId, req.companyId, roleCode);
+            if (!allocateRes.success) {
+                return HttpResponse.error(res, { message: allocateRes.message, statusCode: allocateRes.statusCode });
+            }
+            roleInfo = allocateRes.data;
+        }
+
+        const companyUserRes = await authService.getCompanyAndUser(req.companyId, req.userId);
+        if (!companyUserRes.success) {
+            return HttpResponse.error(res, { message: companyUserRes.message, statusCode: companyUserRes.statusCode });
+        }
+        const { company, user } = companyUserRes.data;
+
+        const role = { id: roleInfo.role_id, role_code: roleInfo.role_code };
+        const userType = USER_TYPES[roleInfo.role_code];
+
+        const fieldsConfigRes = await authService.getProfileFieldsConfig(role.id);
+        if (!fieldsConfigRes.success) {
+            return HttpResponse.error(res, { message: fieldsConfigRes.message, statusCode: fieldsConfigRes.statusCode });
+        }
+
+        const profileFieldsRes = authService.validateAvailableProfileFields(fieldsConfigRes.data, user, company);
+        if (!profileFieldsRes.success) {
+            return HttpResponse.error(res, {
+                message: profileFieldsRes.message,
+                statusCode: profileFieldsRes.statusCode,
+                data: profileFieldsRes.data
+            });
+        }
+        const { requiredFields, availableFields } = profileFieldsRes.data;
+
+        if (roleInfo.status === KYC_STATUS.REJECTED) {
+            return HttpResponse.error(res, {
+                message: roleInfo.rejection_reason || USER_MESSAGES.PROFILE_REJECTED,
+                statusCode: 200,
+                data: { status: roleInfo.status, rejectionReason: roleInfo.rejection_reason }
+            });
+        }
+
+        if (roleInfo.status !== KYC_STATUS.APPROVED) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.PROFILE_PENDING_APPROVAL,
+                statusCode: 200,
+                data: { status: roleInfo.status }
+            });
+        }
+
+        const tokens = await tokenService.generateTokens(company, role, user, userType, {
+            ipAddress: req.ip,
+            headers: req.headers
+        });
+        const { accessToken, refreshToken } = tokens.data;
+
+        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+
+        return HttpResponse.success(res, {
+            message: 'Role switched successfully.',
+            data: { roleId: role.id, role: role.role_code, requiredFields, availableFields }
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: AUTH_MESSAGES.UNAUTHORIZED, statusCode: 500 });
+    }
+};
+
 module.exports = {
     companyRegistration,
     verifyOtp,
@@ -579,5 +657,6 @@ module.exports = {
     resendMfaOtp,
     resetPasswordTriggerOtp,
     resetPasswordVerifyOtp,
-    resetPassword
+    resetPassword,
+    switchRole
 };

@@ -105,6 +105,8 @@ const sendOTP = async (channelType, channelId) => {
             );
         }
 
+        // TODO:- Stop returning the OTP in the message once real SMS/email delivery
+        // is enabled. It is exposed so the web can show it in a toast while testing.
         return ServiceResponse.success({
             message: `OTP - ${otp}`,
             // message: OTP_MESSAGES.OTP_SEND_SUCCESS,

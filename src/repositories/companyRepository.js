@@ -102,6 +102,19 @@ const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}
     return updatedCompany;
 };
 
+const updateCompanyUserRoleStatus = async (id, data, { transaction } = {}) => {
+    const [updatedCount, updatedRows] = await CompanyUserRole.update(
+        { ...data, updated_at: new Date() },
+        { where: { id, is_deleted: false, is_default_role: false }, returning: true, transaction }
+    );
+
+    if (updatedCount === 0) {
+        return null;
+    }
+
+    return updatedRows[0];
+};
+
 module.exports = {
     findByEmail,
     findCompanyWithRoleByEmail,
@@ -114,5 +127,6 @@ module.exports = {
     getCompanyById,
     updatePasswordByEmail,
     getCompanyUser,
-    getDefaultCompanyIdByUserId
+    getDefaultCompanyIdByUserId,
+    updateCompanyUserRoleStatus
 };

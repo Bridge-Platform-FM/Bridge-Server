@@ -1,5 +1,6 @@
 'use strict';
 const bcrypt = require('bcrypt');
+const { UniqueConstraintError } = require('sequelize');
 const { sequelize } = require('../models');
 const companyRepository = require('../repositories/companyRepository');
 const userRepository = require('../repositories/userRepository');
@@ -7,7 +8,7 @@ const tokenService = require('./tokenService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { hashPassword } = require('../utils/Helper');
-const { REGISTRATION_MESSAGES, AUTH_MESSAGES } = require('../utils/constant');
+const { REGISTRATION_MESSAGES, AUTH_MESSAGES, USER_MESSAGES } = require('../utils/constant');
 
 
 const getCompanyByEmail = async (email) => {
@@ -151,6 +152,130 @@ const getCompanyUser_role = async (company_id, user_id) => {
 }
 
 
+const getUserCompanyRoleByCode = async (userId, companyId, roleCode) => {
+    try {
+        const roleInfo = await userRepository.getUserCompanyRoleByCode(userId, companyId, roleCode);
+        return ServiceResponse.success({ data: roleInfo });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: error.message,
+            statusCode: 500
+        });
+    }
+};
+
+const allocateUserCompanyRole = async (userId, companyId, roleCode) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const role = await companyRepository.findRoleMasterByCode(roleCode);
+        if (!role) {
+            await transaction.rollback();
+            return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 400 });
+        }
+
+        const companyUserRole = await companyRepository.createCompanyUserRole(
+            { company_id: companyId, user_id: userId, role_id: role.id, is_default_role: false },
+            { transaction }
+        );
+        await transaction.commit();
+
+        return ServiceResponse.success({
+            data: {
+                company_user_role_id: companyUserRole.id,
+                role_id: role.id,
+                company_id: companyId,
+                role_name: role.role_name,
+                role_code: role.role_code,
+                status: companyUserRole.status,
+                rejection_reason: companyUserRole.rejection_reason,
+                is_profile_completed: companyUserRole.is_profile_completed
+            },
+            statusCode: 201
+        });
+    } catch (error) {
+        await transaction.rollback();
+
+        // A concurrent request can win the insert race between the existence
+        // check in switchRole and this insert; the unique index on
+        // (user_id, company_id, role_id) turns that into a constraint error
+        // here instead of a duplicate row. Treat it as "already allocated"
+        // and hand back the row the other request created.
+        if (error instanceof UniqueConstraintError) {
+            const existing = await userRepository.getUserCompanyRoleByCode(userId, companyId, roleCode);
+            if (existing) {
+                return ServiceResponse.success({ data: existing, statusCode: 200 });
+            }
+        }
+
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: error.message, statusCode: 500 });
+    }
+};
+
+const getCompanyAndUser = async (companyId, userId) => {
+    try {
+        const [company, user] = await Promise.all([
+            companyRepository.getCompanyById(companyId),
+            userRepository.getUserById(userId)
+        ]);
+        return ServiceResponse.success({ data: { company, user } });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: error.message, statusCode: 500 });
+    }
+};
+
+/**
+ * Fetches user_profile_field_master's field list for a role.
+ */
+const getProfileFieldsConfig = async (roleId) => {
+    try {
+        const fieldsConfig = await userRepository.getUserProfileFieldsConfig(roleId);
+        return ServiceResponse.success({ data: fieldsConfig });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: error.message, statusCode: 500 });
+    }
+};
+
+/**
+ * Validates a fetched field config list against the already-fetched user/company
+ * records, splitting into the full field set and the subset that already
+ * has a value in those tables. Fails if any is_required field has no value yet.
+ */
+const validateAvailableProfileFields = (fieldsConfig, user, company) => {
+    const isFilled = (value) => value !== null && value !== undefined && value !== '';
+ 
+    // Only is_required fields with no value yet. `fieldName` + `sourceTable` are what
+    // the client updates against; `value` is deliberately absent (there isn't one).
+    const missingFields = fieldsConfig
+        .filter((config) => config.is_required)
+        .filter((config) => {
+            if (config.source_table === 'user') return !isFilled(user?.[config.field_name]);
+            if (config.source_table === 'company') return !isFilled(company?.[config.field_name]);
+            return false;
+        })
+        .map((config) => ({
+            fieldName: config.field_name,
+            label: config.display_name,
+            sourceTable: config.source_table,
+            type: config.type,
+            isEditable: config.is_editable,
+            isRequired: config.is_required
+        }));
+ 
+    if (missingFields.length > 0) {
+        return ServiceResponse.error({
+            message: USER_MESSAGES.PROFILE_NOT_COMPLETED,
+            data: { missingFields },
+            statusCode: 400
+        });
+    }
+ 
+    return ServiceResponse.success({});
+};
+
 const resetPassword = async (email, newPassword) => {
     const transaction = await sequelize.transaction();
     try {
@@ -175,5 +300,10 @@ module.exports = {
     getCompanyByEmail,
     getUserByEmail,
     getCompanyUser_role,
+    getUserCompanyRoleByCode,
+    allocateUserCompanyRole,
+    getCompanyAndUser,
+    getProfileFieldsConfig,
+    validateAvailableProfileFields,
     resetPassword
 };

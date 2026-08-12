@@ -78,6 +78,47 @@ const getUserList = async () => {
     );
 };
 
+// Users with more than one active company_user_role row have used the
+// switch-role flow (allocateUserCompanyRole) to add a role beyond their
+// original default one.
+const getUsersWithSwitchedRoles = async () => {
+    return await sequelize.query(
+        `SELECT user_id, first_name, last_name, company_id, company_email, company_name,
+            company_user_role_id, role_id, role_code, role_name, is_default_role,
+            status, is_profile_completed, rejection_reason, switched_at, approved_at
+        FROM (
+            SELECT
+                u.id AS user_id,
+                u.first_name,
+                u.last_name,
+                c.id AS company_id,
+                c.company_email,
+                c.company_name,
+                cur.id AS company_user_role_id,
+                crm.id AS role_id,
+                crm.role_code,
+                crm.role_name,
+                cur.is_default_role,
+                cur.status,
+                cur.is_profile_completed,
+                cur.rejection_reason,
+                cur.created_at AS switched_at,
+                cur.approved_at,
+                COUNT(*) OVER (PARTITION BY u.id) AS role_count
+            FROM "user" u
+            JOIN company c ON c.company_email = u.company_email
+            JOIN company_user_role cur ON cur.company_id = c.id AND cur.user_id = u.id AND cur.is_deleted IS NOT TRUE
+            JOIN company_role_master crm ON crm.id = cur.role_id
+            WHERE u.is_deleted IS NOT TRUE AND c.is_deleted IS NOT TRUE
+        ) sub
+        WHERE role_count > 1
+        ORDER BY user_id, switched_at`,
+        {
+            type: QueryTypes.SELECT
+        }
+    );
+};
+
 const getSuspendedUsersWithRoleAndCompany = async () => {
     return await sequelize.query(
         `SELECT
@@ -214,6 +255,25 @@ const getUserCompanyRole = async (userId, companyId, roleId) => {
     return rows[0] || null;
 };
 
+const getUserCompanyRoleByCode = async (userId, companyId, roleCode) => {
+    const rows = await sequelize.query(
+        `SELECT cur.id AS company_user_role_id, cur.role_id, cur.company_id, cur.status,
+            cur.rejection_reason, cur.is_profile_completed, crm.role_name, crm.role_code
+        FROM company_user_role cur
+        JOIN company_role_master crm ON crm.id = cur.role_id
+        WHERE cur.user_id = :userId
+            AND cur.company_id = :companyId
+            AND crm.role_code = :roleCode
+            AND cur.is_deleted IS NOT TRUE
+        LIMIT 1`,
+        {
+            replacements: { userId, companyId, roleCode },
+            type: QueryTypes.SELECT
+        }
+    );
+    return rows[0] || null;
+};
+
 const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}) => {
     const [, [updatedUser]] = await User.update(
         { password: hashedPassword },
@@ -235,11 +295,13 @@ module.exports = {
     findByEmail,
     getCompanyUser_role,
     getUserList,
+    getUsersWithSwitchedRoles,
     getSuspendedUsersWithRoleAndCompany,
     getUserKycDocs,
     searchUsers,
     getUserById,
     getUserCompanyRole,
+    getUserCompanyRoleByCode,
     getUserProfileFieldsConfig,
     updatePasswordByEmail
 };

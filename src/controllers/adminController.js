@@ -261,7 +261,7 @@ const getRoleSwitchUserDetails = async (req, res, next) => {
             return HttpResponse.error(res, { message: USER_MESSAGES.ROLE_ID_REQUIRED, statusCode: 400 });
         }
 
-        const detailsRes = await userService.getUserProfile({ companyId, userId, roleId });
+        const detailsRes = await userService.getRoleSwitchUserDetails({ companyId, userId, roleId });
         if (!detailsRes.success) {
             return HttpResponse.error(res, {
                 message: detailsRes.message,

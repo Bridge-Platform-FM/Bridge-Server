@@ -4,9 +4,10 @@ const { v4: uuidv4 } = require('uuid');
 const {
     ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES,
     USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES,
-    USER_SUSPENSION_MESSAGES, ROLE_SWITCH_MESSAGES, ADMIN_PROFILE_MESSAGES
+    USER_SUSPENSION_MESSAGES, ROLE_SWITCH_MESSAGES, USER_MESSAGES, ADMIN_PROFILE_MESSAGES
 } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
+const { isValidUUID } = require('../utils/Helper');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
@@ -242,6 +243,37 @@ const getSwitchedRoleUsers = async (req, res, next) => {
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { data: [], statusCode: 500 });
+    }
+};
+
+const getRoleSwitchUserDetails = async (req, res, next) => {
+    try {
+        const { userId, companyId } = req.query;
+        const roleId = parseInt(req.query.roleId, 10);
+
+        if (!userId || !isValidUUID(userId)) {
+            return HttpResponse.error(res, { message: USER_MESSAGES.USER_ID_REQUIRED, statusCode: 400 });
+        }
+        if (!companyId || !isValidUUID(companyId)) {
+            return HttpResponse.error(res, { message: USER_MESSAGES.COMPANY_ID_REQUIRED, statusCode: 400 });
+        }
+        if (!req.query.roleId || isNaN(roleId) || roleId <= 0) {
+            return HttpResponse.error(res, { message: USER_MESSAGES.ROLE_ID_REQUIRED, statusCode: 400 });
+        }
+
+        const detailsRes = await userService.getUserProfile({ companyId, userId, roleId });
+        if (!detailsRes.success) {
+            return HttpResponse.error(res, {
+                message: detailsRes.message,
+                data: detailsRes.data,
+                statusCode: detailsRes.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, { message: detailsRes.message, data: detailsRes.data, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: USER_MESSAGES.ROLE_DETAILS_FAILED, statusCode: 500 });
     }
 };
 

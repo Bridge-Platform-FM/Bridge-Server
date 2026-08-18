@@ -75,6 +75,7 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 ('ADMIN_AUTH.MFA_RESEND_OTP', 'Resend admin MFA OTP', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('ADMIN_USER.LIST', 'List company users', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_USER.VIEW_DETAIL', 'View a single user''s role-shaped profile and suspension history', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_USER.VIEW_KYC_DOCS', 'View a user''s KYC documents', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_USER.SUSPENSION_ACTION', 'Suspend or activate a user', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_USER.SWITCH_ROLE_ACTION', 'Approve or reject a pending switched role', (select id from "admin" a where a.email = 'admin@test.com'), now()),

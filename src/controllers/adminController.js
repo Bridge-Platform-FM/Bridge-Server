@@ -4,7 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const {
     ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES,
     USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES,
-    USER_SUSPENSION_MESSAGES, ROLE_SWITCH_MESSAGES, USER_MESSAGES, ADMIN_PROFILE_MESSAGES
+    USER_SUSPENSION_MESSAGES, ROLE_SWITCH_MESSAGES, USER_MESSAGES, ADMIN_PROFILE_MESSAGES,
+    ADMIN_USER_DETAIL_MESSAGES
 } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { isValidUUID } = require('../utils/Helper');
@@ -274,6 +275,35 @@ const getRoleSwitchUserDetails = async (req, res, next) => {
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: USER_MESSAGES.ROLE_DETAILS_FAILED, statusCode: 500 });
+    }
+};
+
+
+const getUserDetail = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const { companyId, roleCode } = req.query;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (!userId || !UUID_REGEX.test(userId)) {
+            return HttpResponse.error(res, { message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID, statusCode: 400 });
+        }
+        if (!companyId || !isValidUUID(companyId)) {
+            return HttpResponse.error(res, { message: ADMIN_USER_DETAIL_MESSAGES.COMPANY_ID_REQUIRED, statusCode: 400 });
+        }
+        if (!roleCode) {
+            return HttpResponse.error(res, { message: ADMIN_USER_DETAIL_MESSAGES.ROLE_CODE_REQUIRED, statusCode: 400 });
+        }
+
+        const result = await adminService.getUserDetail({ userId, companyId, roleCode });
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: ADMIN_USER_DETAIL_MESSAGES.FETCH_FAILED, statusCode: 500 });
     }
 };
 
@@ -639,6 +669,7 @@ module.exports = {
     verifyMfaOtp,
     resendMfaOtp,
     getUserList,
+    getUserDetail,
     getUserKycDocs,
     kycDocumentAction,
     kycReviewAction,
@@ -650,5 +681,6 @@ module.exports = {
     logout,
     getAdminProfile,
     updateAdminProfile,
-    getSwitchedRoleUsers
+    getSwitchedRoleUsers,
+    getRoleSwitchUserDetails
 };

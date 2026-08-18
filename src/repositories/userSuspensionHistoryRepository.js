@@ -14,4 +14,12 @@ const findLatestByUserId = async (userId, { transaction } = {}) => {
     });
 };
 
-module.exports = { create, findLatestByUserId };
+const findAllByUserId = async (userId, { transaction } = {}) => {
+    return await UserSuspensionHistory.findAll({
+        where: { user_id: userId },
+        order: [['created_at', 'DESC']],
+        transaction
+    });
+};
+
+module.exports = { create, findLatestByUserId, findAllByUserId };

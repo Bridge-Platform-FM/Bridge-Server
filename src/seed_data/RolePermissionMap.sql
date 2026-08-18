@@ -174,6 +174,12 @@ INSERT INTO role_permission_map
 VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.LIST'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.VIEW_DETAIL'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('SUPER_ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.VIEW_DETAIL'), now(), (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES('ADMIN', (SELECT id FROM permission_master WHERE permission_key = 'ADMIN_USER.VIEW_KYC_DOCS'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)

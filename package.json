@@ -28,6 +28,7 @@
         "@azure/storage-blob": "^12.33.0",
         "@sendgrid/mail": "^8.1.6",
         "archiver": "^7.0.1",
+        "axios": "^1.19.0",
         "bcrypt": "^6.0.0",
         "clamscan": "^2.4.0",
         "cookie-parser": "^1.4.7",

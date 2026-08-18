@@ -17,6 +17,22 @@ const REGISTRATION_MESSAGES = {
     REGISTRATION_SUCCESS: 'Registration successful'
 };
 
+const GST_MESSAGES = {
+    INVALID_FORMAT: 'gstin must be a valid 15-character GSTIN',
+    VERIFY_SUCCESS: 'GSTIN verified successfully',
+    VERIFY_FAILED: 'GSTIN could not be verified. Please check the number and try again.',
+    NOT_VERIFIED_FOR_REGISTRATION: 'GSTIN could not be verified. Company registration cannot proceed.',
+    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying GSTIN. Please try again.'
+};
+
+const CIN_MESSAGES = {
+    INVALID_FORMAT: 'cin must be a valid 21-character CIN',
+    VERIFY_SUCCESS: 'CIN verified successfully',
+    VERIFY_FAILED: 'CIN could not be verified. Please check the number and try again.',
+    NOT_VERIFIED_FOR_REGISTRATION: 'CIN could not be verified. Company registration cannot proceed.',
+    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying CIN. Please try again.'
+};
+
 const AUTH_MESSAGES = {
     ACCESS_TOKEN_UNAUTHORIZED: 'Unauthorized: No access token provided',
     FORBIDDEN: 'Forbidden',
@@ -750,11 +766,13 @@ const REDIS_BASE_KEYS = {
     CONFIG_OTP_CONFIG: 'config:otp_config',
     CONFIG_TRIAL_CONFIG: 'config:trial_config',
     SUSPENDED_USERS_HASH: 'suspended_users',
-    SUSPENDED_ADMINS_HASH: 'suspended_admins'
+    SUSPENDED_ADMINS_HASH: 'suspended_admins',
+    SANDBOX_GST_TOKEN: 'sandbox_gst:access_token',
+    SANDBOX_MCA_TOKEN: 'sandbox_mca:access_token'
 };
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
-    USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
+    USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES, GST_MESSAGES, CIN_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,

@@ -5,6 +5,8 @@ const authController = require('../controllers/authController');
 const {
     validate,
     companyRegistrationSchema,
+    verifyGstSchema,
+    verifyCinSchema,
     verifyOtpSchema,
     resendOtpSchema,
     refreshTokenSchema,
@@ -21,6 +23,16 @@ const { PERMISSIONS } = require('../utils/constant');
 
 // Route for starting Company registration and generating OTPs
 router.post('/company-registration', validate(companyRegistrationSchema), authController.companyRegistration);
+
+// Route for checking a GSTIN against sandbox.co.in — called by the frontend when the
+// GST field loses focus, before the full registration form is submitted. Public
+// (no authMiddleware) since it runs before any account exists; the same check is
+// re-run server-side inside company-registration so it can't be bypassed.
+router.post('/verify-gst', validate(verifyGstSchema), authController.verifyGst);
+
+// Route for checking a CIN — mirrors /verify-gst. Currently backed by a fixed mock
+// response pending a real CIN verification API (see cinVerificationService.js).
+router.post('/verify-cin', validate(verifyCinSchema), authController.verifyCin);
 
 // Route for verifying a single channel OTP
 router.post('/verify-otp', mfaMiddleware, authorize(PERMISSIONS.AUTH.VERIFY_OTP), validate(verifyOtpSchema), authController.verifyOtp);

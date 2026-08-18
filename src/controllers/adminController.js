@@ -650,5 +650,6 @@ module.exports = {
     logout,
     getAdminProfile,
     updateAdminProfile,
-    getSwitchedRoleUsers
+    getSwitchedRoleUsers,
+    getRoleSwitchUserDetails
 };

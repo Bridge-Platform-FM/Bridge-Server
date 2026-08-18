@@ -332,11 +332,12 @@ const getUserDetail = async ({ userId, companyId, roleCode }) => {
             return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 404 });
         }
 
-        const [company, fieldsConfig, latestSuspension] = await Promise.all([
+        const [company, fieldsConfig, suspensionHistory] = await Promise.all([
             companyRepository.getCompanyById(companyId),
             roleFieldMetadataRepository.getFieldsForRole(roleInfo.role_id),
-            userSuspensionHistoryRepository.findLatestByUserId(userId)
+            userSuspensionHistoryRepository.findAllByUserId(userId)
         ]);
+        const latestSuspension = suspensionHistory[0] ?? null;
 
         if (!company) {
             return ServiceResponse.error({ message: 'Company not found.', statusCode: 404 });
@@ -375,6 +376,15 @@ const getUserDetail = async ({ userId, companyId, roleCode }) => {
             isLockedBySuperAdmin: latestSuspension?.is_updated_by_super_admin ?? false
         };
 
+        const suspensionHistoryList = suspensionHistory.map(entry => ({
+            isSuspended: entry.is_suspended,
+            lastAction: entry.is_suspended ? 'suspended' : 'reactivated',
+            reason: entry.suspension_reason ?? null,
+            actionBy: entry.created_by ?? null,
+            actionAt: entry.created_at,
+            isLockedBySuperAdmin: entry.is_updated_by_super_admin
+        }));
+
         return ServiceResponse.success({
             message: ADMIN_USER_DETAIL_MESSAGES.FETCH_SUCCESS,
             data: {
@@ -395,7 +405,8 @@ const getUserDetail = async ({ userId, companyId, roleCode }) => {
                 roleName: roleInfo.role_name,
                 roleCode: roleInfo.role_code,
                 fields,
-                suspension
+                suspension,
+                suspensionHistory: suspensionHistoryList
             },
             statusCode: 200
         });

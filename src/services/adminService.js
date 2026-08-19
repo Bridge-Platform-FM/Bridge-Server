@@ -6,6 +6,7 @@ const userLimitConfigRepository = require('../repositories/userLimitConfigReposi
 const companyRepository = require('../repositories/companyRepository');
 const subscriptionRepository = require('../repositories/subscriptionRepository');
 const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
+const roleFieldMetadataRepository = require('../repositories/roleFieldMetadataRepository');
 const suspensionCacheRepository = require('../repositories/suspensionCacheRepository');
 const userSessionRepository = require('../repositories/userSessionRepository');
 const sessionCacheRepository = require('../repositories/sessionCacheRepository');
@@ -16,7 +17,7 @@ const {
     ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES,
     ADMIN_ROLES_CODE, ADMIN_USER_TYPES, TOKEN_TYPES, USER_SUSPENSION_MESSAGES,
     ADMIN_PROFILE_MESSAGES, ROLE_SWITCH_MESSAGES, KYC_STATUS, USER_MESSAGES,
-    ADMIN_USER_DETAIL_MESSAGES
+    ADMIN_USER_DETAIL_MESSAGES 
 } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
@@ -311,7 +312,7 @@ const updateUserLimitConfig = async ({ userId, adminId, userType, payload }) => 
 // ── User Detail (View Profile) ────────────────────────────────────────────────
 
 /**
- * One user's role-shaped profile fields (via user_profile_field_master, same source as
+ * One user's role-shaped profile fields (via role_field_metadata, same source as
  * the user-facing role-details endpoint) plus their latest suspension/reactivation
  * reason (from user_suspension_history), for the admin "View Profile" drawer.
  *
@@ -333,7 +334,7 @@ const getUserDetail = async ({ userId, companyId, roleCode }) => {
 
         const [company, fieldsConfig, suspensionHistory] = await Promise.all([
             companyRepository.getCompanyById(companyId),
-            userRepository.getUserProfileFieldsConfig(roleInfo.role_id),
+            roleFieldMetadataRepository.getFieldsForRole(roleInfo.role_id),
             userSuspensionHistoryRepository.findAllByUserId(userId)
         ]);
         const latestSuspension = suspensionHistory[0] ?? null;

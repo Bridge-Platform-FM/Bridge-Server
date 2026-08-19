@@ -286,7 +286,7 @@ const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}
 const getUserProfileFieldsConfig = async (roleId) => {
     return await UserProfileFieldMaster.findAll({
         where: { role_id: roleId, is_deleted: false },
-        order: [['id', 'ASC']]
+        order: [['display_order', 'ASC'], ['field_name', 'ASC']]
     });
 };
 

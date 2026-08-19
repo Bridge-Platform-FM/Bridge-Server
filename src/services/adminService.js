@@ -15,7 +15,8 @@ const ServiceResponse = require('../utils/ServiceResponse');
 const {
     ADMIN_MESSAGES, USER_LIMIT_CONFIG_MESSAGES, USER_LIMIT_DEFAULTS, USER_TYPES,
     ADMIN_ROLES_CODE, ADMIN_USER_TYPES, TOKEN_TYPES, USER_SUSPENSION_MESSAGES,
-    ADMIN_PROFILE_MESSAGES, ROLE_SWITCH_MESSAGES, KYC_STATUS 
+    ADMIN_PROFILE_MESSAGES, ROLE_SWITCH_MESSAGES, KYC_STATUS, USER_MESSAGES,
+    ADMIN_USER_DETAIL_MESSAGES 
 } = require('../utils/constant');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { v4: uuidv4 } = require('uuid');
@@ -307,6 +308,113 @@ const updateUserLimitConfig = async ({ userId, adminId, userType, payload }) => 
     }
 };
 
+// ── User Detail (View Profile) ────────────────────────────────────────────────
+
+/**
+ * One user's role-shaped profile fields (via user_profile_field_master, same source as
+ * the user-facing role-details endpoint) plus their latest suspension/reactivation
+ * reason (from user_suspension_history), for the admin "View Profile" drawer.
+ *
+ * companyId + roleCode are required rather than resolved from a "default role" —
+ * the frontend list row already carries both, mirroring how getRoleSwitchUserDetails
+ * requires an explicit companyId/roleId.
+ */
+const getUserDetail = async ({ userId, companyId, roleCode }) => {
+    try {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            return ServiceResponse.error({ message: USER_MESSAGES.USER_NOT_FOUND, statusCode: 404 });
+        }
+
+        const roleInfo = await userRepository.getUserCompanyRoleByCode(userId, companyId, roleCode);
+        if (!roleInfo) {
+            return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 404 });
+        }
+
+        const [company, fieldsConfig, suspensionHistory] = await Promise.all([
+            companyRepository.getCompanyById(companyId),
+            userRepository.getUserProfileFieldsConfig(roleInfo.role_id),
+            userSuspensionHistoryRepository.findAllByUserId(userId)
+        ]);
+        const latestSuspension = suspensionHistory[0] ?? null;
+
+        if (!company) {
+            return ServiceResponse.error({ message: 'Company not found.', statusCode: 404 });
+        }
+
+        const fields = fieldsConfig
+            .filter(config => config.is_active && !config.is_kyc_field && ['user', 'company'].includes(config.source_table))
+            .map(config => {
+                let value = null;
+                if (config.source_table === 'user') {
+                    value = user[config.field_name];
+                } else if (config.source_table === 'company') {
+                    value = company[config.field_name];
+                }
+
+                if (value === null || value === undefined) {
+                    value = '';
+                }
+
+                return {
+                    fieldName: config.field_name,
+                    label: config.display_name,
+                    value,
+                    datatype: config.datatype,
+                    unit: config.unit,
+                    displayOrder: config.display_order
+                };
+            });
+
+        const suspension = {
+            isSuspended: user.is_user_suspended,
+            lastAction: latestSuspension ? (latestSuspension.is_suspended ? 'suspended' : 'reactivated') : null,
+            reason: latestSuspension?.suspension_reason ?? null,
+            actionBy: latestSuspension?.created_by ?? null,
+            actionAt: latestSuspension?.created_at ?? null,
+            isLockedBySuperAdmin: latestSuspension?.is_updated_by_super_admin ?? false
+        };
+
+        const suspensionHistoryList = suspensionHistory.map(entry => ({
+            isSuspended: entry.is_suspended,
+            lastAction: entry.is_suspended ? 'suspended' : 'reactivated',
+            reason: entry.suspension_reason ?? null,
+            actionBy: entry.created_by ?? null,
+            actionAt: entry.created_at,
+            isLockedBySuperAdmin: entry.is_updated_by_super_admin
+        }));
+
+        return ServiceResponse.success({
+            message: ADMIN_USER_DETAIL_MESSAGES.FETCH_SUCCESS,
+            data: {
+                userId: user.id,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                profilePhoto: user.profile_photo,
+                companyId: company.id,
+                companyName: company.company_name,
+                email: company.company_email,
+                countryCode: company.country_code,
+                mobileNumber: company.mobile_number,
+                emailVerified: company.is_email_verified,
+                mobileVerified: company.is_mobile_number_verified,
+                kycStatus: company.kyc_status,
+                isActive: user.is_active,
+                roleId: roleInfo.role_id,
+                roleName: roleInfo.role_name,
+                roleCode: roleInfo.role_code,
+                fields,
+                suspension,
+                suspensionHistory: suspensionHistoryList
+            },
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: ADMIN_USER_DETAIL_MESSAGES.FETCH_FAILED, statusCode: 500 });
+    }
+};
+
 const updateUserSuspension = async (userId, companyId, adminId, role, is_suspended, suspension_reason ) => {
     const transaction = await sequelize.transaction();
     try {
@@ -399,7 +507,7 @@ const updateRoleSwitchStatus = async ({ companyUserRoleId, action, rejectionReas
 
 module.exports = {
     login, findByEmail, getAdminProfile, updateAdminProfile, getUserLimitConfig,
-    updateUserLimitConfig, updateUserSuspension, updateRoleSwitchStatus, getMatchingEngineStats
+    updateUserLimitConfig, getUserDetail, updateUserSuspension, updateRoleSwitchStatus, getMatchingEngineStats
 };
 
 

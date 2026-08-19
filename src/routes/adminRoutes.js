@@ -122,6 +122,8 @@ router.get('/users/switched-roles', adminMiddleware, authorize(PERMISSIONS.ADMIN
 
 router.get('/users/role-switch-details', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.SWITCHED_ROLE_LIST), adminController.getRoleSwitchUserDetails);
 
+router.get('/users/:userId', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.VIEW_DETAIL), adminController.getUserDetail);
+
 router.get('/get-user-kyc_docs', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.VIEW_KYC_DOCS), adminController.getUserKycDocs);
 
 router.put('/users/suspension', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.SUSPENSION_ACTION), adminController.updateUserSuspension);

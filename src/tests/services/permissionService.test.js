@@ -14,12 +14,17 @@ jest.mock('../../repositories/permissionRepository', () => ({
     getPermissionKeysForUserType: jest.fn()
 }));
 
+jest.mock('../../repositories/adminManagementRepository', () => ({
+    getAdminPermissions: jest.fn()
+}));
+
 jest.mock('../../configs/logger', () => ({
     errorLogger: { error: jest.fn() }
 }));
 
 const redis = require('../../configs/redis');
 const permissionRepository = require('../../repositories/permissionRepository');
+const adminManagementRepository = require('../../repositories/adminManagementRepository');
 const permissionService = require('../../services/permissionService');
 
 describe('permissionService.loadAllRolePermissionsIntoCache', () => {
@@ -151,5 +156,21 @@ describe('permissionService.invalidateUserTypeCache', () => {
         await permissionService.invalidateUserTypeCache('USER');
 
         expect(redis.del).toHaveBeenCalledWith('role_permissions:USER');
+    });
+});
+
+describe('permissionService.getAdminPermissions', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    test('delegates to adminManagementRepository.getAdminPermissions and returns its result', async () => {
+        const grants = [{ permission_key: 'FAQ_MANAGEMENT', is_allowed: true }];
+        adminManagementRepository.getAdminPermissions.mockResolvedValue(grants);
+
+        const result = await permissionService.getAdminPermissions('admin-1');
+
+        expect(result).toBe(grants);
+        expect(adminManagementRepository.getAdminPermissions).toHaveBeenCalledWith('admin-1');
     });
 });

@@ -735,7 +735,8 @@ const FAQ_MESSAGES = {
     CREATE_FAILED: 'Error encountered while creating FAQ',
     UPDATE_SUCCESS: 'FAQ updated successfully',
     UPDATE_FAILED: 'Error encountered while updating FAQ',
-    NOT_FOUND: 'FAQ not found'
+    NOT_FOUND: 'FAQ not found',
+    PERMISSION_DENIED: 'You do not have permission to manage FAQs. Contact a super admin to request access.'
 };
 
 const SUBSCRIPTION_PLAN_MESSAGES = {

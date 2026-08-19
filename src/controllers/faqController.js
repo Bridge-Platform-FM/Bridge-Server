@@ -2,8 +2,16 @@
 
 const { errorLogger } = require('../configs/logger');
 const faqService = require('../services/faqService');
-const { FAQ_MESSAGES } = require('../utils/constant');
+const permissionService = require('../services/permissionService');
+const { FAQ_MESSAGES, ADMIN_PERMISSION_KEYS, USER_TYPE_VALUES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
+
+const canManageFaq = async (adminId) => {
+    const permissions = await permissionService.getAdminPermissions(adminId);
+    const faqPermission = permissions.find((p) => p.permission_key === ADMIN_PERMISSION_KEYS.FAQ_MANAGEMENT);
+
+    return Boolean(faqPermission && faqPermission.is_allowed);
+};
 
 // ── User-facing ───────────────────────────────────────────────────────────────
 
@@ -46,9 +54,12 @@ const getAllFaqsForAdmin = async (req, res, next) => {
             });
         }
 
+        const adminId = req.adminId;
+        const isAllowdToUpsert = await canManageFaq(adminId);
+
         return HttpResponse.success(res, {
             message: faqsResponse.message,
-            data: faqsResponse.data,
+            data: {isAllowdToUpsert, faqs: faqsResponse.data},
             statusCode: faqsResponse.statusCode
         });
     } catch (error) {
@@ -65,6 +76,13 @@ const createFaq = async (req, res, next) => {
     try {
         const { question, answer, is_active } = req.body;
         const adminId = req.adminId;
+
+        if (!(await canManageFaq(adminId))) {
+            return HttpResponse.error(res, {
+                message: FAQ_MESSAGES.PERMISSION_DENIED,
+                statusCode: 403
+            });
+        }
 
         if (!question || typeof question !== 'string' || !question.trim()) {
             return HttpResponse.error(res, {
@@ -113,6 +131,13 @@ const updateFaq = async (req, res, next) => {
     try {
         const faqId = parseInt(req.params.id, 10);
         const adminId = req.adminId;
+
+        if (!(await canManageFaq(adminId))) {
+            return HttpResponse.error(res, {
+                message: FAQ_MESSAGES.PERMISSION_DENIED,
+                statusCode: 403
+            });
+        }
 
         if (!req.params.id || isNaN(faqId) || faqId <= 0) {
             return HttpResponse.error(res, {

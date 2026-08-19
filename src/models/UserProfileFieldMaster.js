@@ -32,6 +32,13 @@ module.exports = (sequelize) => {
             allowNull: false
         },
 
+        // Request-payload key for this field when it differs from field_name
+        // (e.g. 'pan_card' -> 'document_number'). Falls back to field_name when null.
+        lookup: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         display_name: {
             type: DataTypes.STRING(150),
             allowNull: false
@@ -52,6 +59,68 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING(50),
             allowNull: false,
             defaultValue: 'string'
+        },
+
+        datatype: {
+            type: DataTypes.STRING(150),
+            allowNull: true
+        },
+
+        unit: {
+            type: DataTypes.STRING(50),
+            allowNull: true
+        },
+
+        min_length: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+
+        max_length: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+
+        min_value: {
+            type: DataTypes.DECIMAL(15, 4),
+            allowNull: true
+        },
+
+        max_value: {
+            type: DataTypes.DECIMAL(15, 4),
+            allowNull: true
+        },
+
+        regex_pattern: {
+            type: DataTypes.STRING(500),
+            allowNull: true
+        },
+
+        allowed_values: {
+            type: DataTypes.JSON,
+            allowNull: true
+        },
+
+        display_order: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
+
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true
+        },
+
+        is_registration_field: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true
+        },
+
+        is_kyc_field: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true
         },
 
         created_at: {

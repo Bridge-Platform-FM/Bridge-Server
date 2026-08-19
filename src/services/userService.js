@@ -2,7 +2,6 @@
 const { sequelize } = require('../models');
 const userRepository = require('../repositories/userRepository');
 const companyRepository = require('../repositories/companyRepository');
-const roleFieldMetadataRepository = require('../repositories/roleFieldMetadataRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { USER_MESSAGES, KYC_MESSAGES, USER_ROLES_CODE } = require('../utils/constant');
@@ -210,7 +209,7 @@ const getUserRoleDetails = async (targetUserId, companyId, roleId) => {
             return ServiceResponse.error({ message: 'Company not found.', statusCode: 404 });
         }
 
-        const fieldsConfig = await roleFieldMetadataRepository.getFieldsForRole(roleInfo.role_id);
+        const fieldsConfig = await userRepository.getUserProfileFieldsConfig(roleInfo.role_id);
 
         const fields = fieldsConfig
             .filter(config => config.is_active && !config.is_kyc_field && ['user', 'company'].includes(config.source_table))

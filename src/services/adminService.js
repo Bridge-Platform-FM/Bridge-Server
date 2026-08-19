@@ -6,7 +6,6 @@ const userLimitConfigRepository = require('../repositories/userLimitConfigReposi
 const companyRepository = require('../repositories/companyRepository');
 const subscriptionRepository = require('../repositories/subscriptionRepository');
 const userSuspensionHistoryRepository = require('../repositories/userSuspensionHistoryRepository');
-const roleFieldMetadataRepository = require('../repositories/roleFieldMetadataRepository');
 const suspensionCacheRepository = require('../repositories/suspensionCacheRepository');
 const userSessionRepository = require('../repositories/userSessionRepository');
 const sessionCacheRepository = require('../repositories/sessionCacheRepository');
@@ -312,7 +311,7 @@ const updateUserLimitConfig = async ({ userId, adminId, userType, payload }) => 
 // ── User Detail (View Profile) ────────────────────────────────────────────────
 
 /**
- * One user's role-shaped profile fields (via role_field_metadata, same source as
+ * One user's role-shaped profile fields (via user_profile_field_master, same source as
  * the user-facing role-details endpoint) plus their latest suspension/reactivation
  * reason (from user_suspension_history), for the admin "View Profile" drawer.
  *
@@ -334,7 +333,7 @@ const getUserDetail = async ({ userId, companyId, roleCode }) => {
 
         const [company, fieldsConfig, suspensionHistory] = await Promise.all([
             companyRepository.getCompanyById(companyId),
-            roleFieldMetadataRepository.getFieldsForRole(roleInfo.role_id),
+            userRepository.getUserProfileFieldsConfig(roleInfo.role_id),
             userSuspensionHistoryRepository.findAllByUserId(userId)
         ]);
         const latestSuspension = suspensionHistory[0] ?? null;

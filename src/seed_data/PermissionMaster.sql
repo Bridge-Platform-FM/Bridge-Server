@@ -101,4 +101,8 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 ('ADMIN_MANAGEMENT.UPDATE', 'Update a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_MANAGEMENT.DELETE', 'Delete a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_MANAGEMENT.SUSPEND', 'Suspend a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
-('ADMIN_MANAGEMENT.ACTIVATE', 'Reactivate a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now());
+('ADMIN_MANAGEMENT.ACTIVATE', 'Reactivate a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+
+('USER.VIEW_DASHBOARD', 'View own dashboard stat cards', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_DASHBOARD.VIEW', 'View admin dashboard', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('SUPER_ADMIN_DASHBOARD.VIEW', 'View super admin dashboard', (select id from "admin" a where a.email = 'admin@test.com'), now());

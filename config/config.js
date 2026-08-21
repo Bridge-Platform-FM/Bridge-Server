@@ -1,5 +1,11 @@
 // required for migrations
 
+const dotenv = require('dotenv');
+const env = process.env.APP_ENV || 'local';
+dotenv.config({
+    path: env === 'uat' ? '.env.uat' : '.env'
+});
+
 const useSSL = process.env.APP_ENV !== 'local';
 
 module.exports = {

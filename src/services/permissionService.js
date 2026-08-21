@@ -2,6 +2,7 @@
 
 const redis = require('../configs/redis');
 const permissionRepository = require('../repositories/permissionRepository');
+const adminManagementRepository = require('../repositories/adminManagementRepository');
 const { errorLogger } = require('../configs/logger');
 
 const CACHE_PREFIX = 'role_permissions:';
@@ -90,8 +91,14 @@ const invalidateUserTypeCache = async (userType) => {
     }
 };
 
+
+const getAdminPermissions = async (adminId) => {
+    return adminManagementRepository.getAdminPermissions(adminId);
+};
+
 module.exports = {
     loadAllRolePermissionsIntoCache,
     hasPermission,
-    invalidateUserTypeCache
+    invalidateUserTypeCache,
+    getAdminPermissions
 };

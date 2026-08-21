@@ -3,8 +3,10 @@ const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
+const gstVerificationService = require('../services/gstVerificationService');
+const cinVerificationService = require('../services/cinVerificationService');
 const userRepository = require('../repositories/userRepository');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES } = require('../utils/constant');
+const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES, KYC_STATUS, ROLE_SWITCH_MESSAGES, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
@@ -53,7 +55,32 @@ const companyRegistration = async (req, res, next) => {
         if (existingCompany) {
             return HttpResponse.error(res, {message:USER_MESSAGES.EMAIL_ALREADY_EXISTS, statusCode:400});
         }
-        
+
+        // GSTIN/CIN are only collected for B2B — re-run the same verification the
+        // frontend already called on field-blur here, server-side, so registration
+        // can't complete with an unverified/invalid number even if that call was skipped.
+        let isGstVerified = false;
+        let isCinVerified = false;
+        if (role === 'B2B') {
+            const gstVerifyRes = await gstVerificationService.verifyGst(gstNumber);
+            if (!gstVerifyRes.success) {
+                return HttpResponse.error(res, {
+                    message: gstVerifyRes.message || GST_MESSAGES.NOT_VERIFIED_FOR_REGISTRATION,
+                    statusCode: gstVerifyRes.statusCode || 400
+                });
+            }
+            isGstVerified = true;
+
+            const cinVerifyRes = await cinVerificationService.verifyCin(cinNumber);
+            if (!cinVerifyRes.success) {
+                return HttpResponse.error(res, {
+                    message: cinVerifyRes.message || CIN_MESSAGES.NOT_VERIFIED_FOR_REGISTRATION,
+                    statusCode: cinVerifyRes.statusCode || 400
+                });
+            }
+            isCinVerified = true;
+        }
+
         // TODO: handle service response
         const emailOtpRes = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
         if (!emailOtpRes.success) {
@@ -71,7 +98,7 @@ const companyRegistration = async (req, res, next) => {
         }
         
         // remove termsAccepted from payload before saving in db
-        const createCompanyRes = await authService.createCompany({ companyName, email, countryCode, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber });
+        const createCompanyRes = await authService.createCompany({ companyName, email, countryCode, phoneNumber, password, role, termsAccepted, gstNumber, cinNumber, isGstVerified, isCinVerified });
         if (!createCompanyRes.success) {
             return HttpResponse.error(res, { message: createCompanyRes.message, statusCode: createCompanyRes.statusCode });
         }
@@ -101,6 +128,62 @@ const companyRegistration = async (req, res, next) => {
         console.error(error);
         return HttpResponse.error(res, {
             message: REGISTRATION_MESSAGES.COMPANY_CREATION_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+//  POST /api/v1/auth/verify-gst
+// Called by the frontend as soon as the user finishes typing a GSTIN (on field blur),
+// ahead of the full registration submit, so it can show a live ✓ Verified / error toast.
+const verifyGst = async (req, res) => {
+    try {
+        const { gstin } = req.body;
+        const gstVerifyRes = await gstVerificationService.verifyGst(gstin);
+        if (!gstVerifyRes.success) {
+            return HttpResponse.error(res, {
+                message: gstVerifyRes.message || GST_MESSAGES.VERIFY_FAILED,
+                statusCode: gstVerifyRes.statusCode || 400
+            });
+        }
+        return HttpResponse.success(res, {
+            data: gstVerifyRes.data,
+            message: gstVerifyRes.message || GST_MESSAGES.VERIFY_SUCCESS,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        console.error(error);
+        return HttpResponse.error(res, {
+            message: GST_MESSAGES.VERIFICATION_SERVICE_ERROR,
+            statusCode: 500
+        });
+    }
+};
+
+//  POST /api/v1/auth/verify-cin
+// Mirrors verifyGst above. Currently backed by a fixed mock response pending a
+// real CIN verification API (see cinVerificationService.js).
+const verifyCin = async (req, res) => {
+    try {
+        const { cin } = req.body;
+        const cinVerifyRes = await cinVerificationService.verifyCin(cin);
+        if (!cinVerifyRes.success) {
+            return HttpResponse.error(res, {
+                message: cinVerifyRes.message || CIN_MESSAGES.VERIFY_FAILED,
+                statusCode: cinVerifyRes.statusCode || 400
+            });
+        }
+        return HttpResponse.success(res, {
+            data: cinVerifyRes.data,
+            message: cinVerifyRes.message || CIN_MESSAGES.VERIFY_SUCCESS,
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        console.error(error);
+        return HttpResponse.error(res, {
+            message: CIN_MESSAGES.VERIFICATION_SERVICE_ERROR,
             statusCode: 500
         });
     }
@@ -568,8 +651,87 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
+//  POST /api/v1/auth/switch-role
+const switchRole = async (req, res, next) => {
+    try {
+        const { roleCode } = req.body;
+
+        const roleRes = await authService.getUserCompanyRoleByCode(req.userId, req.companyId, roleCode);
+        if (!roleRes.success) {
+            return HttpResponse.error(res, { message: roleRes.message, statusCode: roleRes.statusCode });
+        }
+
+        let roleInfo = roleRes.data;
+        if (!roleInfo) {
+            const allocateRes = await authService.allocateUserCompanyRole(req.userId, req.companyId, roleCode);
+            if (!allocateRes.success) {
+                return HttpResponse.error(res, { message: allocateRes.message, statusCode: allocateRes.statusCode });
+            }
+            roleInfo = allocateRes.data;
+        }
+
+        const companyUserRes = await authService.getCompanyAndUser(req.companyId, req.userId);
+        if (!companyUserRes.success) {
+            return HttpResponse.error(res, { message: companyUserRes.message, statusCode: companyUserRes.statusCode });
+        }
+        const { company, user } = companyUserRes.data;
+
+        const role = { id: roleInfo.role_id, role_code: roleInfo.role_code };
+        const userType = USER_TYPES[roleInfo.role_code];
+
+        const fieldsConfigRes = await authService.getProfileFieldsConfig(role.id);
+        if (!fieldsConfigRes.success) {
+            return HttpResponse.error(res, { message: fieldsConfigRes.message, statusCode: fieldsConfigRes.statusCode });
+        }
+
+        const profileFieldsRes = authService.validateAvailableProfileFields(fieldsConfigRes.data, user, company);
+        if (!profileFieldsRes.success) {
+            return HttpResponse.error(res, {
+                message: profileFieldsRes.message,
+                statusCode: profileFieldsRes.statusCode,
+                data: profileFieldsRes.data
+            });
+        }
+
+        if (roleInfo.status === KYC_STATUS.REJECTED) {
+            return HttpResponse.error(res, {
+                message: roleInfo.rejection_reason || USER_MESSAGES.PROFILE_REJECTED,
+                statusCode: 200,
+                data: { status: roleInfo.status, rejectionReason: roleInfo.rejection_reason }
+            });
+        }
+
+        if (roleInfo.status !== KYC_STATUS.APPROVED) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.PROFILE_PENDING_APPROVAL,
+                statusCode: 200,
+                data: { status: roleInfo.status }
+            });
+        }
+
+        const tokens = await tokenService.generateTokens(company, role, user, userType, {
+            ipAddress: req.ip,
+            headers: req.headers
+        });
+        const { accessToken, refreshToken } = tokens.data;
+
+        res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
+        res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
+
+        return HttpResponse.success(res, {
+            message: 'Role switched successfully.',
+            data: { roleId: role.id, role: role.role_code }
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.SWITCH_FAILED, statusCode: 500 });
+    }
+};
+
 module.exports = {
     companyRegistration,
+    verifyGst,
+    verifyCin,
     verifyOtp,
     resendOtp,
     updateAccessToken,
@@ -579,5 +741,6 @@ module.exports = {
     resendMfaOtp,
     resetPasswordTriggerOtp,
     resetPasswordVerifyOtp,
-    resetPassword
+    resetPassword,
+    switchRole
 };

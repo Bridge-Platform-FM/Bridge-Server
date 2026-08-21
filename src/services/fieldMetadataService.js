@@ -1,6 +1,6 @@
 'use strict';
 const { CompanyRoleMaster } = require('../models');
-const roleFieldMetadataRepository = require('../repositories/roleFieldMetadataRepository');
+const userRepository = require('../repositories/userRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { ROLE_FIELD_METADATA_MESSAGES, USER_MESSAGES } = require('../utils/constant');
@@ -12,17 +12,18 @@ const validateUserPayload = async (role, payload) => {
             where: { role_code: role.toUpperCase(), is_deleted: false }
         });
 
-        const roleMetadata = await roleFieldMetadataRepository.getFieldsForRole(roleObj.id);
+        const roleMetadata = await userRepository.getUserProfileFieldsConfig(roleObj.id);
         const userTableMetadata = roleMetadata.filter(f => f.source_table === 'user' && f.is_registration_field === true);
 
         const errors = [];
 
         for (const meta of userTableMetadata) {
             const {
-                lookup, datatype, is_required,
+                datatype, is_required,
                 min_length, max_length, min_value, max_value,
                 regex_pattern, allowed_values, display_name
             } = meta;
+            const lookup = meta.lookup || meta.field_name;
 
             const value = payload[lookup];
             const isEmpty = value === undefined || value === null || value === '';

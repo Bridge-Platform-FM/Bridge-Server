@@ -2,7 +2,6 @@
 const { sequelize } = require('../models');
 const userRepository = require('../repositories/userRepository');
 const companyRepository = require('../repositories/companyRepository');
-const roleFieldMetadataRepository = require('../repositories/roleFieldMetadataRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { USER_MESSAGES, KYC_MESSAGES, USER_ROLES_CODE } = require('../utils/constant');
@@ -36,6 +35,16 @@ const getUserList = async () => {
         return ServiceResponse.error({ message: USER_MESSAGES.USER_LISTING_FAILURE, data: [], statusCode: 500 });
     }
 }
+
+const getSwitchedRoleUsers = async () => {
+    try {
+        const users = await userRepository.getUsersWithSwitchedRoles();
+        return ServiceResponse.success({ message: USER_MESSAGES.SWITCHED_ROLE_LISTING_SUCCESS, data: users, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.SWITCHED_ROLE_LISTING_FAILURE, data: [], statusCode: 500 });
+    }
+};
 
 const searchUsers = async (searchQuery, roleCode) => {
     try {
@@ -200,7 +209,7 @@ const getUserRoleDetails = async (targetUserId, companyId, roleId) => {
             return ServiceResponse.error({ message: 'Company not found.', statusCode: 404 });
         }
 
-        const fieldsConfig = await roleFieldMetadataRepository.getFieldsForRole(roleInfo.role_id);
+        const fieldsConfig = await userRepository.getUserProfileFieldsConfig(roleInfo.role_id);
 
         const fields = fieldsConfig
             .filter(config => config.is_active && !config.is_kyc_field && ['user', 'company'].includes(config.source_table))
@@ -243,4 +252,18 @@ const getUserRoleDetails = async (targetUserId, companyId, roleId) => {
     }
 };
 
-module.exports = { createUserProfile, getUserList, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails };
+const getRoleSwitchUserDetails = async ({ companyId, userId, roleId }) => {
+    try {
+        const roleInfo = await userRepository.getUserCompanyRole(userId, companyId, roleId);
+        if (!roleInfo) {
+            return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 404 });
+        }
+
+        return await getUserProfile({ companyId, userId, roleId });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({ message: USER_MESSAGES.ROLE_DETAILS_FAILED, statusCode: 500 });
+    }
+};
+
+module.exports = { createUserProfile, getUserList, getSwitchedRoleUsers, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails, getRoleSwitchUserDetails };

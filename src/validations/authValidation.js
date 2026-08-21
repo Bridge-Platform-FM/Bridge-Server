@@ -1,7 +1,9 @@
 // 'use strict';
 const Joi = require('joi');
-const { OTP_MESSAGES } = require('../utils/constant');
+const { OTP_MESSAGES, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
+const GSTIN_PATTERN = /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+const CIN_PATTERN = /^[A-Z]{1}[0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/;
 
 const companyRegistrationSchema = Joi.object({
     companyName: Joi.string().min(3).max(100).required().messages({
@@ -34,15 +36,39 @@ const companyRegistrationSchema = Joi.object({
         'any.only': 'termsAccepted must be true',
         'any.required': 'termsAccepted is required'
     }),
-    gstNumber: Joi.string().when('role', {
+    gstNumber: Joi.string().pattern(GSTIN_PATTERN).when('role', {
         is: 'B2B',
-        then: Joi.required().messages({ 'any.required': 'gstNumber is required for B2B role' }),
-        otherwise: Joi.optional().allow(null, '')
+        then: Joi.required().messages({
+            'any.required': 'gstNumber is required for B2B role',
+            'string.pattern.base': GST_MESSAGES.INVALID_FORMAT
+        }),
+        otherwise: Joi.optional().allow(null, '').messages({
+            'string.pattern.base': GST_MESSAGES.INVALID_FORMAT
+        })
     }),
-    cinNumber: Joi.string().when('role', {
+    cinNumber: Joi.string().pattern(CIN_PATTERN).when('role', {
         is: 'B2B',
-        then: Joi.required().messages({ 'any.required': 'cinNumber is required for B2B role' }),
-        otherwise: Joi.optional().allow(null, '')
+        then: Joi.required().messages({
+            'any.required': 'cinNumber is required for B2B role',
+            'string.pattern.base': CIN_MESSAGES.INVALID_FORMAT
+        }),
+        otherwise: Joi.optional().allow(null, '').messages({
+            'string.pattern.base': CIN_MESSAGES.INVALID_FORMAT
+        })
+    })
+});
+
+const verifyGstSchema = Joi.object({
+    gstin: Joi.string().pattern(GSTIN_PATTERN).required().messages({
+        'string.pattern.base': GST_MESSAGES.INVALID_FORMAT,
+        'any.required': 'gstin is required'
+    })
+});
+
+const verifyCinSchema = Joi.object({
+    cin: Joi.string().pattern(CIN_PATTERN).required().messages({
+        'string.pattern.base': CIN_MESSAGES.INVALID_FORMAT,
+        'any.required': 'cin is required'
     })
 });
 
@@ -127,6 +153,13 @@ const validate = (schema) => {
     };
 };
 
+const switchRoleSchema = Joi.object({
+    roleCode: Joi.string().valid('INVESTOR', 'B2B', 'STARTUP').required().messages({
+        'any.only': 'roleCode must be one of: INVESTOR, B2B, STARTUP',
+        'any.required': 'roleCode is required'
+    })
+});
+
 const resetPasswordSchema = Joi.object({
     newPassword: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/).required().messages({
         'string.min': 'newPassword must be at least 8 characters long',
@@ -138,9 +171,12 @@ const resetPasswordSchema = Joi.object({
 module.exports = {
     validate,
     companyRegistrationSchema,
+    verifyGstSchema,
+    verifyCinSchema,
     verifyOtpSchema,
     resendOtpSchema,
     refreshTokenSchema,
     loginSchema,
-    resetPasswordSchema
+    resetPasswordSchema,
+    switchRoleSchema
 };

@@ -4,9 +4,11 @@ const { v4: uuidv4 } = require('uuid');
 const {
     ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES,
     USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES,
-    USER_SUSPENSION_MESSAGES, ADMIN_PROFILE_MESSAGES
+    USER_SUSPENSION_MESSAGES, ROLE_SWITCH_MESSAGES, USER_MESSAGES, ADMIN_PROFILE_MESSAGES,
+    ADMIN_USER_DETAIL_MESSAGES
 } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
+const { isValidUUID } = require('../utils/Helper');
 const { errorLogger } = require('../configs/logger');
 const adminService = require('../services/adminService');
 const otpService = require('../services/otp.service');
@@ -227,6 +229,81 @@ const getUserList = async (req, res, next) => {
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: 'Failed to fetch user list.', statusCode: 500 });
+    }
+};
+
+
+const getSwitchedRoleUsers = async (req, res, next) => {
+    try {
+        const usersRes = await userService.getSwitchedRoleUsers();
+        if (!usersRes.success) {
+            return HttpResponse.error(res, { message: usersRes.message, statusCode: usersRes.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: usersRes.message, data: usersRes.data, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { data: [], statusCode: 500 });
+    }
+};
+
+const getRoleSwitchUserDetails = async (req, res, next) => {
+    try {
+        const { userId, companyId } = req.query;
+        const roleId = parseInt(req.query.roleId, 10);
+
+        if (!userId || !isValidUUID(userId)) {
+            return HttpResponse.error(res, { message: USER_MESSAGES.USER_ID_REQUIRED, statusCode: 400 });
+        }
+        if (!companyId || !isValidUUID(companyId)) {
+            return HttpResponse.error(res, { message: USER_MESSAGES.COMPANY_ID_REQUIRED, statusCode: 400 });
+        }
+        if (!req.query.roleId || isNaN(roleId) || roleId <= 0) {
+            return HttpResponse.error(res, { message: USER_MESSAGES.ROLE_ID_REQUIRED, statusCode: 400 });
+        }
+
+        const detailsRes = await userService.getRoleSwitchUserDetails({ companyId, userId, roleId });
+        if (!detailsRes.success) {
+            return HttpResponse.error(res, {
+                message: detailsRes.message,
+                data: detailsRes.data,
+                statusCode: detailsRes.statusCode
+            });
+        }
+
+        return HttpResponse.success(res, { message: detailsRes.message, data: detailsRes.data, statusCode: 200 });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: USER_MESSAGES.ROLE_DETAILS_FAILED, statusCode: 500 });
+    }
+};
+
+
+const getUserDetail = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const { companyId, roleCode } = req.query;
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (!userId || !UUID_REGEX.test(userId)) {
+            return HttpResponse.error(res, { message: USER_LIMIT_CONFIG_MESSAGES.INVALID_USER_ID, statusCode: 400 });
+        }
+        if (!companyId || !isValidUUID(companyId)) {
+            return HttpResponse.error(res, { message: ADMIN_USER_DETAIL_MESSAGES.COMPANY_ID_REQUIRED, statusCode: 400 });
+        }
+        if (!roleCode) {
+            return HttpResponse.error(res, { message: ADMIN_USER_DETAIL_MESSAGES.ROLE_CODE_REQUIRED, statusCode: 400 });
+        }
+
+        const result = await adminService.getUserDetail({ userId, companyId, roleCode });
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: ADMIN_USER_DETAIL_MESSAGES.FETCH_FAILED, statusCode: 500 });
     }
 };
 
@@ -459,6 +536,40 @@ const updateUserSuspension = async (req, res, next) => {
     }
 };
 
+const updateRoleSwitchStatus = async (req, res, next) => {
+    try {
+        const adminId = req.adminId;
+        const { companyUserRoleId, action, rejectionReason } = req.body;
+
+        if (!companyUserRoleId) {
+            return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.COMPANY_USER_ROLE_ID_REQUIRED, statusCode: 400 });
+        }
+
+        if (!action) {
+            return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.ACTION_REQUIRED, statusCode: 400 });
+        }
+
+        if (!['approve', 'reject'].includes(action)) {
+            return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.INVALID_ACTION, statusCode: 400 });
+        }
+
+        if (action === 'reject' && !rejectionReason) {
+            return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.REJECTION_REASON_REQUIRED, statusCode: 400 });
+        }
+
+        const result = await adminService.updateRoleSwitchStatus({ companyUserRoleId, action, rejectionReason, adminId });
+
+        if (!result.success) {
+            return HttpResponse.error(res, { message: result.message, statusCode: result.statusCode });
+        }
+
+        return HttpResponse.success(res, { message: result.message, data: result.data, statusCode: result.statusCode });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.REVIEW_ACTION_FAILED, statusCode: 500 });
+    }
+};
+
 const getMatchingEngineStats = async (req, res, next) => {
     try {
         const result = await adminService.getMatchingEngineStats();
@@ -558,14 +669,18 @@ module.exports = {
     verifyMfaOtp,
     resendMfaOtp,
     getUserList,
+    getUserDetail,
     getUserKycDocs,
     kycDocumentAction,
     kycReviewAction,
     getUserLimitConfig,
     updateUserLimitConfig,
     updateUserSuspension,
+    updateRoleSwitchStatus,
     getMatchingEngineStats,
     logout,
     getAdminProfile,
-    updateAdminProfile
+    updateAdminProfile,
+    getSwitchedRoleUsers,
+    getRoleSwitchUserDetails
 };

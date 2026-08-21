@@ -9,6 +9,7 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 ('AUTH.MFA_TRIGGER_OTP', 'Trigger MFA OTP', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('AUTH.MFA_VERIFY_OTP', 'Verify MFA OTP', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('AUTH.MFA_RESEND_OTP', 'Resend MFA OTP', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('AUTH.SWITCH_ROLE', 'Switch active role within the current company', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('USER.BUILD_PROFILE', 'Create user profile', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('USER.VIEW_PROFILE', 'View own user profile', (select id from "admin" a where a.email = 'admin@test.com'), now()),
@@ -74,8 +75,11 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 ('ADMIN_AUTH.MFA_RESEND_OTP', 'Resend admin MFA OTP', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('ADMIN_USER.LIST', 'List company users', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_USER.VIEW_DETAIL', 'View a single user''s role-shaped profile and suspension history', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_USER.VIEW_KYC_DOCS', 'View a user''s KYC documents', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_USER.SUSPENSION_ACTION', 'Suspend or activate a user', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_USER.SWITCH_ROLE_ACTION', 'Approve or reject a pending switched role', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_USER.SWITCHED_ROLE_LIST', 'List users who have switched/added a role', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('ADMIN_KYC.DOCUMENT_ACTION', 'Approve or reject a KYC document', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_KYC.REVIEW_ACTION', 'Final KYC review action', (select id from "admin" a where a.email = 'admin@test.com'), now()),
@@ -97,4 +101,8 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 ('ADMIN_MANAGEMENT.UPDATE', 'Update a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_MANAGEMENT.DELETE', 'Delete a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('ADMIN_MANAGEMENT.SUSPEND', 'Suspend a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
-('ADMIN_MANAGEMENT.ACTIVATE', 'Reactivate a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now());
+('ADMIN_MANAGEMENT.ACTIVATE', 'Reactivate a staff account', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+
+('USER.VIEW_DASHBOARD', 'View own dashboard stat cards', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('ADMIN_DASHBOARD.VIEW', 'View admin dashboard', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('SUPER_ADMIN_DASHBOARD.VIEW', 'View super admin dashboard', (select id from "admin" a where a.email = 'admin@test.com'), now());

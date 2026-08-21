@@ -19,7 +19,7 @@ const { isValidUUID } = require('../utils/Helper');
  * @param {number|string} profileId - The user ID to find matches for
  * @returns {ServiceResponse}
  */
-const getMatches = async (profileId) => {
+const getMatches = async (profileId, userRole) => {
     try {
         const userId = profileId;
         if (!userId || !isValidUUID(userId)) {
@@ -38,7 +38,7 @@ const getMatches = async (profileId) => {
             });
         }
 
-        const sourceRole = sourceProfile.role_code;
+        const sourceRole = userRole;
 
         // Step 2: Fetch number of connection requests sent by the user in the current billing window
         const windowResult = await connectionService.getConnectionBillingWindow(userId);

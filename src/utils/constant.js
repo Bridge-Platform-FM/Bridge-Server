@@ -17,6 +17,22 @@ const REGISTRATION_MESSAGES = {
     REGISTRATION_SUCCESS: 'Registration successful'
 };
 
+const GST_MESSAGES = {
+    INVALID_FORMAT: 'gstin must be a valid 15-character GSTIN',
+    VERIFY_SUCCESS: 'GSTIN verified successfully',
+    VERIFY_FAILED: 'GSTIN could not be verified. Please check the number and try again.',
+    NOT_VERIFIED_FOR_REGISTRATION: 'GSTIN could not be verified. Company registration cannot proceed.',
+    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying GSTIN. Please try again.'
+};
+
+const CIN_MESSAGES = {
+    INVALID_FORMAT: 'cin must be a valid 21-character CIN',
+    VERIFY_SUCCESS: 'CIN verified successfully',
+    VERIFY_FAILED: 'CIN could not be verified. Please check the number and try again.',
+    NOT_VERIFIED_FOR_REGISTRATION: 'CIN could not be verified. Company registration cannot proceed.',
+    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying CIN. Please try again.'
+};
+
 const AUTH_MESSAGES = {
     ACCESS_TOKEN_UNAUTHORIZED: 'Unauthorized: No access token provided',
     FORBIDDEN: 'Forbidden',
@@ -51,15 +67,20 @@ const USER_MESSAGES = {
     UPDATE_FAILED: 'Error encountered while updating user profile',
     EMAIL_ALREADY_EXISTS: 'A user with this email already exists',
     ROLE_NOT_FOUND: 'Company role not found for this account',
+    PROFILE_NOT_COMPLETED: 'Profile for the switching role is not completed.',
+    PROFILE_PENDING_APPROVAL: 'Profile for the switching role is still pending approval.',
+    PROFILE_REJECTED: 'Profile for the switching role has been rejected.',
     VALIDATION_FAILED: 'Validation failed for the submitted fields',
     USER_LISTING_FAILURE: 'Error encountered while fetching user list',
     USER_LISTING_SUCCESS: 'User list fetched successfully',
+    SWITCHED_ROLE_LISTING_SUCCESS: 'Users with switched roles fetched successfully',
+    SWITCHED_ROLE_LISTING_FAILURE: 'Error encountered while fetching users with switched roles',
     USER_NOT_FOUND: 'User not found',
     SEARCH_QUERY_REQUIRED: 'q query parameter is required and must be a non-empty string',
     SEARCH_SUCCESS: 'User search results fetched successfully',
     SEARCH_FAILED: 'Error encountered while searching users',
-    USER_ID_REQUIRED: 'userId query parameter is required and must be a positive integer',
-    COMPANY_ID_REQUIRED: 'companyId query parameter is required and must be a positive integer',
+    USER_ID_REQUIRED: 'userId query parameter is required and must be a valid UUID',
+    COMPANY_ID_REQUIRED: 'companyId query parameter is required and must be a valid UUID',
     ROLE_ID_REQUIRED: 'roleId query parameter is required and must be a positive integer',
     ROLE_DETAILS_SUCCESS: 'User role details fetched successfully',
     ROLE_DETAILS_FAILED: 'Error encountered while fetching user role details'
@@ -273,7 +294,8 @@ const PERMISSIONS = {
         RESEND_OTP: 'AUTH.RESEND_OTP',
         MFA_TRIGGER_OTP: 'AUTH.MFA_TRIGGER_OTP',
         MFA_VERIFY_OTP: 'AUTH.MFA_VERIFY_OTP',
-        MFA_RESEND_OTP: 'AUTH.MFA_RESEND_OTP'
+        MFA_RESEND_OTP: 'AUTH.MFA_RESEND_OTP',
+        SWITCH_ROLE: 'AUTH.SWITCH_ROLE'
     },
     USER: {
         BUILD_PROFILE: 'USER.BUILD_PROFILE',
@@ -354,8 +376,11 @@ const PERMISSIONS = {
     },
     ADMIN_USER: {
         LIST: 'ADMIN_USER.LIST',
+        VIEW_DETAIL: 'ADMIN_USER.VIEW_DETAIL',
         VIEW_KYC_DOCS: 'ADMIN_USER.VIEW_KYC_DOCS',
-        SUSPENSION_ACTION: 'ADMIN_USER.SUSPENSION_ACTION'
+        SUSPENSION_ACTION: 'ADMIN_USER.SUSPENSION_ACTION',
+        SWITCH_ROLE_ACTION: 'ADMIN_USER.SWITCH_ROLE_ACTION',
+        SWITCHED_ROLE_LIST: 'ADMIN_USER.SWITCHED_ROLE_LIST'
     },
     ADMIN_KYC: {
         DOCUMENT_ACTION: 'ADMIN_KYC.DOCUMENT_ACTION',
@@ -675,6 +700,24 @@ const USER_SUSPENSION_MESSAGES = {
     ACCOUNT_SUSPENDED: 'Your account has been suspended. Please contact support.'
 };
 
+const ADMIN_USER_DETAIL_MESSAGES = {
+    FETCH_SUCCESS: 'User detail fetched successfully.',
+    FETCH_FAILED: 'Error encountered while fetching user detail.',
+    COMPANY_ID_REQUIRED: 'companyId query parameter is required and must be a valid UUID',
+    ROLE_CODE_REQUIRED: 'roleCode query parameter is required'
+};
+
+const ROLE_SWITCH_MESSAGES = {
+    COMPANY_USER_ROLE_ID_REQUIRED: 'companyUserRoleId is required',
+    ACTION_REQUIRED: 'action is required',
+    INVALID_ACTION: 'action must be approve or reject',
+    REJECTION_REASON_REQUIRED: 'rejectionReason is required when rejecting',
+    NOT_FOUND: 'Role switch request not found',
+    REVIEW_ACTION_SUCCESS: 'Role switch status updated successfully.',
+    REVIEW_ACTION_FAILED: 'Error encountered while updating role switch status.',
+    SWITCH_FAILED: 'Error encountered while switching role.'
+};
+
 const PREMIUM_DAYS_LIMIT_DEFAULT = 30;
 
 const USER_LIMIT_DEFAULTS = {
@@ -692,7 +735,8 @@ const FAQ_MESSAGES = {
     CREATE_FAILED: 'Error encountered while creating FAQ',
     UPDATE_SUCCESS: 'FAQ updated successfully',
     UPDATE_FAILED: 'Error encountered while updating FAQ',
-    NOT_FOUND: 'FAQ not found'
+    NOT_FOUND: 'FAQ not found',
+    PERMISSION_DENIED: 'You do not have permission to manage FAQs. Contact a super admin to request access.'
 };
 
 const SUBSCRIPTION_PLAN_MESSAGES = {
@@ -731,11 +775,13 @@ const REDIS_BASE_KEYS = {
     CONFIG_OTP_CONFIG: 'config:otp_config',
     CONFIG_TRIAL_CONFIG: 'config:trial_config',
     SUSPENDED_USERS_HASH: 'suspended_users',
-    SUSPENDED_ADMINS_HASH: 'suspended_admins'
+    SUSPENDED_ADMINS_HASH: 'suspended_admins',
+    SANDBOX_GST_TOKEN: 'sandbox_gst:access_token',
+    SANDBOX_MCA_TOKEN: 'sandbox_mca:access_token'
 };
 
 module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIELD_METADATA_MESSAGES,
-    USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES,
+    USER_MESSAGES, S3_FILE_TYPE, KYC_DOC_TYPES, KYC_MESSAGES, GST_MESSAGES, CIN_MESSAGES,
     ENCRYPT_DECRYPT_MESSAGES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME,
     KYC_STATUS, CHANNEL_TYPE, LOGIN_MESSAGES, REDIRECT_ROUTES, ADMIN_MESSAGES,
     ROLES, MATCHING_MESSAGES, TOKEN_TYPES, CONNECTION_STATUS, CONNECTION_MESSAGES,
@@ -749,5 +795,5 @@ module.exports = { OTP_MESSAGES, REGISTRATION_MESSAGES, AUTH_MESSAGES, ROLE_FIEL
     SUBSCRIPTION_PLAN_MESSAGES,
     DATA_TYPES, UNITS, ADMIN_CONFIG_MESSAGES, REDIS_BASE_KEYS, USER_SUSPENSION_MESSAGES,
     ADMIN_MANAGEMENT_MESSAGES, ADMIN_STATUS, ADMIN_ACTIVITY_ACTIONS, ADMIN_PERMISSION_KEYS, DASHBOARD_MESSAGES,
-    ADMIN_PROFILE_MESSAGES
+    ADMIN_PROFILE_MESSAGES, ROLE_SWITCH_MESSAGES, ADMIN_USER_DETAIL_MESSAGES
 };

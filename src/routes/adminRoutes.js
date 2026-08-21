@@ -118,9 +118,17 @@ router.put('/profile', adminMiddleware, adminController.updateAdminProfile);
 
 router.get('/get-user-list', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.LIST), adminController.getUserList);
 
+router.get('/users/switched-roles', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.SWITCHED_ROLE_LIST), adminController.getSwitchedRoleUsers);
+
+router.get('/users/role-switch-details', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.SWITCHED_ROLE_LIST), adminController.getRoleSwitchUserDetails);
+
+router.get('/users/:userId', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.VIEW_DETAIL), adminController.getUserDetail);
+
 router.get('/get-user-kyc_docs', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.VIEW_KYC_DOCS), adminController.getUserKycDocs);
 
 router.put('/users/suspension', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.SUSPENSION_ACTION), adminController.updateUserSuspension);
+
+router.put('/users/role-switch-action', adminMiddleware, authorize(PERMISSIONS.ADMIN_USER.SWITCH_ROLE_ACTION), adminController.updateRoleSwitchStatus);
 
 router.put('/kyc/document-action', adminMiddleware, authorize(PERMISSIONS.ADMIN_KYC.DOCUMENT_ACTION), adminController.kycDocumentAction);
 

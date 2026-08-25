@@ -14,19 +14,22 @@ const COOKIE_NAMES = {
 };
 
 /**
- * SameSite/Secure flip based on COOKIE_CROSS_SITE (env_configs.js):
+ * SameSite/Secure flip based on COOKIE_CROSS_SITE / COOKIE_SECURE (env_configs.js):
  *   - Same-site (default: plain localhost, or any two ports on the same domain):
- *     SameSite=Lax, Secure only in production. Works over plain HTTP.
+ *     SameSite=Lax, Secure only when COOKIE_SECURE=true. Works over plain HTTP.
  *   - Cross-site (COOKIE_CROSS_SITE=true: a devtunnel/forwarded-port URL, a genuinely
  *     different domain from the frontend): SameSite=None + Secure=true — required
  *     together, or the browser drops the cookie. Needs the connection to actually be
  *     HTTPS (true for devtunnels; NOT true for plain http://localhost, so don't set
  *     this flag unless you're actually tunneling).
+ * Secure is intentionally NOT derived from NODE_ENV — a production deployment can still
+ * be served over plain HTTP, and the browser silently drops a Secure cookie on any
+ * non-HTTPS connection. Only set COOKIE_SECURE once the deployment is actually HTTPS.
  */
 const crossSiteCookieFlags = () =>
     env.COOKIE_CROSS_SITE
         ? { sameSite: 'none', secure: true }
-        : { sameSite: 'lax', secure: process.env.NODE_ENV === 'production' };
+        : { sameSite: 'lax', secure: env.COOKIE_SECURE };
 
 const cookieOptions = (maxAgeExpiry) => ({
     httpOnly: true,

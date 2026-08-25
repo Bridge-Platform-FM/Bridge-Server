@@ -12,6 +12,12 @@ const env = {
     // Lax/non-Secure (SameSite=Lax cookies are never sent on cross-site fetch/XHR/socket
     // requests, only top-level navigations, so the cookie would silently never arrive).
     COOKIE_CROSS_SITE: process.env.COOKIE_CROSS_SITE === 'true',
+    // Whether the connection this server is actually reached over is HTTPS. Deliberately
+    // NOT derived from NODE_ENV — a production deployment can still be served over plain
+    // HTTP (e.g. no TLS termination in front of it yet), and a Secure cookie is dropped
+    // by the browser on any non-HTTPS connection, silently breaking auth. Only flip this
+    // on once the deployment is confirmed to be served over HTTPS.
+    COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
     DB: {
         DB_HOST: process.env.DB_HOST,
         DB_PORT: process.env.DB_PORT,

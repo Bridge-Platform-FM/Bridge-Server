@@ -7,9 +7,17 @@ const createUser = async (userData, transaction) => {
 };
 
 const updateUser = async (userData, userId, { transaction } = {}) => {
+    // company_email is the verified account identity set at registration (OTP-verified,
+    // unique-constrained) — never writable through a profile update. Without this,
+    // a stray company_email in the payload (the client always includes it as a locked/
+    // read-only field) can collide with another row's email and fail the whole update
+    // with a SequelizeUniqueConstraintError, rolling back every other field in the same
+    // request even though none of them were the actual problem.
+    const safeUserData = { ...userData };
+    delete safeUserData.company_email;
     const [updatedCount, updatedRows] = await User.update(
         {
-            ...userData,
+            ...safeUserData,
             updated_at: new Date()
         },
         {

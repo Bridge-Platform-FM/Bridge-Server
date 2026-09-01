@@ -12,7 +12,7 @@ const createUserProfile = async ({ userData, companyId, userId, roleId }) => {
     try {
 
         const user = await userRepository.updateUser(userData, userId, { transaction });
-
+        await companyRepository.markProfileCompleted(userId, companyId, roleId, { transaction });
 
         await transaction.commit();
         return ServiceResponse.success({

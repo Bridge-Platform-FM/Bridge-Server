@@ -81,6 +81,14 @@ const updateKycStatus = async (companyId, { isKycVerified, status, rejectionReas
     return updatedCompany;
 };
 
+const markKycUploaded = async (companyId, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { is_kyc_uploaded: true },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
 const getCompanyById = async (companyId) => {
     return await Company.findOne({
         where: { id: companyId, is_deleted: false }
@@ -115,6 +123,18 @@ const updateCompanyUserRoleStatus = async (id, data, { transaction } = {}) => {
     return updatedRows[0];
 };
 
+const markProfileCompleted = async (userId, companyId, roleId, { transaction } = {}) => {
+    const [, [updatedRole]] = await CompanyUserRole.update(
+        { is_profile_completed: true, updated_at: new Date() },
+        {
+            where: { user_id: userId, company_id: companyId, role_id: roleId, is_deleted: false },
+            returning: true,
+            transaction
+        }
+    );
+    return updatedRole;
+};
+
 module.exports = {
     findByEmail,
     findCompanyWithRoleByEmail,
@@ -128,5 +148,7 @@ module.exports = {
     updatePasswordByEmail,
     getCompanyUser,
     getDefaultCompanyIdByUserId,
-    updateCompanyUserRoleStatus
+    updateCompanyUserRoleStatus,
+    markProfileCompleted,
+    markKycUploaded
 };

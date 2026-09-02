@@ -6,7 +6,7 @@ const userLimitConfigRepository = require('../repositories/userLimitConfigReposi
 const adminConfigService = require('./adminConfigService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS, TRIAL_CONFIG_LOOKUP_KEYS, USER_LIMIT_DEFAULTS } = require('../utils/constant');
+const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS, KYC_DOC_TYPES, TRIAL_CONFIG_LOOKUP_KEYS, USER_LIMIT_DEFAULTS } = require('../utils/constant');
 const { decrypt } = require("../utils/encryption");
 const userService = require('./userService');
 
@@ -57,6 +57,22 @@ const createKycInfo = async (records) => {
                 { isKycVerified: false, status: KYC_STATUS.PENDING, rejectionReason: null },
                 { transaction }
             );
+        }
+
+        // Mark the company's KYC as uploaded once every required document type has a
+        // stored record — checked against the full set for this user/company/role, not
+        // just this call's batch, since the required docs can be submitted across
+        // separate requests.
+        if (!company?.is_kyc_uploaded) {
+            const allRecords = await kycInfoRepository.findAllKycRecords(
+                { userId: normalized[0].user_id, companyId, roleId: normalized[0].role_id },
+                { transaction }
+            );
+            const uploadedTypes = new Set(allRecords.map(r => r.document_type));
+            const hasAllRequiredDocs = KYC_DOC_TYPES.every(type => uploadedTypes.has(type));
+            if (hasAllRequiredDocs) {
+                await companyRepository.markKycUploaded(companyId, { transaction });
+            }
         }
 
         await transaction.commit();

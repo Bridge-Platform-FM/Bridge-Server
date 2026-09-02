@@ -470,17 +470,37 @@ const verifyMfaOtp = async (req, res, next) => {
             return HttpResponse.error(res, { message: verifyOtpRes.message, statusCode: verifyOtpRes.statusCode });
         }
 
+        const companyUserRoleRes = await authService.getUserCompanyRoleByCode(req.userId, req.companyId, req.role);
+        const isProfileCompleted = !!companyUserRoleRes.data?.is_profile_completed;
+
         let redirectRoute = REDIRECT_ROUTES.DASHBOARD.DASHBOARD;
         if (!company.is_email_verified || !company.is_mobile_number_verified) {
             redirectRoute = REDIRECT_ROUTES.REGISTRATION.VERIFY_COMPANY_ACCOUNT;
+        } else if (!isProfileCompleted) {
+            redirectRoute = REDIRECT_ROUTES.REGISTRATION.BUILD_USER_PROFILE;
+        } else if (!company.is_kyc_uploaded) {
+            redirectRoute = REDIRECT_ROUTES.REGISTRATION.UPLOAD_KYC_DOCUMENTS;
         } else if (!company.is_kyc_verified) {
             redirectRoute = REDIRECT_ROUTES.REGISTRATION.PENDING_KYC_APPROVAL;
         } else {
             redirectRoute = REDIRECT_ROUTES.DASHBOARD.DASHBOARD;
         }
 
-        
+
         const role = { role_code: req.role, id: req.roleId };
+
+        if (redirectRoute === REDIRECT_ROUTES.REGISTRATION.VERIFY_COMPANY_ACCOUNT) {
+            // Channels still unverified — re-issue the mfa_token (instead of promoting to a
+            // full access token) so /verify-otp and /resend-otp keep working on that page.
+            const mfaTokenRes = await tokenService.generateMfaAccessToken(company, role, user, req.userType);
+            if (!mfaTokenRes.success) {
+                return HttpResponse.error(res, { message: mfaTokenRes.message, statusCode: 500 });
+            }
+            res.cookie(COOKIE_NAMES.MFA_TOKEN, mfaTokenRes.data.accessToken, cookieOptions(env.JWT.MFA_EXPIRY));
+
+            return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { userId: user.id, tokenType: TOKEN_TYPES.MFA_ACCESS_TOKEN, redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name, email: company.company_email, mobileNumber: company.mobile_number, countryCode: company.country_code, role: role.role_code, companyName: company.company_name }, statusCode: 200 });
+        }
+
         const tokens = await tokenService.generateTokens(company, role, user, req.userType, {
             ipAddress: req.ip,
             headers: req.headers          // full headers — parseDeviceInfo reads sec-ch-ua* from these
@@ -490,7 +510,7 @@ const verifyMfaOtp = async (req, res, next) => {
         res.clearCookie(COOKIE_NAMES.MFA_TOKEN, clearCookieOptions());
         res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, cookieOptions(env.JWT.ACCESS_EXPIRY));
         res.cookie(COOKIE_NAMES.REFRESH_TOKEN, refreshToken, cookieOptions(env.JWT.REFRESH_EXPIRY));
-        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { userId: user.id, tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN, redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name }, statusCode: 200 });
+        return HttpResponse.success(res, { message: OTP_MESSAGES.OTP_VERIFY_SUCCESS, data: { userId: user.id, tokenType: TOKEN_TYPES.AUTH_ACCESS_TOKEN, redirectRoute: redirectRoute, isEmailVerified: company.is_email_verified, isPhoneVerified: company.is_phone_verified, isKycVerified: company.is_kyc_verified, first_name: user.first_name, last_name: user.last_name, role: role.role_code, companyName: company.company_name }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
         return HttpResponse.error(res, { message: OTP_MESSAGES.OTP_VERIFICATION_FAILED, statusCode: 500 });

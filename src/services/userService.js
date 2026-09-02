@@ -12,7 +12,7 @@ const createUserProfile = async ({ userData, companyId, userId, roleId }) => {
     try {
 
         const user = await userRepository.updateUser(userData, userId, { transaction });
-
+        await companyRepository.markProfileCompleted(userId, companyId, roleId, { transaction });
 
         await transaction.commit();
         return ServiceResponse.success({
@@ -143,15 +143,19 @@ const getUserProfile = async ({ companyId, userId, roleId }) => {
         const fieldsConfig = await userRepository.getUserProfileFieldsConfig(roleId);
 
         const data = fieldsConfig.filter(config => config.field_name !== 'company_name').map(config => {
-            let value = '';
+            let value;
             if (config.source_table === 'user') {
                 value = user[config.field_name];
             } else if (config.source_table === 'company') {
                 value = company[config.field_name];
             }
 
+            // Empty value, typed to match the field's declared `type`. An unset array
+            // column must come back as [] rather than '' — a client that renders a
+            // multi-select straight from this response would otherwise get a string
+            // where it expects a list (and `''.map is not a function` on refresh).
             if (value === null || value === undefined) {
-                value = '';
+                value = config.type === 'array' ? [] : '';
             }
 
             return {

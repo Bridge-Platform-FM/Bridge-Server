@@ -44,14 +44,15 @@ const bulkCreateKycRecords = async (records, options = {}) => {
 };
 
 
-const findAllKycRecords = async ({ userId, companyId, roleId }) => {
+const findAllKycRecords = async ({ userId, companyId, roleId }, options = {}) => {
     return await KycInfo.findAll({
         where: {
             user_id: userId,
             company_id: companyId,
             role_id: roleId,
             is_deleted: false
-        }
+        },
+        ...options
     });
 };
 

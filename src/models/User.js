@@ -62,6 +62,12 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        // Registered office / residential address as per government ID (investor + b2b).
+        address: {
+            type: DataTypes.STRING(500),
+            allowNull: true
+        },
+
         is_active: {
             type: DataTypes.BOOLEAN,
             allowNull: false,
@@ -108,14 +114,20 @@ module.exports = (sequelize) => {
         pitch_deck_certificate: { type: DataTypes.STRING, allowNull: true },
         business_description: { type: DataTypes.STRING, allowNull: true },
         startup_intent: { type: DataTypes.STRING, allowNull: true },
+        // Repeatable [{ name, url }] rows from the "Founders & LinkedIn" widget.
+        founders: { type: DataTypes.JSONB, allowNull: true },
 
         // Investor info
         ticket_size_amt_min: { type: DataTypes.FLOAT, allowNull: true },
         ticket_size_amt_max: { type: DataTypes.FLOAT, allowNull: true },
+        ticket_currency: { type: DataTypes.STRING, allowNull: true },
+        investment_thesis: { type: DataTypes.STRING(1000), allowNull: true },
         prefrerred_investment_stage: { type:DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
         stage_focus: { type: DataTypes.STRING, allowNull: true },
         investor_sector_preference: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
         geographic_investment_preference: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
+        // Continent half of the same widget; countries live in the column above.
+        geographic_investment_preference_continent: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
         investor_type: { type: DataTypes.STRING, allowNull: true },
         investor_portfolio_overview: { type: DataTypes.STRING, allowNull: true },
         number_of_investments_to_date: { type: DataTypes.INTEGER, allowNull: true },
@@ -124,6 +136,10 @@ module.exports = (sequelize) => {
         // B2B info
         b2b_sector: { type: DataTypes.STRING, allowNull: true },
         b2b_sub_sector: { type: DataTypes.STRING, allowNull: true },
+        business_type: { type: DataTypes.STRING, allowNull: true },
+        // "Geographies" widget — countries + continents, same shape as the investor pair.
+        b2b_geography_country: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
+        b2b_geography_continent: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
         revenue_band: { type: DataTypes.STRING, allowNull: true },
         min_order_quantity: { type: DataTypes.INTEGER, allowNull: true },
         export_rediness: { type: DataTypes.STRING, allowNull: true },

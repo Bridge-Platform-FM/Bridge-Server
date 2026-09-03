@@ -13,8 +13,16 @@ const updateUser = async (userData, userId, { transaction } = {}) => {
     // read-only field) can collide with another row's email and fail the whole update
     // with a SequelizeUniqueConstraintError, rolling back every other field in the same
     // request even though none of them were the actual problem.
-    const safeUserData = { ...userData };
-    delete safeUserData.company_email;
+    //
+    // Copy only real `user` columns so JSONB fields like `founders` are written when
+    // present, and unknown body keys are never forwarded to SQL.
+    const attributes = User.rawAttributes || {};
+    const skip = new Set(['company_email', 'id', 'password', 'created_at', 'deleted_at', 'deleted_by', 'is_deleted']);
+    const safeUserData = {};
+    for (const [key, value] of Object.entries(userData || {})) {
+        if (skip.has(key) || !attributes[key]) continue;
+        safeUserData[key] = value;
+    }
     const [updatedCount, updatedRows] = await User.update(
         {
             ...safeUserData,
@@ -25,6 +33,7 @@ const updateUser = async (userData, userId, { transaction } = {}) => {
                 id: userId,
                 is_deleted: false
             },
+            fields: [...Object.keys(safeUserData), 'updated_at'],
             returning: true, // PostgreSQL only
             transaction
         }

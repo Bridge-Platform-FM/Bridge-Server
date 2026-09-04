@@ -2,11 +2,54 @@
 const { User, UserProfileFieldMaster, sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
 
+/**
+ * Columns a self-service profile request must never write. Identity, secrets,
+ * account lifecycle, and audit fields are admin/system-owned — `User.rawAttributes`
+ * includes them, so an "is it a real column?" copy would otherwise persist
+ * `{ is_user_suspended: false }` from PUT /users/profile.
+ */
+const NEVER_SELF_WRITABLE = new Set([
+    'id',
+    'password',
+    'company_email',
+    'is_active',
+    'is_user_suspended',
+    'created_at',
+    'created_by',
+    'updated_at',
+    'updated_by',
+    'deleted_at',
+    'deleted_by',
+    'is_deleted'
+]);
+
+/** Admin-only lifecycle flags. Writable only when `allowPrivileged: true`. */
+const ADMIN_ONLY_COLUMNS = new Set(['is_active', 'is_user_suspended']);
+
+/**
+ * `user` columns configured in `user_profile_field_master` (any role). That is the
+ * self-service allowlist — switch-role PUTs target-role fields while the JWT is
+ * still the current role, so this is the union across roles, not one role's list.
+ */
+const getSelfServiceUserColumnNames = async () => {
+    const rows = await UserProfileFieldMaster.findAll({
+        where: { source_table: 'user', is_deleted: false },
+        attributes: ['field_name', 'lookup']
+    });
+    const allowed = new Set();
+    for (const raw of rows) {
+        const f = typeof raw.get === 'function' ? raw.get({ plain: true }) : raw;
+        const name = f.lookup || f.field_name;
+        if (name && !NEVER_SELF_WRITABLE.has(name)) allowed.add(name);
+    }
+    return allowed;
+};
+
 const createUser = async (userData, transaction) => {
     return await User.create(userData, transaction);
 };
 
-const updateUser = async (userData, userId, { transaction } = {}) => {
+const updateUser = async (userData, userId, { transaction, allowPrivileged = false } = {}) => {
     // company_email is the verified account identity set at registration (OTP-verified,
     // unique-constrained) — never writable through a profile update. Without this,
     // a stray company_email in the payload (the client always includes it as a locked/
@@ -14,13 +57,22 @@ const updateUser = async (userData, userId, { transaction } = {}) => {
     // with a SequelizeUniqueConstraintError, rolling back every other field in the same
     // request even though none of them were the actual problem.
     //
-    // Copy only real `user` columns so JSONB fields like `founders` are written when
-    // present, and unknown body keys are never forwarded to SQL.
+    // Self-service (build-profile / PUT /users/profile): copy only columns that are
+    // both a real `user` attribute AND listed in user_profile_field_master, minus
+    // NEVER_SELF_WRITABLE. Privileged callers (admin suspension) pass allowPrivileged
+    // so `is_user_suspended` / `is_active` can be written without opening those keys
+    // on the user profile endpoint.
     const attributes = User.rawAttributes || {};
-    const skip = new Set(['company_email', 'id', 'password', 'created_at', 'deleted_at', 'deleted_by', 'is_deleted']);
+    const skip = new Set(NEVER_SELF_WRITABLE);
+    if (allowPrivileged) {
+        for (const col of ADMIN_ONLY_COLUMNS) skip.delete(col);
+    }
+    const allowed = allowPrivileged ? null : await getSelfServiceUserColumnNames();
+
     const safeUserData = {};
     for (const [key, value] of Object.entries(userData || {})) {
         if (skip.has(key) || !attributes[key]) continue;
+        if (allowed && !allowed.has(key)) continue;
         safeUserData[key] = value;
     }
     const [updatedCount, updatedRows] = await User.update(

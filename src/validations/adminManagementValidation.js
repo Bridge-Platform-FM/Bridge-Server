@@ -2,6 +2,7 @@
 const Joi = require('joi');
 const HttpResponse = require('../utils/HttpResponse');
 const { ADMIN_PERMISSION_KEYS } = require('../utils/constant');
+const { NATIONAL_NUMBER_PATTERN } = require('../utils/phoneValidation');
 
 const VALID_PERMISSION_KEYS = Object.values(ADMIN_PERMISSION_KEYS);
 
@@ -34,8 +35,8 @@ const createAdminSchema = Joi.object({
     country_code: Joi.string().max(5).optional().allow(null, '').messages({
         'string.max': 'country_code must not exceed 5 characters'
     }),
-    mobile_number: Joi.string().pattern(/^\d{10}$/).optional().allow(null, '').messages({
-        'string.pattern.base': 'mobile_number must be a valid 10-digit number'
+    mobile_number: Joi.string().pattern(NATIONAL_NUMBER_PATTERN).optional().allow(null, '').messages({
+        'string.pattern.base': 'mobile_number must be a valid national number for the selected country'
     }),
     role: Joi.string().valid('ADMIN').required().messages({
         'any.only': 'role must be ADMIN',
@@ -59,8 +60,8 @@ const updateAdminSchema = Joi.object({
     country_code: Joi.string().max(5).optional().allow(null, '').messages({
         'string.max': 'country_code must not exceed 5 characters'
     }),
-    mobile_number: Joi.string().pattern(/^\d{10}$/).optional().allow(null, '').messages({
-        'string.pattern.base': 'mobile_number must be a valid 10-digit number'
+    mobile_number: Joi.string().pattern(NATIONAL_NUMBER_PATTERN).optional().allow(null, '').messages({
+        'string.pattern.base': 'mobile_number must be a valid national number for the selected country'
     }),
     permissions: Joi.array()
         .items(permissionItemSchema)

@@ -8,7 +8,7 @@ const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { KYC_MESSAGES, ENCRYPT_DECRYPT_MESSAGES, KYC_STATUS, KYC_DOC_TYPES, TRIAL_CONFIG_LOOKUP_KEYS, USER_LIMIT_DEFAULTS } = require('../utils/constant');
 const { decrypt } = require("../utils/encryption");
-const userService = require('./userService');
+const userRepository = require('../repositories/userRepository');
 
 const createKycInfo = async (records) => {
     const transaction = await sequelize.transaction();
@@ -206,13 +206,15 @@ const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId 
 
         if (action === 'approve') {
             const user = await companyRepository.getCompanyUser(companyId);
-            const userDataToUpdate = {is_active: true};
             const userId = user[0].id;
-
-            const updateUserRes = await userService.updateUserProfile(userDataToUpdate, userId);
-            if (!updateUserRes.success) {
-                return ServiceResponse.error({ message: updateUserRes.message, statusCode: updateUserRes.statusCode });
-            }
+            // Privileged: is_active is admin/KYC-owned and is stripped from self-service
+            // updateUser(). Same transaction as the KYC status write so a failed
+            // activate rolls the approval back.
+            await userRepository.updateUser(
+                { is_active: true },
+                userId,
+                { transaction, allowPrivileged: true }
+            );
 
             const [allowedConnections, allowedFreeTrialDays] = await Promise.all([
                 adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_CONNECTION_LIMIT, USER_LIMIT_DEFAULTS.ALLOWED_CONNECTIONS),

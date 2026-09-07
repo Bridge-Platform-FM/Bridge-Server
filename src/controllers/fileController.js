@@ -11,6 +11,7 @@ const { encrypt, decrypt } = require("../utils/encryption");
 // POST /api/v1/file/scan-img & /scan-document
 const scanFile = async (req, res, next) => {
     try {
+        console.log("scanFile function is called");
         const userId = req.userId;
         const companyId = req.companyId;
         const companyName = req.companyName;

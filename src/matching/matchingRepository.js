@@ -2,7 +2,7 @@
 
 const { sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
-const { CONNECTION_STATUS } = require('../utils/constant');
+const { CONNECTION_STATUS, KYC_STATUS } = require('../utils/constant');
 
 /**
  * Fetches a user profile with their assigned role (via company_user_role join).
@@ -56,8 +56,16 @@ const getCandidateProfiles = async (excludeUserId) => {
         WHERE u.id != :excludeUserId
           AND u.is_deleted IS NOT TRUE
           AND u.is_active IS TRUE
-          AND cur.is_default_role IS TRUE
+          AND cur.is_deleted IS NOT TRUE
+          AND (
+              cur.is_default_role IS TRUE
+              OR cur.status = :approvedStatus
+          )
           AND c.is_deleted IS NOT TRUE
+          AND c.is_email_verified IS TRUE
+          AND c.is_mobile_number_verified IS TRUE
+          AND c.is_kyc_verified IS TRUE
+          AND c.kyc_status = :approvedStatus
           AND NOT EXISTS (
               SELECT 1 FROM user_connection uc
               WHERE uc.is_deleted IS NOT TRUE
@@ -70,6 +78,7 @@ const getCandidateProfiles = async (excludeUserId) => {
         {
             replacements: {
                 excludeUserId,
+                approvedStatus: KYC_STATUS.APPROVED,
                 excludedStatuses: [CONNECTION_STATUS.ACCEPTED, CONNECTION_STATUS.DEFERRED, CONNECTION_STATUS.PENDING, CONNECTION_STATUS.VIEWED]
             },
             type: QueryTypes.SELECT

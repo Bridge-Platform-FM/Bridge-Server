@@ -12,6 +12,7 @@ const createUserProfile = async ({ userData, companyId, userId, roleId }) => {
     try {
 
         const user = await userRepository.updateUser(userData, userId, { transaction });
+        await companyRepository.updateCompanyContact(companyId, userData, { transaction });
         await companyRepository.markProfileCompleted(userId, companyId, roleId, { transaction });
 
         await transaction.commit();
@@ -179,10 +180,11 @@ const getUserProfile = async ({ companyId, userId, roleId }) => {
     }
 };
 
-const updateUserProfile = async (userData, user_id) => {
+const updateUserProfile = async (userData, user_id, companyId) => {
     const transaction = await sequelize.transaction();
     try {
         const user = await userRepository.updateUser(userData, user_id, { transaction });
+        await companyRepository.updateCompanyContact(companyId, userData, { transaction });
         await transaction.commit();
         return ServiceResponse.success({
             message: USER_MESSAGES.UPDATE_SUCCESS,

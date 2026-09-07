@@ -11,22 +11,29 @@ const validateUserPayload = async (role, payload) => {
         const roleObj = await CompanyRoleMaster.findOne({
             where: { role_code: role.toUpperCase(), is_deleted: false }
         });
+        if (!roleObj) {
+            return ServiceResponse.error({ message: ROLE_FIELD_METADATA_MESSAGES.FETCH_FAILED, statusCode: 400 });
+        }
 
         const roleMetadata = await userRepository.getUserProfileFieldsConfig(roleObj.id);
-        const userTableMetadata = roleMetadata.filter(f => f.source_table === 'user' && f.is_registration_field === true);
+        const userTableMetadata = roleMetadata
+            .map((f) => (typeof f.get === 'function' ? f.get({ plain: true }) : f))
+            .filter((f) => f.source_table === 'user' && f.is_registration_field === true);
 
         const errors = [];
 
         for (const meta of userTableMetadata) {
             const {
-                datatype, is_required,
+                datatype, type, is_required,
                 min_length, max_length, min_value, max_value,
                 regex_pattern, allowed_values, display_name
             } = meta;
             const lookup = meta.lookup || meta.field_name;
+            const kind = datatype || type;
 
             const value = payload[lookup];
-            const isEmpty = value === undefined || value === null || value === '';
+            const isEmpty = value === undefined || value === null || value === ''
+                || (Array.isArray(value) && value.length === 0);
 
             if (is_required && isEmpty) {
                 errors.push({ field: lookup, message: `${display_name} is required` });
@@ -35,7 +42,7 @@ const validateUserPayload = async (role, payload) => {
 
             if (isEmpty) continue;
 
-            switch (datatype) {
+            switch (kind) {
                 case 'string': {
                     if (typeof value !== 'string') {
                         errors.push({ field: lookup, message: `${display_name} must be a string` });
@@ -96,7 +103,8 @@ const validateUserPayload = async (role, payload) => {
                 }
             }
 
-            if (Array.isArray(allowed_values) && allowed_values.length > 0 && !allowed_values.includes(value)) {
+            if (Array.isArray(allowed_values) && allowed_values.length > 0 && !Array.isArray(value)
+                && !allowed_values.includes(value)) {
                 errors.push({ field: lookup, message: `${display_name} must be one of: ${allowed_values.join(', ')}` });
             }
         }

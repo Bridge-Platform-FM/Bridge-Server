@@ -2,6 +2,7 @@
 const Joi = require('joi');
 const { OTP_MESSAGES, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
+const { DIAL_CODE_PATTERN, NATIONAL_NUMBER_PATTERN } = require('../utils/phoneValidation');
 const GSTIN_PATTERN = /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 const CIN_PATTERN = /^[A-Z]{1}[0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/;
 
@@ -15,12 +16,12 @@ const companyRegistrationSchema = Joi.object({
         'string.email': 'email must be a valid email address',
         'any.required': 'email is required'
     }),
-    countryCode: Joi.string().length(3).required().messages({
-        'string.length': 'countryCode must be 3 characters long',
+    countryCode: Joi.string().pattern(DIAL_CODE_PATTERN).required().messages({
+        'string.pattern.base': 'countryCode must be a dial code like +91 or +1',
         'any.required': 'countryCode is required'
     }),
-    phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).required().messages({
-        'string.pattern.base': 'phoneNumber must be a valid 10-digit Indian phone number',
+    phoneNumber: Joi.string().pattern(NATIONAL_NUMBER_PATTERN).required().messages({
+        'string.pattern.base': 'phoneNumber must be a valid national number for the selected country',
         'any.required': 'phoneNumber is required'
     }),
     password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/).required().messages({
@@ -87,7 +88,7 @@ const verifyOtpSchema = Joi.object({
         then: Joi.required().messages({ 'any.required': OTP_MESSAGES.EMAIL_VALIDATION_FAILED }),
         otherwise: Joi.optional().allow(null, '')
     }),
-    phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).when('channel', {
+    phoneNumber: Joi.string().pattern(NATIONAL_NUMBER_PATTERN).when('channel', {
         is: 'PHONE',
         then: Joi.required().messages({ 'any.required': OTP_MESSAGES.PHONE_NUMBER_VALIDATION_FAILED }),
         otherwise: Joi.optional().allow(null, '')
@@ -104,7 +105,7 @@ const resendOtpSchema = Joi.object({
         then: Joi.required().messages({ 'any.required': 'email is required when channel is EMAIL' }),
         otherwise: Joi.optional().allow(null, '')
     }),
-    phoneNumber: Joi.string().pattern(/^[6-9]\d{9}$/).when('channel', {
+    phoneNumber: Joi.string().pattern(NATIONAL_NUMBER_PATTERN).when('channel', {
         is: 'PHONE',
         then: Joi.required().messages({ 'any.required': 'phoneNumber is required when channel is PHONE' }),
         otherwise: Joi.optional().allow(null, '')

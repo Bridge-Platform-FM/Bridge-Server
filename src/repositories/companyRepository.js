@@ -135,6 +135,28 @@ const markProfileCompleted = async (userId, companyId, roleId, { transaction } =
     return updatedRole;
 };
 
+/**
+ * Phone lives on both `user` and `company` (registration copies it to each).
+ * Profile updates must keep them in sync — login/OTP read the company row.
+ */
+const COMPANY_CONTACT_COLUMNS = ['mobile_number', 'country_code'];
+
+const updateCompanyContact = async (companyId, data, { transaction } = {}) => {
+    if (!companyId) return null;
+
+    const patch = {};
+    for (const col of COMPANY_CONTACT_COLUMNS) {
+        if (data?.[col] !== undefined) patch[col] = data[col];
+    }
+    if (Object.keys(patch).length === 0) return null;
+
+    const [, [updated]] = await Company.update(
+        { ...patch, updated_at: new Date() },
+        { where: { id: companyId, is_deleted: false }, returning: true, transaction }
+    );
+    return updated ?? null;
+};
+
 module.exports = {
     findByEmail,
     findCompanyWithRoleByEmail,
@@ -150,5 +172,6 @@ module.exports = {
     getDefaultCompanyIdByUserId,
     updateCompanyUserRoleStatus,
     markProfileCompleted,
-    markKycUploaded
+    markKycUploaded,
+    updateCompanyContact
 };

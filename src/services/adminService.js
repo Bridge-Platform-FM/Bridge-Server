@@ -438,7 +438,11 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
             is_updated_by_super_admin: isUpdatedBySuperAdmin
         }, { transaction });
 
-        await userRepository.updateUser({ is_user_suspended: is_suspended }, userId, { transaction });
+        await userRepository.updateUser(
+            { is_user_suspended: is_suspended },
+            userId,
+            { transaction, allowPrivileged: true }
+        );
 
         // Suspension must kill every existing session immediately, otherwise
         // a token issued before the suspension keeps passing authMiddleware's

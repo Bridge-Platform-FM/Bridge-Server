@@ -82,7 +82,7 @@ const updateUserProfile = async (req, res, next) => {
     
         const requstPayload = req.body;
     
-        const updateUserRes = await userService.updateUserProfile(requstPayload, userId);
+        const updateUserRes = await userService.updateUserProfile(requstPayload, userId, companyId);
         if (!updateUserRes.success) {
             return HttpResponse.error(res, {
                 message: updateUserRes.message,

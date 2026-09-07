@@ -16,6 +16,7 @@ const userService = require('../services/userService');
 const kycService = require('../services/kycService');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions, generateAccessToken, generateRefreshToken } = require('../utils/token');
 const env = require('../configs/env_configs');
+const { NATIONAL_NUMBER_PATTERN } = require('../utils/phoneValidation');
 const { SESSION_LIMIT_ENABLED } = require('../configs/sessionConfig');
 const adminSessionService = require('../services/adminSessionService');
 const { parseDeviceInfo } = require('../utils/deviceInfo');
@@ -56,8 +57,8 @@ const updateAdminProfileSchema = Joi.object({
     country_code: Joi.string().max(5).optional().allow(null, '').messages({
         'string.max': 'country_code must not exceed 5 characters'
     }),
-    mobile_number: Joi.string().pattern(/^\d{10}$/).optional().allow(null, '').messages({
-        'string.pattern.base': 'mobile_number must be a valid 10-digit number'
+    mobile_number: Joi.string().pattern(NATIONAL_NUMBER_PATTERN).optional().allow(null, '').messages({
+        'string.pattern.base': 'mobile_number must be a valid national number for the selected country'
     })
 }).or('name', 'country_code', 'mobile_number').messages({
     'object.missing': 'At least one field must be provided for update'

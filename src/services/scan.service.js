@@ -1,6 +1,7 @@
 const { scanBuffer } = require("../configs/scan");
 const env_config = require("../configs/env_configs");
 const ServiceResponse = require("../utils/ServiceResponse");
+const { errorLogger } = require("../configs/logger");
 
 const scanUploadedFile = async (buffer) => {
     // if (env_config.SKIP_VIRUS_SCAN) {

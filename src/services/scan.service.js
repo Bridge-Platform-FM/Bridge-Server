@@ -23,7 +23,7 @@ const scanUploadedFile = async (buffer) => {
             success: true
         });
     } catch (err) {
-        console.log(err);
+        console.log(new Date().toISOString(), err);
         errorLogger.error(err);
         return ServiceResponse.error({
             success: false,

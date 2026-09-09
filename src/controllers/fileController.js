@@ -1,7 +1,7 @@
 const { errorLogger } = require("../configs/logger");
 const { uploadToBucket, getFileBuffer, getFileUrl } = require("../services/s3.service");
 const { scanUploadedFile } = require("../services/scan.service");
-const { addPdfWatermark, addImageWatermark } = require("../services/watermark.service");
+const { addPdfWatermark, addImageWatermark, docxToWatermarkedHtml, excelToWatermarkedHtml, pptToWatermarkedHtml } = require("../services/watermark.service");
 const kycService = require('../services/kycService');
 const { S3_FILE_TYPE, KYC_DOC_TYPES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, KYC_STATUS } = require("../utils/constant");
 const { waterMarkFunction } = require("../utils/Helper");
@@ -83,7 +83,7 @@ const scanFile = async (req, res, next) => {
 const filePreview = async (req, res) => {
     try {
         // get key from query
-        const { key: s3Key } = req.query;
+        const { key: s3Key, download } = req.query;
         const userId = req.userId;
         const companyId = req.companyId;
         const companyName = req.companyName;
@@ -114,15 +114,35 @@ const filePreview = async (req, res) => {
             'png': 'image/png',
             'gif': 'image/gif',
             'webp': 'image/webp',
-            'svg': 'image/svg+xml'
+            'svg': 'image/svg+xml',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'doc': 'application/msword',
+            'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xls': 'application/vnd.ms-excel',
+            'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'ppt': 'application/vnd.ms-powerpoint'
         };
 
-        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        const wantOriginal = String(download) === "1" || String(download).toLowerCase() === "true";
+        const officeExts = ["docx", "doc", "xlsx", "xls", "pptx", "ppt"];
+        const originalName = (String(s3Key).split("/").pop() || "download").replace(/^\d+-/, "");
+
+        let contentType = mimeTypes[ext] || 'application/octet-stream';
 
         // Stamping the viewer's company/user across an avatar would make it unreadable.
         if (isProfileImage) {
             res.setHeader('Content-Type', contentType);
             res.setHeader('Content-Disposition', 'inline');
+            return res.send(fileBuffer);
+        }
+
+        const safeName = originalName.replace(/["\r\n]/g, "_");
+
+        // Preview converts Office files to HTML; download must return the stored
+        // .docx / .xlsx bytes (same idea as downloading a PDF/image as that format).
+        if (wantOriginal && officeExts.includes(ext)) {
+            res.setHeader("Content-Type", contentType);
+            res.setHeader("Content-Disposition", `attachment; filename="${safeName}"`);
             return res.send(fileBuffer);
         }
 
@@ -136,6 +156,29 @@ const filePreview = async (req, res) => {
                 fileBuffer,
                 watermarkText
             );
+        } else if (ext === 'docx') {
+            // Browsers cannot render .docx bytes. Convert to watermarked HTML so the
+            // deal-room preview modal can iframe it the same way it does PDFs.
+            try {
+                processedBuffer = await docxToWatermarkedHtml(fileBuffer, watermarkText);
+                contentType = 'text/html; charset=utf-8';
+            } catch {
+                processedBuffer = fileBuffer;
+            }
+        } else if (ext === 'xlsx' || ext === 'xls') {
+            try {
+                processedBuffer = await excelToWatermarkedHtml(fileBuffer, watermarkText);
+                contentType = 'text/html; charset=utf-8';
+            } catch {
+                processedBuffer = fileBuffer;
+            }
+        } else if (ext === 'pptx' || ext === 'ppt') {
+            try {
+                processedBuffer = await pptToWatermarkedHtml(fileBuffer, watermarkText);
+                contentType = 'text/html; charset=utf-8';
+            } catch {
+                processedBuffer = fileBuffer;
+            }
         } else {
             processedBuffer = fileBuffer;
         }

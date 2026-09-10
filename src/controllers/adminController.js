@@ -2,7 +2,7 @@
 const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid');
 const {
-    ADMIN_MESSAGES, OTP_MESSAGES, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES,
+    ADMIN_MESSAGES, OTP_MESSAGES, OTP_PURPOSE, CHANNEL_TYPE, REDIRECT_ROUTES, KYC_MESSAGES,
     USER_LIMIT_CONFIG_MESSAGES, TOKEN_TYPES, USER_TYPES, SESSION_MESSAGES,
     USER_SUSPENSION_MESSAGES, ROLE_SWITCH_MESSAGES, USER_MESSAGES, ADMIN_PROFILE_MESSAGES,
     ADMIN_USER_DETAIL_MESSAGES
@@ -91,9 +91,9 @@ const triggerOtp = async (req, res, next) => {
 
         let result;
         if (channel === CHANNEL_TYPE.EMAIL) {
-            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, OTP_PURPOSE.ADMIN_MFA);
         } else {
-            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber, OTP_PURPOSE.ADMIN_MFA);
         }
 
         if (!result.success) {
@@ -115,7 +115,7 @@ const verifyMfaOtp = async (req, res, next) => {
         const { otp, channel } = req.body;
         let channelId = channel === CHANNEL_TYPE.EMAIL ? email : mobileNumber;
 
-        const verifyOtpRes = await otpService.verifyOTP(channelId, otp);
+        const verifyOtpRes = await otpService.verifyOTP(channelId, otp, OTP_PURPOSE.ADMIN_MFA);
 
         if (!verifyOtpRes.success) {
             return HttpResponse.error(res, { message: verifyOtpRes.message, statusCode: verifyOtpRes.statusCode });
@@ -192,9 +192,9 @@ const resendMfaOtp = async (req, res, next) => {
 
         let result;
         if (channel === 'EMAIL') {
-            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, OTP_PURPOSE.ADMIN_MFA);
         } else {
-            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber, OTP_PURPOSE.ADMIN_MFA);
         }
 
         if (!result.success) {

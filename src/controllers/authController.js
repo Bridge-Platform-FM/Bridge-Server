@@ -6,7 +6,7 @@ const tokenService = require('../services/tokenService');
 const gstVerificationService = require('../services/gstVerificationService');
 const cinVerificationService = require('../services/cinVerificationService');
 const userRepository = require('../repositories/userRepository');
-const { OTP_MESSAGES, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES, KYC_STATUS, ROLE_SWITCH_MESSAGES, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
+const { OTP_MESSAGES, OTP_PURPOSE, AUTH_MESSAGES, CHANNEL_TYPE, REGISTRATION_MESSAGES, USER_MESSAGES, LOGIN_MESSAGES, REDIRECT_ROUTES, TOKEN_TYPES, USER_TYPES, KYC_STATUS, ROLE_SWITCH_MESSAGES, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
 const HttpResponse = require('../utils/HttpResponse');
 const { maskPhone, maskEmail } = require('../utils/Helper');
 const { COOKIE_NAMES, cookieOptions, clearCookieOptions } = require('../utils/token');
@@ -82,14 +82,14 @@ const companyRegistration = async (req, res, next) => {
         }
 
         // TODO: handle service response
-        const emailOtpRes = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+        const emailOtpRes = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, OTP_PURPOSE.REGISTRATION);
         if (!emailOtpRes.success) {
             return HttpResponse.error(res, {
                 message: emailOtpRes.message || OTP_MESSAGES.OTP_SEND_FAILED,
                 statusCode: 500
             });
         }
-        const phoneOtpRes = await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber);
+        const phoneOtpRes = await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber, OTP_PURPOSE.REGISTRATION);
         if (!phoneOtpRes.success) {
             return HttpResponse.error(res, {
                 message: phoneOtpRes.message || OTP_MESSAGES.OTP_SEND_FAILED,
@@ -198,7 +198,7 @@ const verifyOtp = async (req, res, next) => {
         let result;
         let statusResult;
         if (channel === 'EMAIL') {
-            result = await otpService.verifyOTP(email, otp);
+            result = await otpService.verifyOTP(email, otp, OTP_PURPOSE.REGISTRATION);
             if (!result.success) {
                 return HttpResponse.error(res, {
                     message: result.message,
@@ -207,7 +207,7 @@ const verifyOtp = async (req, res, next) => {
             }
             statusResult = await authService.updateChannelVerifiedStatus('EMAIL', req.companyId);
         } else {
-            result = await otpService.verifyOTP(phoneNumber, otp);
+            result = await otpService.verifyOTP(phoneNumber, otp, OTP_PURPOSE.REGISTRATION);
             if (!result.success) {
                 return HttpResponse.error(res, {
                     message: result.message,
@@ -279,9 +279,9 @@ const resendOtp = async (req, res, next) => {
 
         let result;
         if (channel === 'EMAIL') {
-            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, OTP_PURPOSE.REGISTRATION);
         } else {
-            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, phoneNumber, OTP_PURPOSE.REGISTRATION);
         }
 
         if (!result.success) {
@@ -421,9 +421,9 @@ const triggerOtp = async (req, res, next) => {
 
         let result;
         if (channel === CHANNEL_TYPE.EMAIL) {
-            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, OTP_PURPOSE.LOGIN_MFA);
         } else {
-            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber, OTP_PURPOSE.LOGIN_MFA);
         }
 
         if (!result.success) {
@@ -464,7 +464,7 @@ const verifyMfaOtp = async (req, res, next) => {
         const { otp, channel } = req.body;
         let channelId = channel === CHANNEL_TYPE.EMAIL ? email : mobileNumber;
 
-        const verifyOtpRes = await otpService.verifyOTP(channelId, otp);
+        const verifyOtpRes = await otpService.verifyOTP(channelId, otp, OTP_PURPOSE.LOGIN_MFA);
 
         if (!verifyOtpRes.success) {
             return HttpResponse.error(res, { message: verifyOtpRes.message, statusCode: verifyOtpRes.statusCode });
@@ -525,9 +525,9 @@ const resendMfaOtp = async (req, res, next) => {
 
         let result;
         if (channel === 'EMAIL') {
-            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+            result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, OTP_PURPOSE.LOGIN_MFA);
         } else {
-            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber);
+            result = await otpService.sendOTP(CHANNEL_TYPE.PHONE, mobileNumber, OTP_PURPOSE.LOGIN_MFA);
         }
 
         if (!result.success) {
@@ -571,7 +571,7 @@ const resetPasswordTriggerOtp = async (req, res, next) => {
             });
         }
 
-        const result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email);
+        const result = await otpService.sendOTP(CHANNEL_TYPE.EMAIL, email, OTP_PURPOSE.RESET_PASSWORD);
         if (!result.success) {
             return HttpResponse.error(res, {
                 message: result.message,
@@ -622,7 +622,7 @@ const resetPasswordVerifyOtp = async (req, res, next) => {
 
         const accessToken = tokenRes.data.accessToken;
 
-        const verifyOtpRes = await otpService.verifyOTP(email, otp);
+        const verifyOtpRes = await otpService.verifyOTP(email, otp, OTP_PURPOSE.RESET_PASSWORD);
 
         if (!verifyOtpRes.success) {
             return HttpResponse.error(res, { message: verifyOtpRes.message, statusCode: verifyOtpRes.statusCode });

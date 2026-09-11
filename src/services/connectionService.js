@@ -12,24 +12,38 @@ const { ELIGIBLE_ROLE_PAIRS } = require('../matching/matchingConfig');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { CONNECTION_STATUS, CONNECTION_MESSAGES, CONNECTION_VALID_TRANSITIONS, CONNECTION_REQUEST_LIMITS, TRIAL_CONFIG_LOOKUP_KEYS } = require('../utils/constant');
 
-const getConnectionBillingWindow_internal = (registrationDate) => {
+const parseWindowEpoch = (value) => {
+    if (value == null || value === '') {
+        return null;
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+// Rolling 1-month window from an epoch (registration date, or subscription
+// start_date after the user buys a plan — that is what resets used/remaining).
+const getConnectionBillingWindow_internal = (epochDate) => {
     const today = new Date();
-    let monthsElapsed = (today.getFullYear() - registrationDate.getFullYear()) * 12
-        + (today.getMonth() - registrationDate.getMonth());
-    if (today.getDate() < registrationDate.getDate()) {
+    let monthsElapsed = (today.getFullYear() - epochDate.getFullYear()) * 12
+        + (today.getMonth() - epochDate.getMonth());
+    if (today.getDate() < epochDate.getDate()) {
         monthsElapsed -= 1;
     }
-    const windowStart = new Date(registrationDate);
+    const windowStart = new Date(epochDate);
     windowStart.setMonth(windowStart.getMonth() + monthsElapsed);
     const windowEnd = new Date(windowStart);
     windowEnd.setMonth(windowEnd.getMonth() + 1);
     return { windowStart, windowEnd };
 };
 
-const getConnectionBillingWindow = async (userId) => {
+const getConnectionBillingWindow = async (userId, subscriptionStartDate = null) => {
     try {
-        const user = await userRepository.getUserById(userId);
-        const { windowStart, windowEnd } = getConnectionBillingWindow_internal(new Date(user.created_at));
+        let epoch = parseWindowEpoch(subscriptionStartDate);
+        if (!epoch) {
+            const user = await userRepository.getUserById(userId);
+            epoch = new Date(user.created_at);
+        }
+        const { windowStart, windowEnd } = getConnectionBillingWindow_internal(epoch);
         return ServiceResponse.success({ data: { windowStart, windowEnd }, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
@@ -52,7 +66,7 @@ const getConnectionRequestsInWindow = async (userId, windowStart, windowEnd) => 
 // hardcoded constant as a last-resort fallback if the config row is missing.
 const getConnectionRequestLimit = async (userId, hasActiveSubscription) => {
     const userLimitConfig = await userLimitConfigRepository.findByUserId(userId);
-    if (userLimitConfig?.allowed_connections != null) {
+    if (userLimitConfig?.allowed_connections != null && hasActiveSubscription === false) {
         return userLimitConfig.allowed_connections;
     }
 

@@ -40,8 +40,17 @@ const getMatches = async (profileId, userRole) => {
 
         const sourceRole = userRole;
 
-        // Step 2: Fetch number of connection requests sent by the user in the current billing window
-        const windowResult = await connectionService.getConnectionBillingWindow(userId);
+        // Step 2: Subscription first so a paid plan can reset the billing-window epoch
+        const subscriptionResult = await subscriptionService.findActivePrememiumSubscription(sourceProfile.company_id, userId);
+        if (!subscriptionResult.success) {
+            return ServiceResponse.error({ message: subscriptionResult.message, statusCode: subscriptionResult.statusCode });
+        }
+        const hasActiveSubscription = subscriptionResult.data ? true : false;
+        const subscriptionStartDate = subscriptionResult.data?.start_date ?? null;
+
+        // Step 3: Window + used count. Epoch is subscription start_date when subscribed,
+        // otherwise user.created_at (resolved inside getConnectionBillingWindow).
+        const windowResult = await connectionService.getConnectionBillingWindow(userId, subscriptionStartDate);
         if (!windowResult.success) {
             return ServiceResponse.error({ message: windowResult.message, statusCode: windowResult.statusCode });
         }
@@ -53,19 +62,14 @@ const getMatches = async (profileId, userRole) => {
         }
         const requestsSentInWindow = requestCountResult.data.count;
 
-        // Step 3: Determine the request limit (premium vs free) and requests remaining
-        const subscriptionResult = await subscriptionService.findActivePrememiumSubscription(sourceProfile.company_id, userId);
-        if (!subscriptionResult.success) {
-            return ServiceResponse.error({ message: subscriptionResult.message, statusCode: subscriptionResult.statusCode });
-        }
-        const hasActiveSubscription = subscriptionResult.data ? true : false;
+        // Step 4: Determine the request limit (premium vs free) and requests remaining
         const requestLimit = await connectionService.getConnectionRequestLimit(userId, hasActiveSubscription);
         const requestsRemaining = Math.max(requestLimit - requestsSentInWindow, 0);
 
-        // Step 4: Fetch all candidate profiles (excluding user+role combos already connected)
+        // Step 5: Fetch all candidate profiles (excluding user+role combos already connected)
         const allCandidates = await matchingRepository.getCandidateProfiles(userId);
 
-        // Step 5: Apply eligibility filter
+        // Step 6: Apply eligibility filter
         const eligibleCandidates = eligibilityService.filterEligibleCandidates(
             sourceRole,
             allCandidates
@@ -79,7 +83,7 @@ const getMatches = async (profileId, userRole) => {
             });
         }
 
-        // Step 6: Score each eligible candidate
+        // Step 7: Score each eligible candidate
         const scored = eligibleCandidates.map(candidate => {
             const candidateRole = candidate.role_code;
 
@@ -168,7 +172,7 @@ const getMatches = async (profileId, userRole) => {
             return matchResponse;
         });
 
-        // Step 7: Rank by compatibility score (descending)
+        // Step 8: Rank by compatibility score (descending)
         scored.sort((a, b) => b.compatibility - a.compatibility);
 
         // Limit matches to configuration limit if set

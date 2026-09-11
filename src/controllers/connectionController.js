@@ -17,9 +17,14 @@ const sendConnectionRequest = async (req, res, next) => {
         }
 
         const userSubscriptions = subscriptionResult.data; // userSubscriptions
+        const hasActiveSubscription = userSubscriptions ? true : false;
 
-        // 2. Find the billing window for connection requests
-        const windowResult = await connectionService.getConnectionBillingWindow(userId);
+        // 2. Find the billing window. Active subscription resets the epoch to start_date
+        // so requests sent on the free quota no longer count against this window.
+        const windowResult = await connectionService.getConnectionBillingWindow(
+            userId,
+            userSubscriptions?.start_date ?? null
+        );
         if (!windowResult.success) {
             return HttpResponse.error(res, { message: windowResult.message, statusCode: windowResult.statusCode });
         }
@@ -34,8 +39,6 @@ const sendConnectionRequest = async (req, res, next) => {
         const requestCount = countResult.data.count
 
         // 4. Validate the limit — return message if exceeded
-        const hasActiveSubscription = userSubscriptions ? true : false;
-
         const limitResult = await connectionService.validateConnectionLimit(userId, requestCount, hasActiveSubscription);
         if (!limitResult.success) {
             return HttpResponse.error(res, { message: limitResult.message, statusCode: limitResult.statusCode });

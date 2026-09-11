@@ -43,11 +43,8 @@ const sendOtpToEmail = async (email, otp) => {
     }
 };
 
-const sendOTP = async (channelType, channelId) => {
+const sendOTP = async (channelType, channelId, purpose) => {
     try {
-        // 0. Remove previous otp
-        await redis.del(`otp:${channelId}`);
-
         // 1. Check block
         const blocked = await redis.get(`otp_block:${channelId}`);
         if (blocked) {
@@ -55,7 +52,7 @@ const sendOTP = async (channelType, channelId) => {
         }
 
         // 2. Check resend timer
-        const resendExists = await redis.get(`otp_resend:${channelId}`);
+        const resendExists = await redis.get(`otp_resend:${purpose}:${channelId}`);
         if (resendExists) {
             return ServiceResponse.error({ message: OTP_MESSAGES.RESEND_TIMER, statusCode: 429 });
         }
@@ -67,27 +64,27 @@ const sendOTP = async (channelType, channelId) => {
             return ServiceResponse.error({ message: OTP_MESSAGES.MAX_RESEND, statusCode: 400 });
         }
 
-        // 3. Generate OTP
+        // 4. Generate OTP
         const otp = generateOTP();
         console.log(`Generated OTP for channel ${channelId}: ${otp}`);
 
-        // 4. Save OTP
+        // 5. Save OTP
         const otpTtl = await adminConfigService.getOtpConfigValue('SENT_OTP_TTL');
-        await redis.set(`otp:${channelId}`, otp, "EX", otpTtl);
+        await redis.set(`otp:${purpose}:${channelId}`, otp, "EX", otpTtl);
 
-        // 5. Create resend cooldown
+        // 6. Create resend cooldown
         const resendTtl = await adminConfigService.getOtpConfigValue('RESEND_COOLDOWN_TTL');
         await redis.set(
-            `otp_resend:${channelId}`,
+            `otp_resend:${purpose}:${channelId}`,
             "true",
             "EX",
             resendTtl
         );
 
         // Reset attempt count on new OTP
-        await redis.del(`otp_attempt:${channelId}`);
+        await redis.del(`otp_attempt:${purpose}:${channelId}`);
 
-        // 6. Send OTP via appropriate channel
+        // 7. Send OTP via appropriate channel
         if (channelType === CHANNEL_TYPE.PHONE) {
             // TODO:- Remove hardcoded phone number and use channelId instead after testing
             // await sendOtpToPhone("+91" + channelId, otp);
@@ -95,7 +92,7 @@ const sendOTP = async (channelType, channelId) => {
             // await sendOtpToEmail(channelId, otp);
         }
 
-        // 7. Increment OTP resent count
+        // 8. Increment OTP resent count
         const newCount = await redis.incr(`otp_resend_count:${channelId}`);
         if (newCount === 1) {
             const resendCountTtl = (await adminConfigService.getOtpConfigValue('OTP_RESEND_COUNT_TTL_IN_HR')) || 3600;
@@ -114,8 +111,8 @@ const sendOTP = async (channelType, channelId) => {
 
     } catch (err) {
         console.error(`Error in send OTP for channel ${channelId}:`, err);
-        await redis.del(`otp:${channelId}`);
-        await redis.del(`otp_attempt:${channelId}`);
+        await redis.del(`otp:${purpose}:${channelId}`);
+        await redis.del(`otp_attempt:${purpose}:${channelId}`);
         errorLogger.error(err);
         return ServiceResponse.error({
             message: OTP_MESSAGES.OTP_GENERATION_FAILED,
@@ -124,7 +121,7 @@ const sendOTP = async (channelType, channelId) => {
     }
 };
 
-const verifyOTP = async (channelId, enteredOTP) => {
+const verifyOTP = async (channelId, enteredOTP, purpose) => {
     try {
         // 1. Check blocked
         const blocked = await redis.get(`otp_block:${channelId}`);
@@ -134,7 +131,7 @@ const verifyOTP = async (channelId, enteredOTP) => {
         }
 
         // 2. Get stored OTP
-        const savedOTP = await redis.get(`otp:${channelId}`);;
+        const savedOTP = await redis.get(`otp:${purpose}:${channelId}`);
 
         if (!savedOTP) {
             return ServiceResponse.error({ message: "OTP expired", statusCode: 400 });
@@ -144,13 +141,13 @@ const verifyOTP = async (channelId, enteredOTP) => {
         if (savedOTP !== enteredOTP) {
 
             // Increase attempt count
-            const attempts = await redis.incr(`otp_attempt:${channelId}`);;
+            const attempts = await redis.incr(`otp_attempt:${purpose}:${channelId}`);
 
             // Set expiry only on first wrong attempt
             if (attempts === 1) {
                 const otpTtl = await adminConfigService.getOtpConfigValue('SENT_OTP_TTL');
                 await redis.expire(
-                    `otp_attempt:${channelId}`,
+                    `otp_attempt:${purpose}:${channelId}`,
                     otpTtl
                 );
             }
@@ -169,8 +166,8 @@ const verifyOTP = async (channelId, enteredOTP) => {
                 );
 
                 // Cleanup
-                await redis.del(`otp:${channelId}`);
-                await redis.del(`otp_attempt:${channelId}`);
+                await redis.del(`otp:${purpose}:${channelId}`);
+                await redis.del(`otp_attempt:${purpose}:${channelId}`);
 
                 return ServiceResponse.error({ message: OTP_MESSAGES.BLOCKED, statusCode: 403 });
             }
@@ -179,10 +176,10 @@ const verifyOTP = async (channelId, enteredOTP) => {
         }
 
         // Success cleanup
-        await redis.del(`otp:${channelId}`);
-        await redis.del(`otp_resend:${channelId}`);
+        await redis.del(`otp:${purpose}:${channelId}`);
+        await redis.del(`otp_resend:${purpose}:${channelId}`);
         await redis.del(`otp_resend_count:${channelId}`)
-        await redis.del(`otp_attempt:${channelId}`);
+        await redis.del(`otp_attempt:${purpose}:${channelId}`);
 
         return ServiceResponse.success({
             message: OTP_MESSAGES.OTP_VERIFY_SUCCESS,

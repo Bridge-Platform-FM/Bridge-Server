@@ -4,8 +4,75 @@ const userRepository = require('../repositories/userRepository');
 const companyRepository = require('../repositories/companyRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { USER_MESSAGES, KYC_MESSAGES, USER_ROLES_CODE } = require('../utils/constant');
+const gstVerificationService = require('./gstVerificationService');
+const cinVerificationService = require('./cinVerificationService');
+const { USER_MESSAGES, KYC_MESSAGES, USER_ROLES_CODE, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
 const { decrypt } = require('../utils/encryption');
+
+const GSTIN_PATTERN = /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+const CIN_PATTERN = /^[A-Z]{1}[0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/;
+
+const isFilled = (value) => value !== null && value !== undefined && value !== '';
+
+const normalizeIdentifier = (value) => (typeof value === 'string' ? value.trim().toUpperCase() : '');
+
+/**
+ * GST/CIN are company-owned and locked after they exist. PUT /users/profile may
+ * set them only while the company row is still empty (Investor/Startup → B2B),
+ * and only after the same verification registration uses.
+ */
+const prepareCompanyIdentifierPatch = async (userData, companyId) => {
+    const gstNumber = normalizeIdentifier(userData?.gst_number);
+    const cinNumber = normalizeIdentifier(userData?.cin_number);
+    if (!gstNumber && !cinNumber) {
+        return ServiceResponse.success({ data: {} });
+    }
+
+    const company = await companyRepository.getCompanyById(companyId);
+    if (!company) {
+        return ServiceResponse.error({ message: 'Company not found.', statusCode: 404 });
+    }
+
+    const patch = {};
+
+    if (gstNumber) {
+        if (isFilled(company.gst_number)) {
+            return ServiceResponse.error({ message: GST_MESSAGES.ALREADY_SET, statusCode: 400 });
+        }
+        if (!GSTIN_PATTERN.test(gstNumber)) {
+            return ServiceResponse.error({ message: GST_MESSAGES.INVALID_FORMAT, statusCode: 400 });
+        }
+        const gstVerifyRes = await gstVerificationService.verifyGst(gstNumber);
+        if (!gstVerifyRes.success) {
+            return ServiceResponse.error({
+                message: gstVerifyRes.message || GST_MESSAGES.VERIFY_FAILED,
+                statusCode: gstVerifyRes.statusCode || 400
+            });
+        }
+        patch.gst_number = gstNumber;
+        patch.is_gst_verified = true;
+    }
+
+    if (cinNumber) {
+        if (isFilled(company.cin_number)) {
+            return ServiceResponse.error({ message: CIN_MESSAGES.ALREADY_SET, statusCode: 400 });
+        }
+        if (!CIN_PATTERN.test(cinNumber)) {
+            return ServiceResponse.error({ message: CIN_MESSAGES.INVALID_FORMAT, statusCode: 400 });
+        }
+        const cinVerifyRes = await cinVerificationService.verifyCin(cinNumber);
+        if (!cinVerifyRes.success) {
+            return ServiceResponse.error({
+                message: cinVerifyRes.message || CIN_MESSAGES.VERIFY_FAILED,
+                statusCode: cinVerifyRes.statusCode || 400
+            });
+        }
+        patch.cin_number = cinNumber;
+        patch.is_cin_verified = true;
+    }
+
+    return ServiceResponse.success({ data: patch });
+};
 
 const createUserProfile = async ({ userData, companyId, userId, roleId }) => {
     const transaction = await sequelize.transaction();
@@ -181,10 +248,18 @@ const getUserProfile = async ({ companyId, userId, roleId }) => {
 };
 
 const updateUserProfile = async (userData, user_id, companyId) => {
+    const identifierRes = await prepareCompanyIdentifierPatch(userData, companyId);
+    if (!identifierRes.success) {
+        return identifierRes;
+    }
+
     const transaction = await sequelize.transaction();
     try {
         const user = await userRepository.updateUser(userData, user_id, { transaction });
         await companyRepository.updateCompanyContact(companyId, userData, { transaction });
+        if (identifierRes.data && Object.keys(identifierRes.data).length > 0) {
+            await companyRepository.updateCompanyIdentifiers(companyId, identifierRes.data, { transaction });
+        }
         await transaction.commit();
         return ServiceResponse.success({
             message: USER_MESSAGES.UPDATE_SUCCESS,

@@ -29,7 +29,8 @@ const GST_MESSAGES = {
     VERIFY_SUCCESS: 'GSTIN verified successfully',
     VERIFY_FAILED: 'GSTIN could not be verified. Please check the number and try again.',
     NOT_VERIFIED_FOR_REGISTRATION: 'GSTIN could not be verified. Company registration cannot proceed.',
-    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying GSTIN. Please try again.'
+    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying GSTIN. Please try again.',
+    ALREADY_SET: 'GST Number cannot be changed once it has been saved.'
 };
 
 const CIN_MESSAGES = {
@@ -37,7 +38,8 @@ const CIN_MESSAGES = {
     VERIFY_SUCCESS: 'CIN verified successfully',
     VERIFY_FAILED: 'CIN could not be verified. Please check the number and try again.',
     NOT_VERIFIED_FOR_REGISTRATION: 'CIN could not be verified. Company registration cannot proceed.',
-    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying CIN. Please try again.'
+    VERIFICATION_SERVICE_ERROR: 'Error encountered while verifying CIN. Please try again.',
+    ALREADY_SET: 'CIN Number cannot be changed once it has been saved.'
 };
 
 const AUTH_MESSAGES = {

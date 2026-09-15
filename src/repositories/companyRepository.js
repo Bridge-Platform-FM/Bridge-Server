@@ -157,6 +157,29 @@ const updateCompanyContact = async (companyId, data, { transaction } = {}) => {
     return updated ?? null;
 };
 
+/**
+ * First-fill GST/CIN on the company row (Investor/Startup → B2B switch).
+ * Callers must have already verified the numbers and refused overwrites of
+ * values that are already set. Only these columns are copied from `data`.
+ */
+const COMPANY_IDENTIFIER_COLUMNS = ['gst_number', 'cin_number', 'is_gst_verified', 'is_cin_verified'];
+
+const updateCompanyIdentifiers = async (companyId, data, { transaction } = {}) => {
+    if (!companyId) return null;
+
+    const patch = {};
+    for (const col of COMPANY_IDENTIFIER_COLUMNS) {
+        if (data?.[col] !== undefined) patch[col] = data[col];
+    }
+    if (Object.keys(patch).length === 0) return null;
+
+    const [, [updated]] = await Company.update(
+        { ...patch, updated_at: new Date() },
+        { where: { id: companyId, is_deleted: false }, returning: true, transaction }
+    );
+    return updated ?? null;
+};
+
 module.exports = {
     findByEmail,
     findCompanyWithRoleByEmail,
@@ -173,5 +196,6 @@ module.exports = {
     updateCompanyUserRoleStatus,
     markProfileCompleted,
     markKycUploaded,
-    updateCompanyContact
+    updateCompanyContact,
+    updateCompanyIdentifiers
 };

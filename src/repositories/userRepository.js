@@ -255,7 +255,7 @@ const getUserKycDocs = async () => {
     );
 };
 
-const searchUsers = async (searchQuery, searchableRoles = []) => {
+const searchUsers = async (searchQuery, searchableRoles = [], excludeUserId) => {
     const words = [...new Set(searchQuery.trim().split(/\s+/).filter(Boolean))];
 
     const replacements = {};
@@ -269,6 +269,12 @@ const searchUsers = async (searchQuery, searchableRoles = []) => {
     if (Array.isArray(searchableRoles) && searchableRoles.length > 0) {
         replacements.searchableRoles = searchableRoles;
         roleFilter = 'AND crm.role_code IN (:searchableRoles)';
+    }
+
+    let excludeFilter = '';
+    if (excludeUserId) {
+        replacements.excludeUserId = excludeUserId;
+        excludeFilter = 'AND u.id <> :excludeUserId';
     }
 
     return await sequelize.query(
@@ -293,6 +299,7 @@ const searchUsers = async (searchQuery, searchableRoles = []) => {
             AND cur.is_deleted IS NOT TRUE
             AND (${wordConditions})
             ${roleFilter}
+            ${excludeFilter}
         ORDER BY u.first_name ASC`,
         {
             replacements,

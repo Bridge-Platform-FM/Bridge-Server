@@ -145,8 +145,11 @@ module.exports = (sequelize) => {
         updatedAt: 'updated_at',
         indexes: [
             {
+                // Pair + status, scoped to live rows. Declined/Withdrawn/Expired therefore
+                // do not collide with a new Pending request for the same role pair.
                 unique: true,
-                fields: ['requester_user_id', 'requester_role_id', 'recipient_user_id', 'recipient_role_id'],
+                fields: ['requester_user_id', 'requester_role_id', 'recipient_user_id', 'recipient_role_id', 'status'],
+                where: { is_deleted: false },
                 name: 'uc_unique_connection'
             }
         ]

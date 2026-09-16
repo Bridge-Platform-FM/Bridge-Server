@@ -2,30 +2,45 @@
 
 const { Op, QueryTypes } = require('sequelize');
 const { UserConnection, CompanyUserRole, CompanyRoleMaster, sequelize } = require('../models');
-const { CONNECTION_STATUS } = require('../utils/constant');
+const { CONNECTION_STATUS, CONNECTION_BLOCKING_STATUSES, CONNECTION_REOPENABLE_STATUSES } = require('../utils/constant');
 
-
+const pairWhere = (requesterUserId, requesterRoleId, recipientUserId, recipientRoleId) => ({
+    requester_user_id: requesterUserId,
+    requester_role_id: requesterRoleId,
+    recipient_user_id: recipientUserId,
+    recipient_role_id: recipientRoleId
+});
 
 const findExistingConnection = async (requesterUserId, requesterRoleId, recipientUserId, recipientRoleId) => {
     return await UserConnection.findOne({
         where: {
             is_deleted: false,
+            status: { [Op.in]: CONNECTION_BLOCKING_STATUSES },
             [Op.or]: [
-                {
-                    requester_user_id: requesterUserId,
-                    requester_role_id: requesterRoleId,
-                    recipient_user_id: recipientUserId,
-                    recipient_role_id: recipientRoleId
-                },
-                {
-                    requester_user_id: recipientUserId,
-                    requester_role_id: recipientRoleId,
-                    recipient_user_id: requesterUserId,
-                    recipient_role_id: requesterRoleId
-                }
+                pairWhere(requesterUserId, requesterRoleId, recipientUserId, recipientRoleId),
+                pairWhere(recipientUserId, recipientRoleId, requesterUserId, requesterRoleId)
             ]
         }
     });
+};
+
+const softDeleteReopenableConnections = async (requesterUserId, requesterRoleId, recipientUserId, recipientRoleId, deletedBy, { transaction } = {}) => {
+    return await UserConnection.update(
+        {
+            is_deleted: true,
+            deleted_at: new Date(),
+            deleted_by: deletedBy,
+            updated_at: new Date()
+        },
+        {
+            where: {
+                is_deleted: false,
+                status: { [Op.in]: CONNECTION_REOPENABLE_STATUSES },
+                ...pairWhere(requesterUserId, requesterRoleId, recipientUserId, recipientRoleId)
+            },
+            transaction
+        }
+    );
 };
 
 const findRecipientCompanyUserRole = async (userId, roleId) => {
@@ -158,6 +173,7 @@ const findReceivedByUser = async (userId, roleId) => {
 
 module.exports = {
     findExistingConnection,
+    softDeleteReopenableConnections,
     findRecipientCompanyUserRole,
     create,
     findById,

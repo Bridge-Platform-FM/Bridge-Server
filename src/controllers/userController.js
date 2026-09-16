@@ -108,6 +108,7 @@ const searchUsers = async (req, res, next) => {
     try {
         const searchQuery = req.query.q;
         const roleCode = req.role;
+        const userId = req.userId;
 
         if (!searchQuery || typeof searchQuery !== 'string' || !searchQuery.trim()) {
             return HttpResponse.error(res, {
@@ -116,7 +117,7 @@ const searchUsers = async (req, res, next) => {
             });
         }
 
-        const searchResponse = await userService.searchUsers(searchQuery.trim(), roleCode);
+        const searchResponse = await userService.searchUsers(searchQuery.trim(), roleCode, userId);
         if (!searchResponse.success) {
             return HttpResponse.error(res, {
                 message: searchResponse.message,

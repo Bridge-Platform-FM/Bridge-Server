@@ -17,6 +17,7 @@ jest.mock('../../configs/logger', () => ({
 jest.mock('../../repositories/connectionRepository', () => ({
     countRequestsInWindow: jest.fn(),
     findExistingConnection: jest.fn(),
+    softDeleteReopenableConnections: jest.fn(),
     findRecipientCompanyUserRole: jest.fn(),
     create: jest.fn(),
     findById: jest.fn(),

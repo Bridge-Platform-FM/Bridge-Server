@@ -495,7 +495,8 @@ const updateRoleSwitchStatus = async ({ companyUserRoleId, action, rejectionReas
             rejection_reason: reason,
             approved_by: adminId,
             approved_at: new Date(),
-            updated_by: adminId
+            updated_by: adminId,
+            ...(action === 'approve' ? { is_profile_completed: true } : {})
         });
 
         if (!updated) {

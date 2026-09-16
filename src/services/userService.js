@@ -2,6 +2,7 @@
 const { sequelize } = require('../models');
 const userRepository = require('../repositories/userRepository');
 const companyRepository = require('../repositories/companyRepository');
+const connectionRepository = require('../repositories/connectionRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const gstVerificationService = require('./gstVerificationService');
@@ -114,7 +115,7 @@ const getSwitchedRoleUsers = async () => {
     }
 };
 
-const searchUsers = async (searchQuery, roleCode) => {
+const searchUsers = async (searchQuery, roleCode, excludeUserId, viewerRoleId) => {
     try {
         let searchableRoles = [];
         if (roleCode === USER_ROLES_CODE.STARTUP) {
@@ -126,7 +127,7 @@ const searchUsers = async (searchQuery, roleCode) => {
         else if (roleCode === USER_ROLES_CODE.B2B) {
             searchableRoles = [USER_ROLES_CODE.STARTUP, USER_ROLES_CODE.B2B];
         }
-        const users = await userRepository.searchUsers(searchQuery, searchableRoles);
+        const users = await userRepository.searchUsers(searchQuery, searchableRoles, excludeUserId, excludeUserId, viewerRoleId);
         return ServiceResponse.success({ message: USER_MESSAGES.SEARCH_SUCCESS, data: users, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);
@@ -247,6 +248,42 @@ const getUserProfile = async ({ companyId, userId, roleId }) => {
     }
 };
 
+/**
+ * Other-user profile (navbar search / role-details): same fields as getUserProfile,
+ * plus the live blocking connection status between the viewer and this role pair.
+ * `connection_status` is null when no Pending/Viewed/Accepted/Deferred row exists.
+ */
+const getViewedUserProfile = async ({ companyId, userId, roleId, viewerUserId, viewerRoleId }) => {
+    const profile = await getUserProfile({ companyId, userId, roleId });
+    if (!profile.success) {
+        return profile;
+    }
+
+    let connectionStatus = null;
+    try {
+        if (viewerUserId && viewerRoleId) {
+            const existing = await connectionRepository.findExistingConnection(
+                viewerUserId,
+                viewerRoleId,
+                userId,
+                roleId
+            );
+            connectionStatus = existing?.status ?? null;
+        }
+    } catch (error) {
+        errorLogger.error(error);
+    }
+
+    return ServiceResponse.success({
+        message: profile.message,
+        data: {
+            fields: profile.data,
+            connection_status: connectionStatus
+        },
+        statusCode: profile.statusCode
+    });
+};
+
 const updateUserProfile = async (userData, user_id, companyId) => {
     const identifierRes = await prepareCompanyIdentifierPatch(userData, companyId);
     if (!identifierRes.success) {
@@ -347,4 +384,4 @@ const getRoleSwitchUserDetails = async ({ companyId, userId, roleId }) => {
     }
 };
 
-module.exports = { createUserProfile, getUserList, getSwitchedRoleUsers, searchUsers, getUserKycDocs, getUserProfile, updateUserProfile, getUserRoleDetails, getRoleSwitchUserDetails };
+module.exports = { createUserProfile, getUserList, getSwitchedRoleUsers, searchUsers, getUserKycDocs, getUserProfile, getViewedUserProfile, updateUserProfile, getUserRoleDetails, getRoleSwitchUserDetails };

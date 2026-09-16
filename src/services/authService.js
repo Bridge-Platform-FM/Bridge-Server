@@ -8,7 +8,7 @@ const tokenService = require('./tokenService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { hashPassword } = require('../utils/Helper');
-const { REGISTRATION_MESSAGES, AUTH_MESSAGES, USER_MESSAGES } = require('../utils/constant');
+const { REGISTRATION_MESSAGES, AUTH_MESSAGES, USER_MESSAGES, KYC_STATUS, LOGIN_LOCKOUT_LIMITS } = require('../utils/constant');
 
 
 const getCompanyByEmail = async (email) => {
@@ -79,7 +79,13 @@ const createCompany = async (data) => {
         const user = await userRepository.createUser(userData, { transaction });
 
         await companyRepository.createCompanyUserRole(
-            { company_id: company.id, role_id: role.id, user_id: user.id, is_default_role: true },
+            {
+                company_id: company.id,
+                role_id: role.id,
+                user_id: user.id,
+                is_default_role: true,
+                status: KYC_STATUS.APPROVED
+            },
             { transaction }
         );
         await transaction.commit();
@@ -138,6 +144,43 @@ const checkPassword = async (password, hashedPassword) => {
         return ServiceResponse.error({ message: AUTH_MESSAGES.INVALID_CREDENTIALS, statusCode: 401 });
     }
 }
+
+const formatLockMessage = (minutes) =>
+    `Account locked due to ${LOGIN_LOCKOUT_LIMITS.MAX_FAILED_ATTEMPTS} incorrect password attempts. Please try again after ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+
+// Called on every login attempt before the password is checked. Lazily clears
+// a stale lock (locked_until in the past) so the next attempt gets a fresh
+// 5-attempt budget instead of re-locking immediately.
+const checkLoginLockStatus = async (company) => {
+    if (!company.locked_until) {
+        return { locked: false };
+    }
+
+    const remainingMs = new Date(company.locked_until).getTime() - Date.now();
+    if (remainingMs > 0) {
+        const remainingMinutes = Math.ceil(remainingMs / 60000);
+        return { locked: true, message: formatLockMessage(remainingMinutes) };
+    }
+
+    await companyRepository.resetFailedLoginAttempts(company.id);
+    return { locked: false };
+};
+
+const registerFailedLoginAttempt = async (companyId) => {
+    const updated = await companyRepository.incrementFailedLoginAttempts(companyId);
+
+    if (updated.failed_login_attempts < LOGIN_LOCKOUT_LIMITS.MAX_FAILED_ATTEMPTS) {
+        return { locked: false };
+    }
+
+    const lockedUntil = new Date(Date.now() + LOGIN_LOCKOUT_LIMITS.LOCKOUT_DURATION_MINUTES * 60 * 1000);
+    await companyRepository.lockCompanyLogin(companyId, lockedUntil);
+    return { locked: true, message: formatLockMessage(LOGIN_LOCKOUT_LIMITS.LOCKOUT_DURATION_MINUTES) };
+};
+
+const resetLoginAttempts = async (companyId) => {
+    await companyRepository.resetFailedLoginAttempts(companyId);
+};
 
 const getCompanyUser_role = async (company_id, user_id) => {
     try {
@@ -283,8 +326,14 @@ const resetPassword = async (email, newPassword) => {
     try {
         const hashedPassword = await hashPassword(newPassword);
 
-        await companyRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
+        const updatedCompany = await companyRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
         await userRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
+
+        // A locked-out user who proves their identity via OTP-verified reset
+        // should not still be blocked by the old lockout when they log back in.
+        if (updatedCompany) {
+            await companyRepository.resetFailedLoginAttempts(updatedCompany.id, { transaction });
+        }
 
         await transaction.commit();
         return ServiceResponse.success({ message: AUTH_MESSAGES.PASSWORD_RESET_SUCCESS, statusCode: 200 });
@@ -307,5 +356,8 @@ module.exports = {
     getCompanyAndUser,
     getProfileFieldsConfig,
     validateAvailableProfileFields,
-    resetPassword
+    resetPassword,
+    checkLoginLockStatus,
+    registerFailedLoginAttempt,
+    resetLoginAttempts
 };

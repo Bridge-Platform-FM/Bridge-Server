@@ -1,6 +1,7 @@
 'use strict';
 const { KycInfo, sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
+const { KYC_DOC_TYPES } = require('../utils/constant');
 
 // `options` carries the caller's { transaction } — the insert-vs-update decision in
 // kycService.createKycInfo must read inside the same transaction it writes in, or it
@@ -58,7 +59,7 @@ const findAllKycRecords = async ({ userId, companyId, roleId }, options = {}) =>
 
 const findAllKycRecordsRaw = async ({ userId, companyId, roleId }) => {
     return await sequelize.query(
-        `SELECT 
+        `SELECT DISTINCT ON (document_type)
             id,
             document_type,
             document_number,
@@ -79,9 +80,11 @@ const findAllKycRecordsRaw = async ({ userId, companyId, roleId }) => {
         WHERE user_id    = :userId
         AND company_id = :companyId
         AND role_id    = :roleId
-        AND is_deleted = false`,
+        AND is_deleted = false
+        AND document_type IN (:kycDocTypes)
+        ORDER BY document_type, created_at DESC, id DESC`,
         {
-            replacements: { userId, companyId, roleId },
+            replacements: { userId, companyId, roleId, kycDocTypes: KYC_DOC_TYPES },
             type: QueryTypes.SELECT
         }
     );

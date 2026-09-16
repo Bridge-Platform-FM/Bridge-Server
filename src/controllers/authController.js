@@ -356,16 +356,35 @@ const login = async (req, res, next) => {
             });
         }
 
+        const lockStatus = await authService.checkLoginLockStatus(existingCompany);
+        if (lockStatus.locked) {
+            return HttpResponse.error(res, {
+                message: lockStatus.message,
+                statusCode: 403
+            });
+        }
+
         const passwordRes = await authService.checkPassword(
             password,
             existingCompany.password
         );
 
         if (!passwordRes.success) {
+            const attemptResult = await authService.registerFailedLoginAttempt(existingCompany.id);
+            if (attemptResult.locked) {
+                return HttpResponse.error(res, {
+                    message: attemptResult.message,
+                    statusCode: 403
+                });
+            }
             return HttpResponse.error(res, {
                 message: LOGIN_MESSAGES.INVALID_CREDENTIALS,
                 statusCode: 400
             });
+        }
+
+        if (existingCompany.failed_login_attempts > 0) {
+            await authService.resetLoginAttempts(existingCompany.id);
         }
 
         const existingUserRes = await authService.getUserByEmail(email);

@@ -1,6 +1,7 @@
 'use strict';
 const { User, UserProfileFieldMaster, sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
+const { CONNECTION_BLOCKING_STATUSES, KYC_STATUS, KYC_DOC_TYPES } = require('../utils/constant');
 
 /**
  * Columns a self-service profile request must never write. Identity, secrets,
@@ -246,16 +247,37 @@ const getUserKycDocs = async () => {
             k.created_at AS kyc_uploaded_at
         FROM "user" u
         JOIN company c ON u.company_email = c.company_email
-        LEFT JOIN kyc_info k ON k.user_id = u.id AND k.is_deleted IS NOT TRUE
+        LEFT JOIN LATERAL (
+            SELECT DISTINCT ON (k.document_type)
+                k.id,
+                k.document_type,
+                k.document_number,
+                k.document_number_iv,
+                k.document_number_auth_tag,
+                k.front_s3_key,
+                k.front_file_name,
+                k.back_s3_key,
+                k.back_file_name,
+                k.status,
+                k.rejection_reason,
+                k.verified_at,
+                k.created_at
+            FROM kyc_info k
+            WHERE k.user_id = u.id
+                AND k.is_deleted IS NOT TRUE
+                AND k.document_type IN (:kycDocTypes)
+            ORDER BY k.document_type, k.created_at DESC, k.id DESC
+        ) k ON TRUE
         WHERE u.is_deleted IS NOT TRUE
         ORDER BY k.created_at DESC`,
         {
+            replacements: { kycDocTypes: KYC_DOC_TYPES },
             type: QueryTypes.SELECT
         }
     );
 };
 
-const searchUsers = async (searchQuery, searchableRoles = []) => {
+const searchUsers = async (searchQuery, searchableRoles = [], excludeUserId, viewerUserId, viewerRoleId) => {
     const words = [...new Set(searchQuery.trim().split(/\s+/).filter(Boolean))];
 
     const replacements = {};
@@ -271,6 +293,41 @@ const searchUsers = async (searchQuery, searchableRoles = []) => {
         roleFilter = 'AND crm.role_code IN (:searchableRoles)';
     }
 
+    let excludeFilter = '';
+    if (excludeUserId) {
+        replacements.excludeUserId = excludeUserId;
+        excludeFilter = 'AND u.id <> :excludeUserId';
+    }
+
+    replacements.approvedStatus = KYC_STATUS.APPROVED;
+    replacements.kycDocTypes = KYC_DOC_TYPES;
+    replacements.kycDocTypeCount = KYC_DOC_TYPES.length;
+
+    const hasViewer = Boolean(viewerUserId && viewerRoleId);
+    let connectionSelect = 'NULL AS connection_status';
+    let connectionJoin = '';
+    if (hasViewer) {
+        replacements.viewerUserId = viewerUserId;
+        replacements.viewerRoleId = viewerRoleId;
+        replacements.blockingStatuses = CONNECTION_BLOCKING_STATUSES;
+        connectionSelect = 'conn.status AS connection_status';
+        connectionJoin = `LEFT JOIN LATERAL (
+            SELECT uc.status
+            FROM user_connection uc
+            WHERE uc.is_deleted IS NOT TRUE
+              AND uc.status IN (:blockingStatuses)
+              AND (
+                  (uc.requester_user_id = :viewerUserId AND uc.requester_role_id = :viewerRoleId
+                   AND uc.recipient_user_id = u.id AND uc.recipient_role_id = cur.role_id)
+                  OR
+                  (uc.requester_user_id = u.id AND uc.requester_role_id = cur.role_id
+                   AND uc.recipient_user_id = :viewerUserId AND uc.recipient_role_id = :viewerRoleId)
+              )
+            ORDER BY uc.updated_at DESC NULLS LAST, uc.created_at DESC
+            LIMIT 1
+        ) conn ON TRUE`;
+    }
+
     return await sequelize.query(
         `SELECT
             u.id AS user_id,
@@ -283,16 +340,32 @@ const searchUsers = async (searchQuery, searchableRoles = []) => {
             c.company_email AS email,
             c.mobile_number,
             u.country,
-            u.continent
+            u.continent,
+            ${connectionSelect}
         FROM "user" u
         JOIN company c ON u.company_email = c.company_email
         JOIN company_user_role cur ON cur.company_id = c.id AND cur.user_id = u.id AND cur.is_default_role IS TRUE
         JOIN company_role_master crm ON crm.id = cur.role_id
+        ${connectionJoin}
         WHERE u.is_deleted IS NOT TRUE
             AND c.is_deleted IS NOT TRUE
             AND cur.is_deleted IS NOT TRUE
+            AND cur.is_profile_completed IS TRUE
+            AND c.is_kyc_verified IS TRUE
+            AND c.kyc_status = :approvedStatus
+            AND (
+                SELECT COUNT(DISTINCT k.document_type)
+                FROM kyc_info k
+                WHERE k.user_id = u.id
+                    AND k.company_id = c.id
+                    AND k.role_id = cur.role_id
+                    AND k.is_deleted IS NOT TRUE
+                    AND k.status = :approvedStatus
+                    AND k.document_type IN (:kycDocTypes)
+            ) = :kycDocTypeCount
             AND (${wordConditions})
             ${roleFilter}
+            ${excludeFilter}
         ORDER BY u.first_name ASC`,
         {
             replacements,

@@ -110,6 +110,30 @@ const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}
     return updatedCompany;
 };
 
+const incrementFailedLoginAttempts = async (companyId, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { failed_login_attempts: sequelize.literal('failed_login_attempts + 1') },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
+const lockCompanyLogin = async (companyId, lockedUntil, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { locked_until: lockedUntil },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
+const resetFailedLoginAttempts = async (companyId, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { failed_login_attempts: 0, locked_until: null },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
 const updateCompanyUserRoleStatus = async (id, data, { transaction } = {}) => {
     const [updatedCount, updatedRows] = await CompanyUserRole.update(
         { ...data, updated_at: new Date() },
@@ -128,6 +152,18 @@ const markProfileCompleted = async (userId, companyId, roleId, { transaction } =
         { is_profile_completed: true, updated_at: new Date() },
         {
             where: { user_id: userId, company_id: companyId, role_id: roleId, is_deleted: false },
+            returning: true,
+            transaction
+        }
+    );
+    return updatedRole;
+};
+
+const markDefaultProfileCompleted = async (userId, companyId, { transaction } = {}) => {
+    const [, [updatedRole]] = await CompanyUserRole.update(
+        { is_profile_completed: true, updated_at: new Date() },
+        {
+            where: { user_id: userId, company_id: companyId, is_default_role: true, is_deleted: false },
             returning: true,
             transaction
         }
@@ -195,7 +231,11 @@ module.exports = {
     getDefaultCompanyIdByUserId,
     updateCompanyUserRoleStatus,
     markProfileCompleted,
+    markDefaultProfileCompleted,
     markKycUploaded,
     updateCompanyContact,
-    updateCompanyIdentifiers
+    updateCompanyIdentifiers,
+    incrementFailedLoginAttempts,
+    lockCompanyLogin,
+    resetFailedLoginAttempts
 };

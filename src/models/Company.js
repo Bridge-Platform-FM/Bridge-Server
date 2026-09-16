@@ -125,6 +125,17 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        failed_login_attempts: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
+
+        locked_until: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+
         created_at: {
             type: DataTypes.DATE,
             allowNull: false,

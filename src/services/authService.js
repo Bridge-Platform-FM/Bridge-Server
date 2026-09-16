@@ -326,8 +326,14 @@ const resetPassword = async (email, newPassword) => {
     try {
         const hashedPassword = await hashPassword(newPassword);
 
-        await companyRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
+        const updatedCompany = await companyRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
         await userRepository.updatePasswordByEmail(email, hashedPassword, { transaction });
+
+        // A locked-out user who proves their identity via OTP-verified reset
+        // should not still be blocked by the old lockout when they log back in.
+        if (updatedCompany) {
+            await companyRepository.resetFailedLoginAttempts(updatedCompany.id, { transaction });
+        }
 
         await transaction.commit();
         return ServiceResponse.success({ message: AUTH_MESSAGES.PASSWORD_RESET_SUCCESS, statusCode: 200 });

@@ -110,6 +110,30 @@ const updatePasswordByEmail = async (email, hashedPassword, { transaction } = {}
     return updatedCompany;
 };
 
+const incrementFailedLoginAttempts = async (companyId, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { failed_login_attempts: sequelize.literal('failed_login_attempts + 1') },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
+const lockCompanyLogin = async (companyId, lockedUntil, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { locked_until: lockedUntil },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
+const resetFailedLoginAttempts = async (companyId, { transaction } = {}) => {
+    const [, [updatedCompany]] = await Company.update(
+        { failed_login_attempts: 0, locked_until: null },
+        { where: { id: companyId }, transaction, returning: true }
+    );
+    return updatedCompany;
+};
+
 const updateCompanyUserRoleStatus = async (id, data, { transaction } = {}) => {
     const [updatedCount, updatedRows] = await CompanyUserRole.update(
         { ...data, updated_at: new Date() },
@@ -210,5 +234,8 @@ module.exports = {
     markDefaultProfileCompleted,
     markKycUploaded,
     updateCompanyContact,
-    updateCompanyIdentifiers
+    updateCompanyIdentifiers,
+    incrementFailedLoginAttempts,
+    lockCompanyLogin,
+    resetFailedLoginAttempts
 };

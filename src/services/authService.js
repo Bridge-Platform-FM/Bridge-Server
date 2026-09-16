@@ -8,7 +8,7 @@ const tokenService = require('./tokenService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { hashPassword } = require('../utils/Helper');
-const { REGISTRATION_MESSAGES, AUTH_MESSAGES, USER_MESSAGES } = require('../utils/constant');
+const { REGISTRATION_MESSAGES, AUTH_MESSAGES, USER_MESSAGES, KYC_STATUS } = require('../utils/constant');
 
 
 const getCompanyByEmail = async (email) => {
@@ -79,7 +79,13 @@ const createCompany = async (data) => {
         const user = await userRepository.createUser(userData, { transaction });
 
         await companyRepository.createCompanyUserRole(
-            { company_id: company.id, role_id: role.id, user_id: user.id, is_default_role: true },
+            {
+                company_id: company.id,
+                role_id: role.id,
+                user_id: user.id,
+                is_default_role: true,
+                status: KYC_STATUS.APPROVED
+            },
             { transaction }
         );
         await transaction.commit();

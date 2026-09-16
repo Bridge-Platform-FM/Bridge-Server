@@ -216,6 +216,8 @@ const updateReviewStatus = async ({ companyId, action, rejectionReason, adminId 
                 { transaction, allowPrivileged: true }
             );
 
+            await companyRepository.markDefaultProfileCompleted(userId, companyId, { transaction });
+
             const [allowedConnections, allowedFreeTrialDays] = await Promise.all([
                 adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_CONNECTION_LIMIT, USER_LIMIT_DEFAULTS.ALLOWED_CONNECTIONS),
                 adminConfigService.getTrialConfigValue(TRIAL_CONFIG_LOOKUP_KEYS.FREE_TRIAL_DAY, USER_LIMIT_DEFAULTS.ALLOWED_FREE_TRIAL_DAYS)

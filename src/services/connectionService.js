@@ -103,12 +103,19 @@ const sendRequest = async ({ requesterUserId, requesterRoleId, requesterCompanyI
             return ServiceResponse.error({ message: CONNECTION_MESSAGES.RECIPIENT_ROLE_NOT_FOUND, statusCode: 404 });
         }
 
-        // 3. Check for existing active connection between this role pair
+        // 3. Check for an existing blocking connection between this role pair.
+        // Declined / Withdrawn / Expired are not blocking — the requester may send again.
         const existing = await connectionRepository.findExistingConnection(requesterUserId, requesterRoleId, recipientUserId, recipientRoleId);
         if (existing) {
             await transaction.rollback();
             return ServiceResponse.error({ message: CONNECTION_MESSAGES.ALREADY_EXISTS, statusCode: 409 });
         }
+
+        // Soft-delete prior Declined/Withdrawn/Expired rows so a later decline
+        // of this new request does not collide with unique (pair, status).
+        await connectionRepository.softDeleteReopenableConnections(
+            requesterUserId, requesterRoleId, recipientUserId, recipientRoleId, requesterUserId, { transaction }
+        );
 
         // 4. Create connection
         const connection = await connectionRepository.create({

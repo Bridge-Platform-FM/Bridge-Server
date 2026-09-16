@@ -114,7 +114,7 @@ const getSwitchedRoleUsers = async () => {
     }
 };
 
-const searchUsers = async (searchQuery, roleCode) => {
+const searchUsers = async (searchQuery, roleCode, excludeUserId) => {
     try {
         let searchableRoles = [];
         if (roleCode === USER_ROLES_CODE.STARTUP) {
@@ -126,7 +126,7 @@ const searchUsers = async (searchQuery, roleCode) => {
         else if (roleCode === USER_ROLES_CODE.B2B) {
             searchableRoles = [USER_ROLES_CODE.STARTUP, USER_ROLES_CODE.B2B];
         }
-        const users = await userRepository.searchUsers(searchQuery, searchableRoles);
+        const users = await userRepository.searchUsers(searchQuery, searchableRoles, excludeUserId);
         return ServiceResponse.success({ message: USER_MESSAGES.SEARCH_SUCCESS, data: users, statusCode: 200 });
     } catch (error) {
         errorLogger.error(error);

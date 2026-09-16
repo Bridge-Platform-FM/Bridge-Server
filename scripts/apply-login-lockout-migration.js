@@ -1,5 +1,5 @@
 /**
- * Applies ONLY migrations/20260916000000_add_login_lockout_to_company.js, then verifies.
+ * Applies ONLY migrations/20260916141404_add_login_lockout_to_company.js, then verifies.
  *
  * Why not `npm run migrate:run`: this repo's migrations/ folder is gitignored, so a
  * freshly-pulled environment's SequelizeMeta can be missing/out of sync with the files
@@ -16,7 +16,7 @@ require('dotenv').config({ path: process.env.APP_ENV === 'uat' ? '.env.uat' : '.
 const { sequelize } = require('../src/models');
 const { DataTypes } = require('sequelize');
 
-const MIGRATION = '20260916000000_add_login_lockout_to_company.js';
+const MIGRATION = '20260916141404_add_login_lockout_to_company.js';
 
 const COLUMNS = {
     failed_login_attempts: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },

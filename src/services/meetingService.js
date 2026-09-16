@@ -4,7 +4,7 @@ const { sequelize } = require('../models');
 const meetingRepository = require('../repositories/meetingRepository');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
-const { MEETING_MESSAGES } = require('../utils/constant');
+const { MEETING_MESSAGES, DEAL_ROOM_STATUS } = require('../utils/constant');
 
 // ─── Create Meeting ───────────────────────────────────────────────────────────
 
@@ -25,6 +25,11 @@ const createMeeting = async ({
         if (!dealRoom) {
             await transaction.rollback();
             return ServiceResponse.error({ message: MEETING_MESSAGES.DEAL_ROOM_NOT_FOUND, statusCode: 404 });
+        }
+
+        if (dealRoom.status !== DEAL_ROOM_STATUS.ACTIVE) {
+            await transaction.rollback();
+            return ServiceResponse.error({ message: MEETING_MESSAGES.DEAL_ROOM_CLOSED, statusCode: 400 });
         }
 
         // 2. Logged-in user must be a participant in this deal room
@@ -198,6 +203,16 @@ const updateMeeting = async ({ meetingId, updateData, userId }) => {
         if (meeting.created_by !== userId) {
             await transaction.rollback();
             return ServiceResponse.error({ message: MEETING_MESSAGES.FORBIDDEN, statusCode: 403 });
+        }
+
+        const dealRoom = await meetingRepository.getDealRoomById(meeting.deal_room_id);
+        if (!dealRoom) {
+            await transaction.rollback();
+            return ServiceResponse.error({ message: MEETING_MESSAGES.DEAL_ROOM_NOT_FOUND, statusCode: 404 });
+        }
+        if (dealRoom.status !== DEAL_ROOM_STATUS.ACTIVE) {
+            await transaction.rollback();
+            return ServiceResponse.error({ message: MEETING_MESSAGES.DEAL_ROOM_CLOSED, statusCode: 400 });
         }
 
         // Build snake_case DB payload from camelCase request body

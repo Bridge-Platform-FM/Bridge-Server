@@ -117,7 +117,7 @@ const searchUsers = async (req, res, next) => {
             });
         }
 
-        const searchResponse = await userService.searchUsers(searchQuery.trim(), roleCode, userId);
+        const searchResponse = await userService.searchUsers(searchQuery.trim(), roleCode, userId, req.roleId);
         if (!searchResponse.success) {
             return HttpResponse.error(res, {
                 message: searchResponse.message,
@@ -165,7 +165,13 @@ const getUserRoleDetails = async (req, res, next) => {
             });
         }
 
-        const roleDetailsResponse = await userService.getUserProfile({companyId, userId, roleId});
+        const roleDetailsResponse = await userService.getViewedUserProfile({
+            companyId,
+            userId,
+            roleId,
+            viewerUserId: req.userId,
+            viewerRoleId: req.roleId
+        });
         if (!roleDetailsResponse.success) {
             return HttpResponse.error(res, {
                 message: roleDetailsResponse.message,

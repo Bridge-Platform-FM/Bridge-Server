@@ -706,7 +706,8 @@ const MEETING_MESSAGES = {
     RECIPIENT_MISMATCH: 'The recipient does not match the deal room participant',
     FETCH_SUCCESS: 'Meetings fetched successfully',
     FETCH_FAILED: 'Error encountered while fetching meetings',
-    FORBIDDEN: 'You are not authorized to perform this action'
+    FORBIDDEN: 'You are not authorized to perform this action',
+    DEAL_ROOM_CLOSED: 'This deal room is closed; meetings cannot be scheduled or updated'
 };
 
 const USER_LIMIT_CONFIG_MESSAGES = {

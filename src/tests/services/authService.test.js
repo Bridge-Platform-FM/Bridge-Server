@@ -109,3 +109,53 @@ describe('authService.allocateUserCompanyRole', () => {
         expect(result.statusCode).toBe(500);
     });
 });
+
+describe('authService.validateAvailableProfileFields', () => {
+    const user = { first_name: 'Ada', funding_stage: null, use_of_funds: null };
+    const company = { gst_number: null };
+
+    test('returns required and optional unfilled registration fields when required ones are missing', () => {
+        const fieldsConfig = [
+            {
+                field_name: 'use_of_funds', display_name: 'Use of Funds', source_table: 'user',
+                type: 'string', is_editable: true, is_required: true, is_registration_field: true
+            },
+            {
+                field_name: 'funding_stage', display_name: 'Funding Stage', source_table: 'user',
+                type: 'string', is_editable: true, is_required: false, is_registration_field: true
+            },
+            {
+                field_name: 'first_name', display_name: 'First Name', source_table: 'user',
+                type: 'string', is_editable: true, is_required: true, is_registration_field: true
+            }
+        ];
+
+        const result = authService.validateAvailableProfileFields(fieldsConfig, user, company);
+
+        expect(result.success).toBe(false);
+        expect(result.statusCode).toBe(400);
+        expect(result.data.missingFields.map((f) => f.fieldName).sort()).toEqual([
+            'funding_stage',
+            'use_of_funds'
+        ]);
+        expect(result.data.missingFields.find((f) => f.fieldName === 'funding_stage').isRequired).toBe(false);
+        expect(result.data.missingFields.find((f) => f.fieldName === 'use_of_funds').isRequired).toBe(true);
+    });
+
+    test('succeeds when required fields are filled even if optional ones are empty', () => {
+        const fieldsConfig = [
+            {
+                field_name: 'first_name', display_name: 'First Name', source_table: 'user',
+                type: 'string', is_editable: true, is_required: true, is_registration_field: true
+            },
+            {
+                field_name: 'funding_stage', display_name: 'Funding Stage', source_table: 'user',
+                type: 'string', is_editable: true, is_required: false, is_registration_field: true
+            }
+        ];
+
+        const result = authService.validateAvailableProfileFields(fieldsConfig, user, company);
+
+        expect(result.success).toBe(true);
+    });
+});

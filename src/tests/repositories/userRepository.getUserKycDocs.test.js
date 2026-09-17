@@ -27,6 +27,7 @@ describe('userRepository.getUserKycDocs', () => {
         expect(sql).toContain('k.document_type IN (:kycDocTypes)');
         expect(sql).toContain('c.kyc_status');
         expect(sql).toContain('c.is_kyc_verified');
+        expect(sql).toContain('c.kyc_rejection_reason');
         expect(sql).toContain('k.status AS document_status');
         expect(sql).not.toContain('k.status AS kyc_status');
         expect(sql).toContain('ORDER BY k.document_type, k.created_at DESC, k.id DESC');

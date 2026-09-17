@@ -157,6 +157,7 @@ const getUserKycDocs = async () => {
                     is_mobile_number_verified: row.is_mobile_number_verified,
                     kyc_status: row.kyc_status,
                     is_kyc_verified: row.is_kyc_verified,
+                    kyc_rejection_reason: row.kyc_rejection_reason,
                     kyc_documents: []
                 });
             }

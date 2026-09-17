@@ -743,6 +743,7 @@ const ROLE_SWITCH_MESSAGES = {
     INVALID_ACTION: 'action must be approve or reject',
     REJECTION_REASON_REQUIRED: 'rejectionReason is required when rejecting',
     NOT_FOUND: 'Role switch request not found',
+    PROFILE_NOT_COMPLETED: 'Cannot approve or reject a role switch until the user has completed their profile for this role.',
     REVIEW_ACTION_SUCCESS: 'Role switch status updated successfully.',
     REVIEW_ACTION_FAILED: 'Error encountered while updating role switch status.',
     SWITCH_FAILED: 'Error encountered while switching role.'

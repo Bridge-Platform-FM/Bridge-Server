@@ -135,6 +135,12 @@ const resetFailedLoginAttempts = async (companyId, { transaction } = {}) => {
     return updatedCompany;
 };
 
+const findCompanyUserRoleById = async (id) => {
+    return await CompanyUserRole.findOne({
+        where: { id, is_deleted: false, is_default_role: false }
+    });
+};
+
 const updateCompanyUserRoleStatus = async (id, data, { transaction } = {}) => {
     const [updatedCount, updatedRows] = await CompanyUserRole.update(
         { ...data, updated_at: new Date() },
@@ -230,6 +236,7 @@ module.exports = {
     updatePasswordByEmail,
     getCompanyUser,
     getDefaultCompanyIdByUserId,
+    findCompanyUserRoleById,
     updateCompanyUserRoleStatus,
     markProfileCompleted,
     markDefaultProfileCompleted,

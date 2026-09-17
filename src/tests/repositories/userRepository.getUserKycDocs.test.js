@@ -25,6 +25,10 @@ describe('userRepository.getUserKycDocs', () => {
         expect(sql).toContain('LEFT JOIN LATERAL');
         expect(sql).toContain('SELECT DISTINCT ON (k.document_type)');
         expect(sql).toContain('k.document_type IN (:kycDocTypes)');
+        expect(sql).toContain('c.kyc_status');
+        expect(sql).toContain('c.is_kyc_verified');
+        expect(sql).toContain('k.status AS document_status');
+        expect(sql).not.toContain('k.status AS kyc_status');
         expect(sql).toContain('ORDER BY k.document_type, k.created_at DESC, k.id DESC');
         expect(options).toEqual(expect.objectContaining({
             type: QueryTypes.SELECT,

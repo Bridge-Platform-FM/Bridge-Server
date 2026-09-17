@@ -3,6 +3,26 @@
 const Joi = require('joi');
 const HttpResponse = require('../utils/HttpResponse');
 
+/** True if the link contains at least one "." that is followed by a character.
+ *  Other "." characters may be trailing — we do not require a character after every ".". */
+const hasDotCharacterPair = (value) => {
+    const dot = value.indexOf('.');
+    return dot !== -1 && dot < value.length - 1;
+};
+
+const meetingLinkMessages = {
+    'string.uri': 'meetingLink must be a valid URL (include https://)',
+    'any.custom': 'meetingLink must include at least one dot (.) with a character after it',
+    'string.max': 'meetingLink must not exceed 500 characters',
+    'any.required': 'meetingLink is required'
+};
+
+const meetingLinkSchema = Joi.string()
+    .uri()
+    .custom((value, helpers) => (hasDotCharacterPair(value) ? value : helpers.error('any.custom')))
+    .max(500)
+    .messages(meetingLinkMessages);
+
 const createMeetingSchema = Joi.object({
     dealRoomId: Joi.string().guid().required().messages({
         'string.guid': 'dealRoomId must be a valid UUID',
@@ -25,11 +45,7 @@ const createMeetingSchema = Joi.object({
         'string.max': 'duration must not exceed 100 characters',
         'any.required': 'duration is required'
     }),
-    meetingLink: Joi.string().uri().max(500).required().messages({
-        'string.uri': 'meetingLink must be a valid URL (include https://)',
-        'string.max': 'meetingLink must not exceed 500 characters',
-        'any.required': 'meetingLink is required'
-    }),
+    meetingLink: meetingLinkSchema.required(),
     scheduledAt: Joi.date().iso().greater('now').required().messages({
         'date.base': 'scheduledAt must be a valid date',
         'date.format': 'scheduledAt must be a valid ISO 8601 date string',
@@ -49,10 +65,7 @@ const updateMeetingSchema = Joi.object({
     duration: Joi.string().max(100).optional().messages({
         'string.max': 'duration must not exceed 100 characters'
     }),
-    meetingLink: Joi.string().uri().max(500).optional().messages({
-        'string.uri': 'meetingLink must be a valid URL (include https://)',
-        'string.max': 'meetingLink must not exceed 500 characters'
-    }),
+    meetingLink: meetingLinkSchema.optional(),
     scheduledAt: Joi.date().iso().greater('now').optional().messages({
         'date.base': 'scheduledAt must be a valid date',
         'date.format': 'scheduledAt must be a valid ISO 8601 date string',

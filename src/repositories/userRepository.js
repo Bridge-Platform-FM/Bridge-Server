@@ -233,6 +233,7 @@ const getUserKycDocs = async () => {
             c.is_mobile_number_verified,
             c.kyc_status,
             c.is_kyc_verified,
+            c.kyc_rejection_reason,
             k.id AS kyc_id,
             k.document_type,
             k.document_number,

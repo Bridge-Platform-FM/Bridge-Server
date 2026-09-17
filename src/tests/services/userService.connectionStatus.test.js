@@ -131,3 +131,50 @@ describe('userService.getViewedUserProfile', () => {
         expect(result.data.connection_status).toBe(CONNECTION_STATUS.PENDING);
     });
 });
+
+describe('userService.getUserProfile', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        userRepository.getUserById.mockResolvedValue({
+            id: 'user-1',
+            company_email: 'user@example.com',
+            mobile_number: '9999999999',
+            country_code: '+91'
+        });
+        companyRepository.getCompanyById.mockResolvedValue({
+            id: 'company-1',
+            company_email: 'company@example.com',
+            mobile_number: '8888888888',
+            country_code: '+1',
+            company_name: 'Acme'
+        });
+    });
+
+    test('returns email, mobile and country code once, preferring the user row', async () => {
+        userRepository.getUserProfileFieldsConfig.mockResolvedValue([
+            { field_name: 'company_name', source_table: 'company', display_name: 'Company name', is_editable: false, type: 'string' },
+            { field_name: 'company_email', source_table: 'company', display_name: 'Company Email', is_editable: true, type: 'string' },
+            { field_name: 'mobile_number', source_table: 'company', display_name: 'Mobile Number', is_editable: true, type: 'string' },
+            { field_name: 'country_code', source_table: 'company', display_name: 'Country Code', is_editable: true, type: 'string' },
+            { field_name: 'company_email', source_table: 'user', display_name: 'Email', is_editable: true, type: 'string' },
+            { field_name: 'mobile_number', source_table: 'user', display_name: 'Mobile Number', is_editable: true, type: 'string' },
+            { field_name: 'country_code', source_table: 'user', display_name: 'Country Code', is_editable: true, type: 'string' }
+        ]);
+
+        const result = await userService.getUserProfile({
+            companyId: 'company-1',
+            userId: 'user-1',
+            roleId: 2
+        });
+
+        expect(result.success).toBe(true);
+        const names = result.data.map((f) => f.columnName);
+        expect(names.filter((n) => n === 'company_email')).toHaveLength(1);
+        expect(names.filter((n) => n === 'mobile_number')).toHaveLength(1);
+        expect(names.filter((n) => n === 'country_code')).toHaveLength(1);
+        expect(names).not.toContain('company_name');
+        expect(result.data.find((f) => f.columnName === 'company_email').value).toBe('user@example.com');
+        expect(result.data.find((f) => f.columnName === 'mobile_number').value).toBe('9999999999');
+        expect(result.data.find((f) => f.columnName === 'country_code').value).toBe('+91');
+    });
+});

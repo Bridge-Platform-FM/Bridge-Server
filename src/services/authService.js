@@ -84,7 +84,7 @@ const createCompany = async (data) => {
                 role_id: role.id,
                 user_id: user.id,
                 is_default_role: true,
-                status: KYC_STATUS.APPROVED
+                status: KYC_STATUS.PENDING
             },
             { transaction }
         );
@@ -286,38 +286,67 @@ const getProfileFieldsConfig = async (roleId) => {
 
 /**
  * Validates a fetched field config list against the already-fetched user/company
- * records, splitting into the full field set and the subset that already
- * has a value in those tables. Fails if any is_required field has no value yet.
+ * records. The switch-role form must offer the same registration fields as
+ * complete-profile (required and optional). Fails only when an is_required
+ * registration field has no value yet; optional blanks ride along on that
+ * response so they can be filled, but they do not block the switch.
  */
 const validateAvailableProfileFields = (fieldsConfig, user, company) => {
-    const isFilled = (value) => value !== null && value !== undefined && value !== '';
- 
-    // Only is_required fields with no value yet. `fieldName` + `sourceTable` are what
-    // the client updates against; `value` is deliberately absent (there isn't one).
-    const missingFields = fieldsConfig
-        .filter((config) => config.is_required)
-        .filter((config) => {
-            if (config.source_table === 'user') return !isFilled(user?.[config.field_name]);
-            if (config.source_table === 'company') return !isFilled(company?.[config.field_name]);
-            return false;
-        })
-        .map((config) => ({
-            fieldName: config.field_name,
-            label: config.display_name,
-            sourceTable: config.source_table,
-            type: config.type,
-            isEditable: config.is_editable,
-            isRequired: config.is_required
-        }));
- 
-    if (missingFields.length > 0) {
+    // Empty arrays (and founder placeholder rows) are "not filled" — otherwise
+    // jsonb `founders: []` would skip the switch-role form even though Startup
+    // still requires at least one name + LinkedIn URL.
+    const isFilled = (value) => {
+        if (value === null || value === undefined || value === '') return false;
+        if (Array.isArray(value)) {
+            if (value.length === 0) return false;
+            return value.some((row) => {
+                if (row && typeof row === 'object' && !Array.isArray(row)) {
+                    return String(row.name ?? '').trim() !== '' || String(row.url ?? '').trim() !== '';
+                }
+                return row !== null && row !== undefined && row !== '';
+            });
+        }
+        return true;
+    };
+
+    const toMeta = (config) => ({
+        fieldName: config.field_name,
+        label: config.display_name,
+        sourceTable: config.source_table,
+        type: config.type,
+        isEditable: config.is_editable,
+        isRequired: Boolean(config.is_required)
+    });
+
+    // One row per column. Company + user both list email/phone — keep `user`
+    // so PUT /users/profile can write it.
+    const byName = new Map();
+    for (const raw of fieldsConfig || []) {
+        const config = typeof raw.get === 'function' ? raw.get({ plain: true }) : raw;
+        if (config.is_registration_field === false) continue;
+        if (config.source_table !== 'user' && config.source_table !== 'company') continue;
+        const existing = byName.get(config.field_name);
+        if (existing && existing.source_table === 'user' && config.source_table !== 'user') continue;
+        byName.set(config.field_name, config);
+    }
+
+    const missingFields = [];
+    for (const config of byName.values()) {
+        const value = config.source_table === 'user'
+            ? user?.[config.field_name]
+            : company?.[config.field_name];
+        if (isFilled(value)) continue;
+        missingFields.push(toMeta(config));
+    }
+
+    if (missingFields.some((field) => field.isRequired)) {
         return ServiceResponse.error({
             message: USER_MESSAGES.PROFILE_NOT_COMPLETED,
             data: { missingFields },
             statusCode: 400
         });
     }
- 
+
     return ServiceResponse.success({});
 };
 

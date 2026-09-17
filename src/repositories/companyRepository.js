@@ -2,6 +2,7 @@
 const { Company, CompanyUserRole, CompanyRoleMaster, User } = require('../models');
 const { sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
+const { KYC_STATUS } = require('../utils/constant');
 
 const findByEmail = async (email) => {
     return await Company.findOne({
@@ -161,7 +162,7 @@ const markProfileCompleted = async (userId, companyId, roleId, { transaction } =
 
 const markDefaultProfileCompleted = async (userId, companyId, { transaction } = {}) => {
     const [, [updatedRole]] = await CompanyUserRole.update(
-        { is_profile_completed: true, updated_at: new Date() },
+        { status: KYC_STATUS.APPROVED, is_profile_completed: true, updated_at: new Date() },
         {
             where: { user_id: userId, company_id: companyId, is_default_role: true, is_deleted: false },
             returning: true,

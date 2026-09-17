@@ -211,7 +211,19 @@ const getUserProfile = async ({ companyId, userId, roleId }) => {
 
         const fieldsConfig = await userRepository.getUserProfileFieldsConfig(roleId);
 
-        const data = fieldsConfig.filter(config => config.field_name !== 'company_name').map(config => {
+        // `user_profile_field_master` lists company_email / mobile_number / country_code
+        // twice per role (company + user). Keep one row, preferring `user` — that is
+        // the copy PUT /users/profile writes, and what My Profile already shows.
+        const byName = new Map();
+        for (const raw of fieldsConfig || []) {
+            const config = typeof raw.get === 'function' ? raw.get({ plain: true }) : raw;
+            if (config.field_name === 'company_name') continue;
+            const existing = byName.get(config.field_name);
+            if (existing && existing.source_table === 'user' && config.source_table !== 'user') continue;
+            byName.set(config.field_name, config);
+        }
+
+        const data = Array.from(byName.values()).map(config => {
             let value;
             if (config.source_table === 'user') {
                 value = user[config.field_name];

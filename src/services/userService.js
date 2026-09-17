@@ -156,6 +156,7 @@ const getUserKycDocs = async () => {
                     is_email_verified: row.is_email_verified,
                     is_mobile_number_verified: row.is_mobile_number_verified,
                     kyc_status: row.kyc_status,
+                    is_kyc_verified: row.is_kyc_verified,
                     kyc_documents: []
                 });
             }
@@ -174,7 +175,7 @@ const getUserKycDocs = async () => {
                     front_file_name: row.front_file_name,
                     back_s3_key: row.back_s3_key,
                     back_file_name: row.back_file_name,
-                    kyc_status: row.kyc_status,
+                    kyc_status: row.document_status,
                     rejection_reason: row.rejection_reason,
                     verified_at: row.verified_at,
                     kyc_uploaded_at: row.kyc_uploaded_at

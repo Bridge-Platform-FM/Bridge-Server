@@ -232,6 +232,7 @@ const getUserKycDocs = async () => {
             c.is_email_verified,
             c.is_mobile_number_verified,
             c.kyc_status,
+            c.is_kyc_verified,
             k.id AS kyc_id,
             k.document_type,
             k.document_number,
@@ -241,7 +242,7 @@ const getUserKycDocs = async () => {
             k.front_file_name,
             k.back_s3_key,
             k.back_file_name,
-            k.status AS kyc_status,
+            k.status AS document_status,
             k.rejection_reason,
             k.verified_at,
             k.created_at AS kyc_uploaded_at

@@ -487,6 +487,18 @@ const updateUserSuspension = async (userId, companyId, adminId, role, is_suspend
 
 const updateRoleSwitchStatus = async ({ companyUserRoleId, action, rejectionReason, adminId }) => {
     try {
+        const companyUserRole = await companyRepository.findCompanyUserRoleById(companyUserRoleId);
+        if (!companyUserRole) {
+            return ServiceResponse.error({ message: ROLE_SWITCH_MESSAGES.NOT_FOUND, statusCode: 404 });
+        }
+
+        // Approve/reject is a review of the completed target-role profile. Acting
+        // before that would also have previously stamped is_profile_completed on
+        // approve, which hid incomplete profiles as if the user had filled them.
+        if (!companyUserRole.is_profile_completed) {
+            return ServiceResponse.error({ message: ROLE_SWITCH_MESSAGES.PROFILE_NOT_COMPLETED, statusCode: 400 });
+        }
+
         const status = action === 'approve' ? KYC_STATUS.APPROVED : KYC_STATUS.REJECTED;
         const reason = action === 'reject' ? (rejectionReason ?? null) : null;
 
@@ -495,8 +507,7 @@ const updateRoleSwitchStatus = async ({ companyUserRoleId, action, rejectionReas
             rejection_reason: reason,
             approved_by: adminId,
             approved_at: new Date(),
-            updated_by: adminId,
-            ...(action === 'approve' ? { is_profile_completed: true } : {})
+            updated_by: adminId
         });
 
         if (!updated) {

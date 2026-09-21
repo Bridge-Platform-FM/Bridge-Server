@@ -8,7 +8,7 @@ const tokenService = require('./tokenService');
 const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { hashPassword } = require('../utils/Helper');
-const { REGISTRATION_MESSAGES, AUTH_MESSAGES, USER_MESSAGES, KYC_STATUS, LOGIN_LOCKOUT_LIMITS } = require('../utils/constant');
+const { REGISTRATION_MESSAGES, AUTH_MESSAGES, USER_MESSAGES, KYC_STATUS, LOGIN_LOCKOUT_LIMITS, ROLE_SWITCH_MESSAGES } = require('../utils/constant');
 
 
 const getCompanyByEmail = async (email) => {
@@ -210,7 +210,18 @@ const getUserCompanyRoleByCode = async (userId, companyId, roleCode) => {
     }
 };
 
-const allocateUserCompanyRole = async (userId, companyId, roleCode) => {
+const toRoleSwitchRow = (companyUserRole, role, companyId) => ({
+    company_user_role_id: companyUserRole.id ?? companyUserRole.company_user_role_id,
+    role_id: role.id,
+    company_id: companyId,
+    role_name: role.role_name ?? companyUserRole.role_name,
+    role_code: role.role_code ?? companyUserRole.role_code,
+    status: companyUserRole.status,
+    rejection_reason: companyUserRole.rejection_reason,
+    is_profile_completed: companyUserRole.is_profile_completed
+});
+
+const allocateUserCompanyRole = async (userId, companyId, roleCode, { isProfileCompleted = false } = {}) => {
     const transaction = await sequelize.transaction();
     try {
         const role = await companyRepository.findRoleMasterByCode(roleCode);
@@ -220,35 +231,42 @@ const allocateUserCompanyRole = async (userId, companyId, roleCode) => {
         }
 
         const companyUserRole = await companyRepository.createCompanyUserRole(
-            { company_id: companyId, user_id: userId, role_id: role.id, is_default_role: false },
+            {
+                company_id: companyId,
+                user_id: userId,
+                role_id: role.id,
+                is_default_role: false,
+                is_profile_completed: isProfileCompleted
+            },
             { transaction }
         );
         await transaction.commit();
 
         return ServiceResponse.success({
-            data: {
-                company_user_role_id: companyUserRole.id,
-                role_id: role.id,
-                company_id: companyId,
-                role_name: role.role_name,
-                role_code: role.role_code,
-                status: companyUserRole.status,
-                rejection_reason: companyUserRole.rejection_reason,
-                is_profile_completed: companyUserRole.is_profile_completed
-            },
+            data: toRoleSwitchRow(companyUserRole, role, companyId),
             statusCode: 201
         });
     } catch (error) {
         await transaction.rollback();
 
         // A concurrent request can win the insert race between the existence
-        // check in switchRole and this insert; the unique index on
-        // (user_id, company_id, role_id) turns that into a constraint error
-        // here instead of a duplicate row. Treat it as "already allocated"
-        // and hand back the row the other request created.
+        // check and this insert; the unique index on (user_id, company_id, role_id)
+        // turns that into a constraint error instead of a duplicate row.
         if (error instanceof UniqueConstraintError) {
             const existing = await userRepository.getUserCompanyRoleByCode(userId, companyId, roleCode);
             if (existing) {
+                if (isProfileCompleted && !existing.is_profile_completed) {
+                    const role = await companyRepository.findRoleMasterByCode(roleCode);
+                    if (role) {
+                        const updated = await companyRepository.markProfileCompleted(userId, companyId, role.id);
+                        if (updated) {
+                            return ServiceResponse.success({
+                                data: toRoleSwitchRow(updated, role, companyId),
+                                statusCode: 200
+                            });
+                        }
+                    }
+                }
                 return ServiceResponse.success({ data: existing, statusCode: 200 });
             }
         }
@@ -285,41 +303,28 @@ const getProfileFieldsConfig = async (roleId) => {
 };
 
 /**
- * Validates a fetched field config list against the already-fetched user/company
- * records. The switch-role form must offer the same registration fields as
- * complete-profile (required and optional). Fails only when an is_required
- * registration field has no value yet; optional blanks ride along on that
- * response so they can be filled, but they do not block the switch.
+ * Registration columns for a target role, with the current user/company values.
+ * Empty arrays (and founder placeholder rows) are "not filled" — otherwise
+ * jsonb `founders: []` would skip the switch-role form even though Startup
+ * still requires at least one name + LinkedIn URL.
  */
-const validateAvailableProfileFields = (fieldsConfig, user, company) => {
-    // Empty arrays (and founder placeholder rows) are "not filled" — otherwise
-    // jsonb `founders: []` would skip the switch-role form even though Startup
-    // still requires at least one name + LinkedIn URL.
-    const isFilled = (value) => {
-        if (value === null || value === undefined || value === '') return false;
-        if (Array.isArray(value)) {
-            if (value.length === 0) return false;
-            return value.some((row) => {
-                if (row && typeof row === 'object' && !Array.isArray(row)) {
-                    return String(row.name ?? '').trim() !== '' || String(row.url ?? '').trim() !== '';
-                }
-                return row !== null && row !== undefined && row !== '';
-            });
-        }
-        return true;
-    };
+const isProfileValueFilled = (value) => {
+    if (value === null || value === undefined || value === '') return false;
+    if (Array.isArray(value)) {
+        if (value.length === 0) return false;
+        return value.some((row) => {
+            if (row && typeof row === 'object' && !Array.isArray(row)) {
+                return String(row.name ?? '').trim() !== '' || String(row.url ?? '').trim() !== '';
+            }
+            return row !== null && row !== undefined && row !== '';
+        });
+    }
+    return true;
+};
 
-    const toMeta = (config) => ({
-        fieldName: config.field_name,
-        label: config.display_name,
-        sourceTable: config.source_table,
-        type: config.type,
-        isEditable: config.is_editable,
-        isRequired: Boolean(config.is_required)
-    });
-
+const listSwitchRoleFields = (fieldsConfig, user, company) => {
     // One row per column. Company + user both list email/phone — keep `user`
-    // so PUT /users/profile can write it.
+    // so the switch-role save can write it.
     const byName = new Map();
     for (const raw of fieldsConfig || []) {
         const config = typeof raw.get === 'function' ? raw.get({ plain: true }) : raw;
@@ -330,14 +335,33 @@ const validateAvailableProfileFields = (fieldsConfig, user, company) => {
         byName.set(config.field_name, config);
     }
 
-    const missingFields = [];
+    const fields = [];
     for (const config of byName.values()) {
         const value = config.source_table === 'user'
             ? user?.[config.field_name]
             : company?.[config.field_name];
-        if (isFilled(value)) continue;
-        missingFields.push(toMeta(config));
+        fields.push({
+            fieldName: config.field_name,
+            label: config.display_name,
+            sourceTable: config.source_table,
+            type: config.type,
+            isEditable: config.is_editable,
+            isRequired: Boolean(config.is_required),
+            isFilled: isProfileValueFilled(value),
+            value: value ?? null
+        });
     }
+    return fields;
+};
+
+/**
+ * Fails only when an is_required registration field has no value yet; optional
+ * blanks ride along on that response so they can be filled, but they do not
+ * block submitting the role-switch request.
+ */
+const validateAvailableProfileFields = (fieldsConfig, user, company) => {
+    const fields = listSwitchRoleFields(fieldsConfig, user, company);
+    const missingFields = fields.filter((field) => !field.isFilled);
 
     if (missingFields.some((field) => field.isRequired)) {
         return ServiceResponse.error({
@@ -348,6 +372,124 @@ const validateAvailableProfileFields = (fieldsConfig, user, company) => {
     }
 
     return ServiceResponse.success({});
+};
+
+/**
+ * Read-only preview of the target role's registration fields. Does not insert
+ * into company_user_role — that happens only when the user submits
+ * request-role-switch after filling required fields.
+ */
+const getSwitchRoleDetails = async (userId, companyId, roleCode) => {
+    try {
+        const role = await companyRepository.findRoleMasterByCode(roleCode);
+        if (!role) {
+            return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 400 });
+        }
+
+        const existing = await userRepository.getUserCompanyRoleByCode(userId, companyId, roleCode);
+        const companyUserRes = await getCompanyAndUser(companyId, userId);
+        if (!companyUserRes.success) {
+            return companyUserRes;
+        }
+        const { company, user } = companyUserRes.data;
+
+        const fieldsConfigRes = await getProfileFieldsConfig(role.id);
+        if (!fieldsConfigRes.success) {
+            return fieldsConfigRes;
+        }
+
+        return ServiceResponse.success({
+            message: ROLE_SWITCH_MESSAGES.DETAILS_SUCCESS,
+            data: {
+                roleId: role.id,
+                roleCode: role.role_code,
+                status: existing?.status ?? null,
+                isProfileCompleted: existing ? Boolean(existing.is_profile_completed) : false,
+                rejectionReason: existing?.rejection_reason ?? null,
+                fields: listSwitchRoleFields(fieldsConfigRes.data, user, company)
+            }
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: ROLE_SWITCH_MESSAGES.DETAILS_FAILED,
+            statusCode: 500
+        });
+    }
+};
+
+/**
+ * After the target-role profile is saved, create (or complete) the
+ * company_user_role row with is_profile_completed=true and status Pending so
+ * an admin can approve or reject it. Never issues a new token pair.
+ */
+const submitRoleSwitchRequest = async (userId, companyId, roleCode) => {
+    try {
+        const role = await companyRepository.findRoleMasterByCode(roleCode);
+        if (!role) {
+            return ServiceResponse.error({ message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 400 });
+        }
+
+        const companyUserRes = await getCompanyAndUser(companyId, userId);
+        if (!companyUserRes.success) {
+            return companyUserRes;
+        }
+        const { company, user } = companyUserRes.data;
+
+        const fieldsConfigRes = await getProfileFieldsConfig(role.id);
+        if (!fieldsConfigRes.success) {
+            return fieldsConfigRes;
+        }
+
+        const profileFieldsRes = validateAvailableProfileFields(fieldsConfigRes.data, user, company);
+        if (!profileFieldsRes.success) {
+            return profileFieldsRes;
+        }
+
+        const existing = await userRepository.getUserCompanyRoleByCode(userId, companyId, roleCode);
+        if (existing?.is_profile_completed) {
+            return ServiceResponse.success({
+                message: USER_MESSAGES.PROFILE_PENDING_APPROVAL,
+                data: {
+                    status: existing.status,
+                    isProfileCompleted: true
+                }
+            });
+        }
+
+        if (existing) {
+            const updated = await companyRepository.markProfileCompleted(userId, companyId, role.id);
+            return ServiceResponse.success({
+                message: ROLE_SWITCH_MESSAGES.REQUEST_SUCCESS,
+                data: {
+                    status: updated?.status ?? existing.status ?? KYC_STATUS.PENDING,
+                    isProfileCompleted: true
+                }
+            });
+        }
+
+        const allocateRes = await allocateUserCompanyRole(userId, companyId, roleCode, {
+            isProfileCompleted: true
+        });
+        if (!allocateRes.success) {
+            return allocateRes;
+        }
+
+        return ServiceResponse.success({
+            message: ROLE_SWITCH_MESSAGES.REQUEST_SUCCESS,
+            data: {
+                status: allocateRes.data?.status ?? KYC_STATUS.PENDING,
+                isProfileCompleted: true
+            },
+            statusCode: allocateRes.statusCode
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return ServiceResponse.error({
+            message: ROLE_SWITCH_MESSAGES.REQUEST_FAILED,
+            statusCode: 500
+        });
+    }
 };
 
 const resetPassword = async (email, newPassword) => {
@@ -384,7 +526,10 @@ module.exports = {
     allocateUserCompanyRole,
     getCompanyAndUser,
     getProfileFieldsConfig,
+    listSwitchRoleFields,
     validateAvailableProfileFields,
+    getSwitchRoleDetails,
+    submitRoleSwitchRequest,
     resetPassword,
     checkLoginLockStatus,
     registerFailedLoginAttempt,

@@ -135,6 +135,13 @@ const getUserList = async () => {
             c.is_email_verified, 
             c.is_mobile_number_verified, 
             c.kyc_status,
+            EXISTS (
+                SELECT 1
+                FROM kyc_info k
+                WHERE k.user_id = u.id
+                    AND k.is_deleted IS NOT TRUE
+                    AND k.document_type IN (:kycDocTypes)
+            ) AS has_kyc_documents,
             u.is_active,
             u.is_user_suspended,
             (select crm.role_code from company_role_master crm where id = cur.role_id) as role
@@ -143,14 +150,15 @@ const getUserList = async () => {
         join company_user_role cur on cur.company_id = c.id and cur.user_id = u.id
         where u.is_deleted is not true and c.is_deleted is not true and cur.is_default_role is true`,
         {
+            replacements: { kycDocTypes: KYC_DOC_TYPES },
             type: QueryTypes.SELECT
         }
     );
 };
 
-// Users with more than one active company_user_role row have used the
-// switch-role flow (allocateUserCompanyRole) to add a role beyond their
-// original default one.
+        // Users with more than one active company_user_role row have used the
+        // switch-role flow (request-role-switch) to add a role beyond their
+        // original default one.
 const getUsersWithSwitchedRoles = async () => {
     return await sequelize.query(
         `SELECT user_id, first_name, last_name, profile_photo, company_id, company_email, company_name,

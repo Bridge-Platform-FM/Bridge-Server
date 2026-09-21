@@ -12,7 +12,8 @@ const {
     refreshTokenSchema,
     loginSchema,
     resetPasswordSchema,
-    switchRoleSchema
+    switchRoleSchema,
+    requestRoleSwitchSchema
 } = require('../validations/authValidation');
 const authMiddleware = require('../middleware/authMiddleware');
 const mfaMiddleware = require('../middleware/mfaMiddleware');
@@ -59,7 +60,15 @@ router.post('/reset-password/verify-otp', authController.resetPasswordVerifyOtp)
 
 router.post('/reset-password', resetPasswordMiddleware, validate(resetPasswordSchema), authController.resetPassword);
 
-// Route for switching the active role within the current company
+// Fetch the target role's filled/unfilled registration fields. Read-only —
+// does not insert into company_user_role.
+router.get('/switch-role-details', authMiddleware, authorize(PERMISSIONS.AUTH.SWITCH_ROLE), validate(switchRoleSchema, 'query'), authController.getSwitchRoleDetails);
+
+// Save target-role profile fields and create a pending company_user_role
+// with is_profile_completed=true so an admin can approve or reject it.
+router.post('/request-role-switch', authMiddleware, authorize(PERMISSIONS.AUTH.SWITCH_ROLE), validate(requestRoleSwitchSchema), authController.requestRoleSwitch);
+
+// Switch the active session into an already-approved role (re-issues tokens).
 router.post('/switch-role', authMiddleware, authorize(PERMISSIONS.AUTH.SWITCH_ROLE), validate(switchRoleSchema), authController.switchRole);
 
 module.exports = router;

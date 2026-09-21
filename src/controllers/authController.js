@@ -1,6 +1,7 @@
 'use strict';
 const { errorLogger } = require('../configs/logger');
 const authService = require('../services/authService');
+const userService = require('../services/userService');
 const otpService = require('../services/otp.service');
 const tokenService = require('../services/tokenService');
 const gstVerificationService = require('../services/gstVerificationService');
@@ -739,6 +740,95 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
+//  GET /api/v1/auth/switch-role-details
+const getSwitchRoleDetails = async (req, res) => {
+    try {
+        const { roleCode } = req.query;
+        const result = await authService.getSwitchRoleDetails(req.userId, req.companyId, roleCode);
+        if (!result.success) {
+            return HttpResponse.error(res, {
+                message: result.message,
+                statusCode: result.statusCode,
+                data: result.data
+            });
+        }
+        return HttpResponse.success(res, {
+            message: result.message,
+            data: result.data,
+            statusCode: result.statusCode
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.DETAILS_FAILED, statusCode: 500 });
+    }
+};
+
+//  POST /api/v1/auth/request-role-switch
+const requestRoleSwitch = async (req, res) => {
+    try {
+        const { roleCode, ...profilePayload } = req.body;
+
+        const roleRes = await authService.getUserCompanyRoleByCode(req.userId, req.companyId, roleCode);
+        if (!roleRes.success) {
+            return HttpResponse.error(res, { message: roleRes.message, statusCode: roleRes.statusCode });
+        }
+
+        const existing = roleRes.data;
+        if (existing) {
+            if (existing.status === KYC_STATUS.REJECTED) {
+                return HttpResponse.error(res, {
+                    message: existing.rejection_reason || USER_MESSAGES.PROFILE_REJECTED,
+                    statusCode: 200,
+                    data: { status: existing.status, rejectionReason: existing.rejection_reason }
+                });
+            }
+            if (existing.status === KYC_STATUS.APPROVED) {
+                return HttpResponse.error(res, {
+                    message: ROLE_SWITCH_MESSAGES.ALREADY_APPROVED,
+                    statusCode: 400,
+                    data: { status: existing.status }
+                });
+            }
+            if (existing.is_profile_completed) {
+                return HttpResponse.error(res, {
+                    message: USER_MESSAGES.PROFILE_PENDING_APPROVAL,
+                    statusCode: 200,
+                    data: { status: existing.status, isProfileCompleted: true }
+                });
+            }
+        }
+
+        if (Object.keys(profilePayload).length > 0) {
+            const updateRes = await userService.updateUserProfile(profilePayload, req.userId, req.companyId);
+            if (!updateRes.success) {
+                return HttpResponse.error(res, {
+                    message: updateRes.message,
+                    data: updateRes.data,
+                    statusCode: updateRes.statusCode
+                });
+            }
+        }
+
+        const submitRes = await authService.submitRoleSwitchRequest(req.userId, req.companyId, roleCode);
+        if (!submitRes.success) {
+            return HttpResponse.error(res, {
+                message: submitRes.message,
+                statusCode: submitRes.statusCode,
+                data: submitRes.data
+            });
+        }
+
+        return HttpResponse.success(res, {
+            message: submitRes.message,
+            data: submitRes.data,
+            statusCode: submitRes.statusCode
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: ROLE_SWITCH_MESSAGES.REQUEST_FAILED, statusCode: 500 });
+    }
+};
+
 //  POST /api/v1/auth/switch-role
 const switchRole = async (req, res, next) => {
     try {
@@ -749,35 +839,18 @@ const switchRole = async (req, res, next) => {
             return HttpResponse.error(res, { message: roleRes.message, statusCode: roleRes.statusCode });
         }
 
-        let roleInfo = roleRes.data;
+        const roleInfo = roleRes.data;
         if (!roleInfo) {
-            const allocateRes = await authService.allocateUserCompanyRole(req.userId, req.companyId, roleCode);
-            if (!allocateRes.success) {
-                return HttpResponse.error(res, { message: allocateRes.message, statusCode: allocateRes.statusCode });
-            }
-            roleInfo = allocateRes.data;
-        }
-
-        const companyUserRes = await authService.getCompanyAndUser(req.companyId, req.userId);
-        if (!companyUserRes.success) {
-            return HttpResponse.error(res, { message: companyUserRes.message, statusCode: companyUserRes.statusCode });
-        }
-        const { company, user } = companyUserRes.data;
-
-        const role = { id: roleInfo.role_id, role_code: roleInfo.role_code };
-        const userType = USER_TYPES[roleInfo.role_code];
-
-        const fieldsConfigRes = await authService.getProfileFieldsConfig(role.id);
-        if (!fieldsConfigRes.success) {
-            return HttpResponse.error(res, { message: fieldsConfigRes.message, statusCode: fieldsConfigRes.statusCode });
-        }
-
-        const profileFieldsRes = authService.validateAvailableProfileFields(fieldsConfigRes.data, user, company);
-        if (!profileFieldsRes.success) {
             return HttpResponse.error(res, {
-                message: profileFieldsRes.message,
-                statusCode: profileFieldsRes.statusCode,
-                data: profileFieldsRes.data
+                message: ROLE_SWITCH_MESSAGES.NOT_REQUESTED,
+                statusCode: 400
+            });
+        }
+
+        if (!roleInfo.is_profile_completed) {
+            return HttpResponse.error(res, {
+                message: USER_MESSAGES.PROFILE_NOT_COMPLETED,
+                statusCode: 400
             });
         }
 
@@ -796,6 +869,15 @@ const switchRole = async (req, res, next) => {
                 data: { status: roleInfo.status }
             });
         }
+
+        const companyUserRes = await authService.getCompanyAndUser(req.companyId, req.userId);
+        if (!companyUserRes.success) {
+            return HttpResponse.error(res, { message: companyUserRes.message, statusCode: companyUserRes.statusCode });
+        }
+        const { company, user } = companyUserRes.data;
+
+        const role = { id: roleInfo.role_id, role_code: roleInfo.role_code };
+        const userType = USER_TYPES[roleInfo.role_code];
 
         const tokens = await tokenService.generateTokens(company, role, user, userType, {
             ipAddress: req.ip,
@@ -830,5 +912,7 @@ module.exports = {
     resetPasswordTriggerOtp,
     resetPasswordVerifyOtp,
     resetPassword,
+    getSwitchRoleDetails,
+    requestRoleSwitch,
     switchRole
 };

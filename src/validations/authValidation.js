@@ -131,25 +131,24 @@ const loginSchema = Joi.object({
 });
 
 /**
- * Higher-order middleware to run Joi validation.
+ * Higher-order middleware to run Joi validation against `req.body` (default)
+ * or another request property such as `query`.
  */
-const validate = (schema) => {
+const validate = (schema, source = 'body') => {
     return (req, res, next) => {
-        const { error } = schema.validate(req.body, { abortEarly: false });
+        const { error, value } = schema.validate(req[source], { abortEarly: false });
         if (error) {
             const errors = error.details.map(err => ({
                 field: err.path.join('.'),
                 message: err.message.replace(/['"]/g, '')
             }));
-            const err = new Error('Validation failed');
-            err.status = 400;
-            err.errors = errors;
             return HttpResponse.error(res, {
-                message: err.message,
+                message: 'Validation failed',
                 data: errors,
                 statusCode: 400
             });
         }
+        req[source] = value;
         next();
     };
 };
@@ -160,6 +159,10 @@ const switchRoleSchema = Joi.object({
         'any.required': 'roleCode is required'
     })
 });
+
+// Same roleCode rule as switch-role, but the rest of the body is the target
+// role's profile fields (user/company columns) collected on the switch form.
+const requestRoleSwitchSchema = switchRoleSchema.unknown(true);
 
 const resetPasswordSchema = Joi.object({
     newPassword: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/).required().messages({
@@ -179,5 +182,6 @@ module.exports = {
     refreshTokenSchema,
     loginSchema,
     resetPasswordSchema,
-    switchRoleSchema
+    switchRoleSchema,
+    requestRoleSwitchSchema
 };

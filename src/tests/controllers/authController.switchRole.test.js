@@ -17,6 +17,10 @@ jest.mock('../../services/authService', () => ({
     validateAvailableProfileFields: jest.fn()
 }));
 
+jest.mock('../../services/userService', () => ({
+    updateUserProfile: jest.fn()
+}));
+
 jest.mock('../../services/tokenService', () => ({
     generateTokens: jest.fn()
 }));
@@ -65,14 +69,17 @@ describe('authController.switchRole', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         authService.getCompanyAndUser.mockResolvedValue({ success: true, data: { company, user } });
-        authService.getProfileFieldsConfig.mockResolvedValue({ success: true, data: [] });
-        authService.validateAvailableProfileFields.mockReturnValue({ success: true });
     });
 
     test('reuses an existing approved role and issues fresh tokens without allocating', async () => {
         authService.getUserCompanyRoleByCode.mockResolvedValue({
             success: true,
-            data: { role_id: 5, role_code: 'INVESTOR', status: KYC_STATUS.APPROVED }
+            data: {
+                role_id: 5,
+                role_code: 'INVESTOR',
+                status: KYC_STATUS.APPROVED,
+                is_profile_completed: true
+            }
         });
         tokenService.generateTokens.mockResolvedValue({
             data: { accessToken: 'at', refreshToken: 'rt' }
@@ -91,48 +98,25 @@ describe('authController.switchRole', () => {
         }));
     });
 
-    test('allocates a new role when the user has none yet, and returns pending-approval for the fresh row', async () => {
+    test('returns 400 NOT_REQUESTED when the user has no company_user_role for the target', async () => {
         authService.getUserCompanyRoleByCode.mockResolvedValue({ success: true, data: null });
-        authService.allocateUserCompanyRole.mockResolvedValue({
-            success: true,
-            data: { role_id: 9, role_code: 'MENTOR', status: 'Pending' }
-        });
 
-        const req = createReq({ body: { roleCode: 'MENTOR' } });
+        const req = createReq();
         const res = createRes();
         await authController.switchRole(req, res);
 
-        expect(authService.allocateUserCompanyRole).toHaveBeenCalledWith('user-1', 'company-1', 'MENTOR');
+        expect(authService.allocateUserCompanyRole).not.toHaveBeenCalled();
         expect(tokenService.generateTokens).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            message: USER_MESSAGES.PROFILE_PENDING_APPROVAL,
-            data: { status: 'Pending' }
+            message: ROLE_SWITCH_MESSAGES.NOT_REQUESTED
         }));
     });
 
-    test('propagates allocation failure (e.g. unknown role code) without issuing tokens', async () => {
-        authService.getUserCompanyRoleByCode.mockResolvedValue({ success: true, data: null });
-        authService.allocateUserCompanyRole.mockResolvedValue({
-            success: false, message: USER_MESSAGES.ROLE_NOT_FOUND, statusCode: 400
-        });
-
-        const req = createReq();
-        const res = createRes();
-        await authController.switchRole(req, res);
-
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(tokenService.generateTokens).not.toHaveBeenCalled();
-        expect(res.cookie).not.toHaveBeenCalled();
-    });
-
-    test('returns 400 with the missing-fields list when the profile is incomplete', async () => {
+    test('returns 400 when the target-role profile is not completed', async () => {
         authService.getUserCompanyRoleByCode.mockResolvedValue({
             success: true,
-            data: { role_id: 5, role_code: 'INVESTOR', status: KYC_STATUS.APPROVED }
-        });
-        const missingFields = [{ fieldName: 'pan_number', label: 'PAN', sourceTable: 'user' }];
-        authService.validateAvailableProfileFields.mockReturnValue({
-            success: false, message: 'Profile for the switching role is not completed.', statusCode: 400, data: { missingFields }
+            data: { role_id: 5, role_code: 'INVESTOR', status: 'Pending', is_profile_completed: false }
         });
 
         const req = createReq();
@@ -140,14 +124,22 @@ describe('authController.switchRole', () => {
         await authController.switchRole(req, res);
 
         expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ data: { missingFields } }));
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            message: USER_MESSAGES.PROFILE_NOT_COMPLETED
+        }));
         expect(tokenService.generateTokens).not.toHaveBeenCalled();
     });
 
     test('returns the rejection reason (200) for a rejected role without issuing tokens', async () => {
         authService.getUserCompanyRoleByCode.mockResolvedValue({
             success: true,
-            data: { role_id: 5, role_code: 'INVESTOR', status: KYC_STATUS.REJECTED, rejection_reason: 'Invalid PAN' }
+            data: {
+                role_id: 5,
+                role_code: 'INVESTOR',
+                status: KYC_STATUS.REJECTED,
+                rejection_reason: 'Invalid PAN',
+                is_profile_completed: true
+            }
         });
 
         const req = createReq();
@@ -164,10 +156,10 @@ describe('authController.switchRole', () => {
         expect(res.cookie).not.toHaveBeenCalled();
     });
 
-    test('returns pending-approval (200) for a role that is neither approved nor rejected', async () => {
+    test('returns pending-approval (200) for a completed role that is neither approved nor rejected', async () => {
         authService.getUserCompanyRoleByCode.mockResolvedValue({
             success: true,
-            data: { role_id: 5, role_code: 'INVESTOR', status: 'Pending' }
+            data: { role_id: 5, role_code: 'INVESTOR', status: 'Pending', is_profile_completed: true }
         });
 
         const req = createReq();

@@ -746,7 +746,13 @@ const ROLE_SWITCH_MESSAGES = {
     PROFILE_NOT_COMPLETED: 'Cannot approve or reject a role switch until the user has completed their profile for this role.',
     REVIEW_ACTION_SUCCESS: 'Role switch status updated successfully.',
     REVIEW_ACTION_FAILED: 'Error encountered while updating role switch status.',
-    SWITCH_FAILED: 'Error encountered while switching role.'
+    SWITCH_FAILED: 'Error encountered while switching role.',
+    DETAILS_SUCCESS: 'Switch role details fetched successfully.',
+    DETAILS_FAILED: 'Error encountered while fetching switch role details.',
+    NOT_REQUESTED: 'A role switch has not been requested for this role yet.',
+    ALREADY_APPROVED: 'This role is already approved. Switch into it instead of requesting it again.',
+    REQUEST_SUCCESS: 'Your role switch request has been sent for approval.',
+    REQUEST_FAILED: 'Error encountered while requesting a role switch.'
 };
 
 const PREMIUM_DAYS_LIMIT_DEFAULT = 30;

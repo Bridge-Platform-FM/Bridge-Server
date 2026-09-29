@@ -23,6 +23,8 @@ describe('userRepository.searchUsers', () => {
         expect(sequelize.query).toHaveBeenCalledTimes(1);
         const [sql, options] = sequelize.query.mock.calls[0];
         expect(sql).toContain('conn.status AS connection_status');
+        expect(sql).toContain('crm.role_code AS role');
+        expect(sql).toContain('crm.role_name');
         expect(sql).toContain('LEFT JOIN LATERAL');
         expect(sql).toContain('FROM user_connection uc');
         expect(options).toEqual(expect.objectContaining({

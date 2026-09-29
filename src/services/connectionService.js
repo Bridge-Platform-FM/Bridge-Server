@@ -8,7 +8,7 @@ const userRepository = require('../repositories/userRepository');
 const userLimitConfigRepository = require('../repositories/userLimitConfigRepository');
 const dealRoomService = require('./dealRoomService');
 const adminConfigService = require('./adminConfigService');
-const { ELIGIBLE_ROLE_PAIRS } = require('../matching/matchingConfig');
+const { canConnect } = require('../matching/eligibilityService');
 const ServiceResponse = require('../utils/ServiceResponse');
 const { CONNECTION_STATUS, CONNECTION_MESSAGES, CONNECTION_VALID_TRANSITIONS, CONNECTION_REQUEST_LIMITS, TRIAL_CONFIG_LOOKUP_KEYS } = require('../utils/constant');
 
@@ -101,6 +101,12 @@ const sendRequest = async ({ requesterUserId, requesterRoleId, requesterCompanyI
         if (!recipientCompanyUserRole) {
             await transaction.rollback();
             return ServiceResponse.error({ message: CONNECTION_MESSAGES.RECIPIENT_ROLE_NOT_FOUND, statusCode: 404 });
+        }
+
+        const recipientRoleCode = recipientCompanyUserRole.role?.role_code;
+        if (!canConnect(requesterRoleCode, recipientRoleCode)) {
+            await transaction.rollback();
+            return ServiceResponse.error({ message: CONNECTION_MESSAGES.INVALID_ROLE_PAIR, statusCode: 400 });
         }
 
         // 3. Check for an existing blocking connection between this role pair.

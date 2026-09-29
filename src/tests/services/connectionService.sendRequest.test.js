@@ -75,7 +75,8 @@ describe('connectionService.sendRequest', () => {
         sequelize.transaction.mockResolvedValue(mockTransaction);
         userRepository.getUserById.mockResolvedValue({ id: 'user-b' });
         connectionRepository.findRecipientCompanyUserRole.mockResolvedValue({
-            company_id: 'company-b'
+            company_id: 'company-b',
+            role: { role_code: 'INVESTOR' }
         });
         connectionRepository.softDeleteReopenableConnections.mockResolvedValue([0]);
         connectionRepository.create.mockResolvedValue({ id: 99, status: CONNECTION_STATUS.PENDING });
@@ -113,5 +114,51 @@ describe('connectionService.sendRequest', () => {
             { transaction: mockTransaction }
         );
         expect(mockTransaction.commit).toHaveBeenCalled();
+    });
+
+    test('returns 400 when the requester and recipient roles cannot connect', async () => {
+        connectionRepository.findExistingConnection.mockResolvedValue(null);
+        connectionRepository.findRecipientCompanyUserRole.mockResolvedValue({
+            company_id: 'company-b',
+            role: { role_code: 'STARTUP' }
+        });
+
+        const result = await sendRequest({ ...requestPayload, requesterRoleCode: 'STARTUP' });
+
+        expect(result.success).toBe(false);
+        expect(result.statusCode).toBe(400);
+        expect(result.message).toBe(CONNECTION_MESSAGES.INVALID_ROLE_PAIR);
+        expect(connectionRepository.create).not.toHaveBeenCalled();
+        expect(mockTransaction.rollback).toHaveBeenCalled();
+        expect(mockTransaction.commit).not.toHaveBeenCalled();
+    });
+
+    test('allows B2B → B2B', async () => {
+        connectionRepository.findExistingConnection.mockResolvedValue(null);
+        connectionRepository.findRecipientCompanyUserRole.mockResolvedValue({
+            company_id: 'company-b',
+            role: { role_code: 'B2B' }
+        });
+
+        const result = await sendRequest({ ...requestPayload, requesterRoleCode: 'B2B' });
+
+        expect(result.success).toBe(true);
+        expect(result.statusCode).toBe(201);
+        expect(connectionRepository.create).toHaveBeenCalled();
+        expect(mockTransaction.commit).toHaveBeenCalled();
+    });
+
+    test('allows STARTUP → B2B (same pair search can find)', async () => {
+        connectionRepository.findExistingConnection.mockResolvedValue(null);
+        connectionRepository.findRecipientCompanyUserRole.mockResolvedValue({
+            company_id: 'company-b',
+            role: { role_code: 'B2B' }
+        });
+
+        const result = await sendRequest({ ...requestPayload, requesterRoleCode: 'STARTUP' });
+
+        expect(result.success).toBe(true);
+        expect(result.statusCode).toBe(201);
+        expect(connectionRepository.create).toHaveBeenCalled();
     });
 });

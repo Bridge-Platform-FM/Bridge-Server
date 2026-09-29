@@ -29,6 +29,17 @@ const ELIGIBLE_ROLE_PAIRS = [
     { source: 'B2B', target: 'B2B' },
 ];
 
+// Who search may show, and who POST /connections may create a row for.
+// Broader than matching: a Startup can find/connect to a B2B even if the
+// matching engine does not recommend that pair.
+const CONNECTABLE_ROLE_PAIRS = [
+    { source: 'STARTUP', target: 'INVESTOR' },
+    { source: 'STARTUP', target: 'B2B' },
+    { source: 'INVESTOR', target: 'STARTUP' },
+    { source: 'B2B', target: 'STARTUP' },
+    { source: 'B2B', target: 'B2B' },
+];
+
 // Revenue bands ordered by size for proximity comparison
 const REVENUE_BAND_ORDER = ['lt_1cr', '1_10cr', '10_50cr', '50_250cr', 'gt_250cr'];
 
@@ -96,6 +107,7 @@ module.exports = {
     MATCHING_WEIGHTS,
     MATCHES_LIMIT,
     ELIGIBLE_ROLE_PAIRS,
+    CONNECTABLE_ROLE_PAIRS,
     REVENUE_BAND_ORDER,
     GEO_SCORES,
     INTENT_COMPATIBILITY,

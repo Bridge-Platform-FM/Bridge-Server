@@ -7,8 +7,9 @@ const { errorLogger } = require('../configs/logger');
 const ServiceResponse = require('../utils/ServiceResponse');
 const gstVerificationService = require('./gstVerificationService');
 const cinVerificationService = require('./cinVerificationService');
-const { USER_MESSAGES, KYC_MESSAGES, USER_ROLES_CODE, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
+const { USER_MESSAGES, KYC_MESSAGES, GST_MESSAGES, CIN_MESSAGES } = require('../utils/constant');
 const { decrypt } = require('../utils/encryption');
+const { getConnectableRoles } = require('../matching/eligibilityService');
 
 const GSTIN_PATTERN = /^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 const CIN_PATTERN = /^[A-Z]{1}[0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/;
@@ -117,16 +118,7 @@ const getSwitchedRoleUsers = async () => {
 
 const searchUsers = async (searchQuery, roleCode, excludeUserId, viewerRoleId) => {
     try {
-        let searchableRoles = [];
-        if (roleCode === USER_ROLES_CODE.STARTUP) {
-            searchableRoles = [USER_ROLES_CODE.INVESTOR, USER_ROLES_CODE.B2B];
-        }
-        else if (roleCode === USER_ROLES_CODE.INVESTOR) {
-            searchableRoles = [USER_ROLES_CODE.STARTUP];
-        }
-        else if (roleCode === USER_ROLES_CODE.B2B) {
-            searchableRoles = [USER_ROLES_CODE.STARTUP, USER_ROLES_CODE.B2B];
-        }
+        const searchableRoles = getConnectableRoles(roleCode);
         const users = await userRepository.searchUsers(searchQuery, searchableRoles, excludeUserId, excludeUserId, viewerRoleId);
         return ServiceResponse.success({ message: USER_MESSAGES.SEARCH_SUCCESS, data: users, statusCode: 200 });
     } catch (error) {

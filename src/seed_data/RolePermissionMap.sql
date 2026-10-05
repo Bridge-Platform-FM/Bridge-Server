@@ -48,6 +48,12 @@ INSERT INTO role_permission_map
 VALUES('USER', (SELECT id FROM permission_master WHERE permission_key = 'FILE.GET_KYC_DOCS'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('USER', (SELECT id FROM permission_master WHERE permission_key = 'FILE.VIDEO_URL'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
+VALUES('USER', (SELECT id FROM permission_master WHERE permission_key = 'FILE.SCAN_VIDEO'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
+INSERT INTO role_permission_map
+(user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)
 VALUES('USER', (SELECT id FROM permission_master WHERE permission_key = 'MATCHING.VIEW_PROFILES'), '2026-07-27 14:10:40.426', (select id from "admin" a where email = 'admin@test.com'), NULL, NULL, false, NULL, NULL);
 INSERT INTO role_permission_map
 (user_type, permission_id, created_at, created_by, updated_at, updated_by, is_deleted, deleted_at, deleted_by)

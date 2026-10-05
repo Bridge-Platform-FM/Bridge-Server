@@ -205,7 +205,8 @@ const DASHBOARD_MESSAGES = {
 const S3_FILE_TYPE = {
     PROFILE: 'profile',
     KYC: 'kyc',
-    CHAT: 'chat'
+    CHAT: 'chat',
+    INTRO_VIDEO: 'intro-video'
 }
 
 const CHANNEL_TYPE = {
@@ -317,6 +318,8 @@ const PERMISSIONS = {
     FILE: {
         SCAN_IMAGE: 'FILE.SCAN_IMAGE',
         SCAN_DOCUMENT: 'FILE.SCAN_DOCUMENT',
+        SCAN_VIDEO: 'FILE.SCAN_VIDEO',
+        VIDEO_URL: 'FILE.VIDEO_URL',
         SAVE_KYC_INFO: 'FILE.SAVE_KYC_INFO',
         PREVIEW: 'FILE.PREVIEW',
         GET_KYC_DOCS: 'FILE.GET_KYC_DOCS'

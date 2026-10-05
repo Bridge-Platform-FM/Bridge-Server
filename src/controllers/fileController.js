@@ -7,6 +7,18 @@ const { S3_FILE_TYPE, KYC_DOC_TYPES, DEFAULT_KYC_VERIFICATION_APPROVAL_TIME, KYC
 const { waterMarkFunction } = require("../utils/Helper");
 const HttpResponse = require("../utils/HttpResponse");
 const { encrypt, decrypt } = require("../utils/encryption");
+const userRepository = require("../repositories/userRepository");
+const { canConnect } = require("../matching/eligibilityService");
+const { isValidUUID } = require("../utils/Helper");
+
+// Container signatures for the accepted intro-video formats. The multipart mimetype
+// is client-supplied, so confirm the bytes really are mp4/mov (ISO BMFF "ftyp") or webm (EBML).
+const isVideoBuffer = (buffer) => {
+    if (!buffer || buffer.length < 12) return false;
+    const isIsoBmff = buffer.slice(4, 8).toString("ascii") === "ftyp";
+    const isWebm = buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+    return isIsoBmff || isWebm;
+};
 
 // POST /api/v1/file/scan-img & /scan-document
 const scanFile = async (req, res, next) => {
@@ -29,6 +41,14 @@ const scanFile = async (req, res, next) => {
 
         // req.file.buffer
         const fileBuffer = req.file.buffer;
+
+        const isVideo = req.file.mimetype.startsWith("video/");
+        if (isVideo && !isVideoBuffer(fileBuffer)) {
+            return HttpResponse.error(res, {
+                message: "File is not a valid video",
+                statusCode: 400
+            });
+        }
         // Virus Scan
         const scanResult = await scanUploadedFile(fileBuffer);
         if (!scanResult.success) {
@@ -39,7 +59,10 @@ const scanFile = async (req, res, next) => {
         }
 
         let s3_file_type = S3_FILE_TYPE.PROFILE
-        if (KYC_DOC_TYPES.includes(docType)) {
+        if (isVideo) {
+            // The folder comes from the file itself, not the client-supplied docType.
+            s3_file_type = S3_FILE_TYPE.INTRO_VIDEO
+        } else if (KYC_DOC_TYPES.includes(docType)) {
             s3_file_type = S3_FILE_TYPE.KYC
         }
 
@@ -91,6 +114,14 @@ const filePreview = async (req, res) => {
             return HttpResponse.error(res, {
                 message: "File key is required",
                 statusCode: 400
+            });
+        }
+
+        // Intro videos are served only through GET /file/video-url (viewer-eligibility checked).
+        if (s3Key.includes(`/${S3_FILE_TYPE.INTRO_VIDEO}/`)) {
+            return HttpResponse.error(res, {
+                message: "Use the video endpoint to view this file",
+                statusCode: 403
             });
         }
 
@@ -189,6 +220,51 @@ const filePreview = async (req, res) => {
  
     } catch (error) {
         return HttpResponse.error(res, error);
+    }
+};
+
+// GET /api/v1/file/video-url[?userId=&companyId=&roleId=]
+// Signed, short-lived URL for a user's intro video. Allowed for the owner, or for a viewer
+// whose role may connect with the owner's role (same rule as search / connection requests).
+const getIntroVideoUrl = async (req, res) => {
+    try {
+        // No ids in the query = the caller's own video.
+        const targetUserId = req.query.userId || req.userId;
+        const targetCompanyId = req.query.companyId || req.companyId;
+        const targetRoleId = parseInt(req.query.roleId || req.roleId, 10);
+
+        if (!isValidUUID(targetUserId) || !isValidUUID(targetCompanyId) || isNaN(targetRoleId) || targetRoleId <= 0) {
+            return HttpResponse.error(res, { message: "userId, companyId and roleId are required", statusCode: 400 });
+        }
+
+        const target = await userRepository.getUserById(targetUserId);
+        const key = target && target.intro_video;
+        if (!key) {
+            return HttpResponse.error(res, { message: "No intro video found", statusCode: 404 });
+        }
+
+        // The key must live in the owner's own folder.
+        const expectedPrefix = `company/${targetCompanyId}/${targetUserId}/${S3_FILE_TYPE.INTRO_VIDEO}/`;
+        if (!key.startsWith(expectedPrefix)) {
+            return HttpResponse.error(res, { message: "No intro video found", statusCode: 404 });
+        }
+
+        if (req.userId !== targetUserId) {
+            const roleInfo = await userRepository.getUserCompanyRole(targetUserId, targetCompanyId, targetRoleId);
+            if (!roleInfo || !canConnect(req.role, roleInfo.role_code)) {
+                return HttpResponse.error(res, { message: "You are not allowed to view this video", statusCode: 403 });
+            }
+        }
+
+        const url = await getFileUrl(key);
+        return HttpResponse.success(res, {
+            message: "Video URL generated",
+            data: { url, expiresIn: 180 },
+            statusCode: 200
+        });
+    } catch (error) {
+        errorLogger.error(error);
+        return HttpResponse.error(res, { message: "Failed to load video", statusCode: 500 });
     }
 };
 
@@ -318,4 +394,4 @@ const getKycDocs = async (req, res) => {
     }
 };
 
-module.exports = { scanFile, filePreview, saveKycInfo, getKycDocs }
+module.exports = { scanFile, filePreview, saveKycInfo, getKycDocs, getIntroVideoUrl }

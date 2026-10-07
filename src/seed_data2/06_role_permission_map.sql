@@ -13,6 +13,8 @@ INSERT INTO public.role_permission_map (user_type, permission_id, created_by, cr
     ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'FILE.SCAN_DOCUMENT'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),
     ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'FILE.SAVE_KYC_INFO'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),
     ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'FILE.PREVIEW'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),
+    ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'FILE.SCAN_VIDEO'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),
+    ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'FILE.VIDEO_URL'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),
     ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'FILE.GET_KYC_DOCS'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),
     ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'MATCHING.VIEW_PROFILES'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),
     ('USER', (SELECT id FROM public.permission_master WHERE permission_key = 'SUBSCRIPTION.VIEW_PLANS'), 'd617302e-60a1-414c-8275-95a1cd1b9e7e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE),

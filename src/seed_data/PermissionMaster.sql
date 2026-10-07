@@ -22,6 +22,8 @@ INSERT INTO public.permission_master (permission_key, description, created_by, c
 ('FILE.SAVE_KYC_INFO', 'Save KYC document info', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('FILE.PREVIEW', 'Preview a stored file', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 ('FILE.GET_KYC_DOCS', 'Fetch own KYC documents', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('FILE.SCAN_VIDEO', 'Scan and upload an intro video', (select id from "admin" a where a.email = 'admin@test.com'), now()),
+('FILE.VIDEO_URL', 'Get a signed URL to view an intro video', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 
 ('MATCHING.VIEW_PROFILES', 'View ranked match profiles', (select id from "admin" a where a.email = 'admin@test.com'), now()),
 

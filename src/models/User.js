@@ -28,6 +28,11 @@ module.exports = (sequelize) => {
             allowNull: true
         },
 
+        intro_video: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
         organization_name: {
             type: DataTypes.STRING,
             allowNull: true

@@ -61,6 +61,30 @@ const fileUpload = multer({
     }
 });
 
+const INTRO_VIDEO_MAX_BYTES = 30 * 1024 * 1024; // 30MB
+
+const videoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: INTRO_VIDEO_MAX_BYTES
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedMimeTypes = [
+            "video/mp4",
+            "video/webm",
+            "video/quicktime"
+        ];
+
+        if (allowedMimeTypes.includes(file.mimetype)) {
+            return cb(null, true);
+        }
+        return cb(
+            new Error("Only MP4, WebM and MOV videos are allowed"),
+            false
+        );
+    }
+});
+
 // mimetype -> { messageType, maxSize } for the single chat media upload endpoint.
 // multer enforces one blanket fileSize ceiling (the max across all types below);
 // chatService re-checks the per-type max after upload so an image can't sneak in at video-sized limits.
@@ -127,6 +151,8 @@ async function scanBuffer(buffer) {
 module.exports = {
     picUpload,
     fileUpload,
+    videoUpload,
+    INTRO_VIDEO_MAX_BYTES,
     chatMediaUpload,
     CHAT_MEDIA_RULES,
     scanBuffer

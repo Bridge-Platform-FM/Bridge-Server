@@ -342,6 +342,8 @@ const searchUsers = async (searchQuery, searchableRoles = [], excludeUserId, vie
         `SELECT
             u.id AS user_id,
             cur.role_id,
+            crm.role_code AS role,
+            crm.role_name,
             c.id AS company_id,
             u.first_name,
             u.last_name,

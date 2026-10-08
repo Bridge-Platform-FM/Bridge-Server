@@ -54,7 +54,7 @@ const AUTH_MESSAGES = {
     LOGIN_FAILED: 'Error encountered while logging in',
     PASSWORD_RESET_SUCCESS: 'Password updated successfully',
     PASSWORD_RESET_FAILED: 'Error encountered while updating password'
-}
+};
 
 const ROLE_FIELD_METADATA_MESSAGES = {
     CREATE_SUCCESS: 'Role field metadata created successfully',
@@ -99,7 +99,7 @@ const LOGIN_MESSAGES = {
     INVALID_CREDENTIALS: 'Invalid Credentials',
     VALID_CREDENTIALS: 'Logged in successfully',
     USER_NOT_FOUND: 'User not found'
-}
+};
 
 const KYC_MESSAGES = {
     FETCH_SUCCESS: 'Fetched KYC documents successfully',
@@ -112,20 +112,20 @@ const KYC_MESSAGES = {
     REVIEW_ACTION_FAILED: 'Error encountered while updating KYC review status',
     DOCUMENT_NOT_FOUND: 'KYC document not found',
     DUPLICATE_SUBMISSION: 'This document was already submitted. Please refresh and try again.',
-}
+};
 
 const ENCRYPT_DECRYPT_MESSAGES = {
     ENCRYPT_FAILED: 'Error encountered while encrypting data',
     DECRYPT_FAILED: 'Error encountered while decrypting data',
     ENCRYPT_SUCCESS: 'Data encrypted successfully',
     DECRYPT_SUCCESS: 'Data decrypted successfully'
-}
+};
 
 const ADMIN_MESSAGES = {
     INVALID_CREDENTIALS: 'Invalid Credentials',
     LOGIN_SUCCESS: 'Logged in successfully',
     LOGIN_FAILED: 'Error encountered while logging in'
-}
+};
 
 const ADMIN_MANAGEMENT_MESSAGES = {
     CREATE_SUCCESS: 'Admin created successfully',
@@ -185,7 +185,7 @@ const SESSION_MESSAGES = {
     SESSION_LIMIT_REACHED: 'Maximum number of active devices reached. Please choose a device to log out.',
     SESSION_SELECTION_REQUIRED: 'Please select at least one device to log out.',
     SESSION_SELECTION_INVALID: 'One or more selected sessions are invalid or do not belong to you.'
-}
+};
 
 const ADMIN_CONFIG_MESSAGES = {
     CONFIG_FETCH_SUCCESS: 'OTP configuration fetched successfully',
@@ -207,12 +207,12 @@ const S3_FILE_TYPE = {
     KYC: 'kyc',
     CHAT: 'chat',
     INTRO_VIDEO: 'intro-video'
-}
+};
 
 const CHANNEL_TYPE = {
     EMAIL: 'EMAIL',
     PHONE: 'PHONE'
-}
+};
 
 const KYC_DOC_TYPES = ['AADHAAR', 'PAN'];
 
@@ -222,7 +222,7 @@ const KYC_STATUS = {
     PENDING: 'Pending',
     REJECTED: 'Rejected',
     APPROVED: 'Approved'
-}
+};
 
 const REDIRECT_ROUTES = {
     REGISTRATION: {
@@ -235,7 +235,7 @@ const REDIRECT_ROUTES = {
     DASHBOARD: {
         DASHBOARD: '/dashboard'
     }
-}
+};
 
 const ROLES = {
     USER: ['STARTUP', 'INVESTOR', 'B2B'],
